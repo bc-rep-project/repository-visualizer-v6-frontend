@@ -1,0 +1,15 @@
+{
+  "src": {
+    "components": {
+      "Button.js": "class Button extends React.Component {}",
+      "Input.js": "function Input(props) { return <input {...props} />; }"
+    },
+    "utils": {
+      "math.js": "export function add(a, b) { return a + b; }",
+      "string.js": "export function capitalize(str) { return str.toUpperCase(); }"
+    },
+    "index.js": "import { Button } from './components/Button'; export default function Home() { return <Button />; }"
+  },
+  "README.md": "# My Project\nThis is a simple project.",
+  "package.json": "{\"name\": \"my-project\", \"version\": \"1.0.0\"}"
+}
