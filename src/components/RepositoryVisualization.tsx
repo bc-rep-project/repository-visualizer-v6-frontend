@@ -1,12 +1,25 @@
-import { useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import * as d3 from 'd3';
+import { HierarchyNode as D3HierarchyNode } from 'd3';
 import { ConversionResponse } from '../utils/api';
+
+interface FileNode {
+    name: string;
+    value: number;
+    lines: number;
+    extension: string;
+}
+
+interface HierarchyNode {
+    name: string;
+    children: FileNode[];
+}
 
 interface RepositoryVisualizationProps {
     data: ConversionResponse['analysis'];
 }
 
-export const RepositoryVisualization: React.FC<RepositoryVisualizationProps> = ({ data }) => {
+export const RepositoryVisualization: React.FC<RepositoryVisualizationProps> = ({ data }: RepositoryVisualizationProps) => {
     const svgRef = useRef<SVGSVGElement>(null);
 
     useEffect(() => {
@@ -24,9 +37,9 @@ export const RepositoryVisualization: React.FC<RepositoryVisualizationProps> = (
             .attr('height', height);
 
         // Create hierarchical data structure
-        const hierarchyData = {
+        const hierarchyData: HierarchyNode = {
             name: 'root',
-            children: data.files.map(file => ({
+            children: data.files.map((file: any) => ({
                 name: file.original_path,
                 value: file.size,
                 lines: file.lines,
@@ -35,13 +48,13 @@ export const RepositoryVisualization: React.FC<RepositoryVisualizationProps> = (
         };
 
         // Create treemap layout
-        const treemap = d3.treemap<any>()
+        const treemap = d3.treemap<HierarchyNode | FileNode>()
             .size([width - margin.left - margin.right, height - margin.top - margin.bottom])
             .padding(1);
 
-        const root = d3.hierarchy(hierarchyData)
-            .sum(d => d.value)
-            .sort((a, b) => (b.value || 0) - (a.value || 0));
+        const root = d3.hierarchy<HierarchyNode | FileNode>(hierarchyData)
+            .sum((d: HierarchyNode | FileNode) => 'value' in d ? d.value : 0)
+            .sort((a: D3HierarchyNode<HierarchyNode | FileNode>, b: D3HierarchyNode<HierarchyNode | FileNode>) => (b.value || 0) - (a.value || 0));
 
         treemap(root);
 
