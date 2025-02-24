@@ -1,9 +1,18 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { repositoryApi } from '@/services/api';
+import { Button } from '@/components/common/Button';
 
 interface NavbarProps {
   onMenuClick: () => void;
+}
+
+interface Notification {
+  type: string;
+  repository: string;
+  message: string;
+  timestamp: string;
 }
 
 const navItems = [
@@ -14,6 +23,39 @@ const navItems = [
 
 export default function Navbar({ onMenuClick }: NavbarProps) {
   const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [showSearch, setShowSearch] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const data = await repositoryApi.getNotifications();
+        setNotifications(data.notifications);
+      } catch (error) {
+        console.error('Failed to fetch notifications:', error);
+      }
+    };
+
+    fetchNotifications();
+    // Refresh notifications every 5 minutes
+    const interval = setInterval(fetchNotifications, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+    
+    try {
+      const data = await repositoryApi.search(searchQuery);
+      setSearchResults(data.results);
+      setShowSearch(true);
+    } catch (error) {
+      console.error('Search failed:', error);
+    }
+  };
 
   return (
     <nav className="sticky top-0 z-20 bg-background/80 backdrop-blur-sm border-b">
@@ -43,24 +85,85 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
               ))}
             </div>
           </div>
-          
-          <div className="flex items-center gap-2 sm:gap-4">
-            <button className="p-2 text-muted-foreground hover:text-foreground">
-              <SearchIcon className="h-5 w-5" />
-            </button>
-            <button className="p-2 text-muted-foreground hover:text-foreground hidden sm:block">
-              <BellIcon className="h-5 w-5" />
-            </button>
-            <button className="p-2 text-muted-foreground hover:text-foreground hidden sm:block">
-              <SettingsIcon className="h-5 w-5" />
-            </button>
-            <button className="ml-2">
-              <img
-                src="https://github.com/shadcn.png"
-                alt="Avatar"
-                className="h-8 w-8 rounded-full"
+
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search repositories..."
+                className="input w-64"
+                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
               />
-            </button>
+              <button 
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-muted-foreground hover:text-foreground"
+                onClick={handleSearch}
+              >
+                <SearchIcon className="h-5 w-5" />
+              </button>
+
+              {showSearch && searchResults.length > 0 && (
+                <div className="absolute top-full mt-2 w-full bg-background border rounded-md shadow-lg">
+                  {searchResults.map((result: any, index: number) => (
+                    <div
+                      key={index}
+                      className="p-3 hover:bg-accent cursor-pointer border-b last:border-b-0"
+                      onClick={() => {
+                        setShowSearch(false);
+                        if (result.type === 'repository') {
+                          router.push(`/repository/${result.name}`);
+                        }
+                      }}
+                    >
+                      <div className="font-medium">{result.name}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {result.type === 'repository' ? 'Repository' : 'File'}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="relative">
+              <button 
+                className="p-2 text-muted-foreground hover:text-foreground"
+                onClick={() => setShowNotifications(!showNotifications)}
+              >
+                <BellIcon className="h-5 w-5" />
+                {notifications.length > 0 && (
+                  <span className="absolute -top-1 -right-1 h-4 w-4 bg-primary text-primary-foreground rounded-full text-xs flex items-center justify-center">
+                    {notifications.length}
+                  </span>
+                )}
+              </button>
+
+              {showNotifications && notifications.length > 0 && (
+                <div className="absolute top-full right-0 mt-2 w-80 bg-background border rounded-md shadow-lg">
+                  {notifications.map((notification, index) => (
+                    <div
+                      key={index}
+                      className="p-3 hover:bg-accent cursor-pointer border-b last:border-b-0"
+                    >
+                      <div className="font-medium">{notification.repository}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {notification.message}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {new Date(notification.timestamp).toLocaleString()}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <Link href="/settings">
+              <button className="p-2 text-muted-foreground hover:text-foreground">
+                <SettingsIcon className="h-5 w-5" />
+              </button>
+            </Link>
           </div>
         </div>
       </div>

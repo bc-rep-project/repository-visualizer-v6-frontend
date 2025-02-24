@@ -58,6 +58,56 @@ export const repositoryApi = {
     deleteRepository: async (repoId: string): Promise<void> => {
         await api.delete(`/api/repositories/${repoId}`);
     },
+
+    search: async (query: string): Promise<any> => {
+        const response = await api.get(`/search?q=${encodeURIComponent(query)}`);
+        return response.data;
+    },
+
+    getNotifications: async (): Promise<any> => {
+        const response = await api.get('/notifications');
+        return response.data;
+    },
+
+    getSettings: async (): Promise<any> => {
+        const response = await api.get('/settings');
+        return response.data;
+    },
+
+    updateSettings: async (settings: any): Promise<any> => {
+        const response = await api.post('/settings', settings);
+        return response.data;
+    },
+
+    getDashboardStats: async (): Promise<any> => {
+        const response = await api.get('/dashboard/stats');
+        return response.data;
+    },
+
+    getCommits: async (repoId: string): Promise<any> => {
+        const response = await api.get(`/repository/${repoId}/commits`);
+        return response.data;
+    },
+
+    getIssues: async (repoId: string): Promise<any> => {
+        const response = await api.get(`/repository/${repoId}/issues`);
+        return response.data;
+    },
+
+    createIssue: async (repoId: string, issue: any): Promise<any> => {
+        const response = await api.post(`/repository/${repoId}/issues`, issue);
+        return response.data;
+    },
+
+    getPullRequests: async (repoId: string): Promise<any> => {
+        const response = await api.get(`/repository/${repoId}/pulls`);
+        return response.data;
+    },
+
+    createPullRequest: async (repoId: string, pr: any): Promise<any> => {
+        const response = await api.post(`/repository/${repoId}/pulls`, pr);
+        return response.data;
+    }
 };
 
 export default api;
