@@ -32,8 +32,8 @@ export const RepositoryList: React.FC = () => {
 
     if (error) {
         return (
-            <div className="text-red-600 p-4 rounded-md bg-red-50">
-                Error: {error}
+            <div className="p-4 text-sm text-destructive-foreground bg-destructive/10 rounded-lg">
+                {error}
             </div>
         );
     }
@@ -47,7 +47,7 @@ export const RepositoryList: React.FC = () => {
                         value={newRepoUrl}
                         onChange={(e) => setNewRepoUrl(e.target.value)}
                         placeholder="Enter GitHub repository URL"
-                        className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="input flex-1"
                     />
                     <Button type="submit" isLoading={isCloning} disabled={!newRepoUrl.trim()}>
                         Clone Repository
@@ -57,63 +57,62 @@ export const RepositoryList: React.FC = () => {
 
             {loading && !isCloning ? (
                 <div className="flex justify-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                 </div>
             ) : (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {repositories.map((repo: Repository) => (
-                        <div
-                            key={repo.repo_id}
-                            className="p-6 bg-white/80 backdrop-blur-sm border border-gray-100 rounded-xl shadow-sm 
-                                hover:shadow-md transition-all duration-300 transform hover:-translate-y-1"
-                        >
-                            <div className="flex justify-between items-start">
-                                <h3 className="text-lg font-light text-gray-800">
-                                    {repo.repo_url.split('/').pop()?.replace('.git', '')}
-                                </h3>
-                                <span className={`px-3 py-1 text-xs rounded-full font-medium ${
-                                    repo.status === 'completed' ? 'bg-green-50 text-green-700' :
-                                    repo.status === 'failed' ? 'bg-red-50 text-red-700' :
-                                    'bg-blue-50 text-blue-700'
-                                }`}>
-                                    {repo.status}
-                                </span>
-                            </div>
-                            
-                            <p className="mt-2 text-sm text-gray-600 truncate">{repo.repo_url}</p>
-                            
-                            <div className="mt-4 space-y-2">
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-gray-500">Files:</span>
-                                    <span className="text-gray-900">{repo.file_count}</span>
-                                </div>
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-gray-500">Size:</span>
-                                    <span className="text-gray-900">{formatSize(repo.total_size)}</span>
-                                </div>
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-gray-500">Created:</span>
-                                    <span className="text-gray-900">
-                                        {new Date(repo.created_at).toLocaleDateString()}
+                        <div key={repo.repo_id} className="card">
+                            <div className="card-header">
+                                <div className="flex justify-between items-start">
+                                    <h3 className="card-title">
+                                        {repo.repo_url.split('/').pop()?.replace('.git', '')}
+                                    </h3>
+                                    <span className={`px-3 py-1 text-xs rounded-full font-medium ${
+                                        repo.status === 'completed' ? 'bg-green-100 text-green-700' :
+                                        repo.status === 'failed' ? 'bg-destructive/10 text-destructive-foreground' :
+                                        'bg-primary/10 text-primary-foreground'
+                                    }`}>
+                                        {repo.status}
                                     </span>
                                 </div>
-                                {Object.keys(repo.languages).length > 0 && (
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-gray-500">Languages:</span>
-                                        <span className="text-gray-900">
-                                            {Object.entries(repo.languages)
-                                                .sort(([, a], [, b]) => b - a)
-                                                .slice(0, 3)
-                                                .map(([lang]) => lang.replace('.', ''))
-                                                .join(', ')}
-                                        </span>
+                                <p className="card-description truncate">{repo.repo_url}</p>
+                            </div>
+                            
+                            <div className="card-content space-y-4">
+                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                        <p className="text-muted-foreground">Files</p>
+                                        <p className="font-medium">{repo.file_count}</p>
                                     </div>
-                                )}
+                                    <div>
+                                        <p className="text-muted-foreground">Size</p>
+                                        <p className="font-medium">{formatSize(repo.total_size)}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-muted-foreground">Created</p>
+                                        <p className="font-medium">
+                                            {new Date(repo.created_at).toLocaleDateString()}
+                                        </p>
+                                    </div>
+                                    {Object.keys(repo.languages).length > 0 && (
+                                        <div>
+                                            <p className="text-muted-foreground">Top Languages</p>
+                                            <p className="font-medium">
+                                                {Object.entries(repo.languages)
+                                                    .sort(([, a], [, b]) => b - a)
+                                                    .slice(0, 3)
+                                                    .map(([lang]) => lang.replace('.', ''))
+                                                    .join(', ')}
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
-                            <div className="mt-4">
+                            <div className="card-footer">
                                 <Button
-                                    variant="danger"
+                                    variant="destructive"
                                     size="sm"
                                     onClick={() => deleteRepository(repo.repo_id)}
                                     className="w-full"
