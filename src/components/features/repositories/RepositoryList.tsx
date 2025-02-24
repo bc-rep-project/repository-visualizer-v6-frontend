@@ -41,7 +41,7 @@ export const RepositoryList: React.FC = () => {
     return (
         <div className="space-y-6">
             <form onSubmit={handleClone} className="space-y-4">
-                <div className="flex gap-4">
+                <div className="flex flex-col sm:flex-row gap-4">
                     <input
                         type="text"
                         value={newRepoUrl}
@@ -49,7 +49,12 @@ export const RepositoryList: React.FC = () => {
                         placeholder="Enter GitHub repository URL"
                         className="input flex-1"
                     />
-                    <Button type="submit" isLoading={isCloning} disabled={!newRepoUrl.trim()}>
+                    <Button 
+                        type="submit" 
+                        isLoading={isCloning} 
+                        disabled={!newRepoUrl.trim()}
+                        className="w-full sm:w-auto"
+                    >
                         Clone Repository
                     </Button>
                 </div>
@@ -60,15 +65,15 @@ export const RepositoryList: React.FC = () => {
                     <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                 </div>
             ) : (
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
                     {repositories.map((repo: Repository) => (
                         <div key={repo.repo_id} className="card">
                             <div className="card-header">
-                                <div className="flex justify-between items-start">
+                                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
                                     <h3 className="card-title">
                                         {repo.repo_url.split('/').pop()?.replace('.git', '')}
                                     </h3>
-                                    <span className={`px-3 py-1 text-xs rounded-full font-medium ${
+                                    <span className={`self-start px-3 py-1 text-xs rounded-full font-medium ${
                                         repo.status === 'completed' ? 'bg-green-100 text-green-700' :
                                         repo.status === 'failed' ? 'bg-destructive/10 text-destructive-foreground' :
                                         'bg-primary/10 text-primary-foreground'

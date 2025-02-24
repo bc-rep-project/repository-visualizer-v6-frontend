@@ -2,43 +2,56 @@ import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 
+interface NavbarProps {
+  onMenuClick: () => void;
+}
+
 const navItems = [
   { label: 'Home', href: '/' },
   { label: 'Visualizations', href: '/visualizations' },
   { label: 'Analysis', href: '/analysis' },
 ];
 
-export default function Navbar() {
+export default function Navbar({ onMenuClick }: NavbarProps) {
   const router = useRouter();
 
   return (
-    <nav className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b">
-      <div className="container mx-auto px-6">
+    <nav className="sticky top-0 z-20 bg-background/80 backdrop-blur-sm border-b">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
-          <div className="flex gap-8">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`inline-flex items-center px-2 py-1 text-sm font-medium transition-colors 
-                  ${router.pathname === item.href 
-                    ? 'text-primary border-b-2 border-primary' 
-                    : 'text-muted-foreground hover:text-foreground'
-                  }`}
-              >
-                {item.label}
-              </Link>
-            ))}
+          <div className="flex items-center">
+            <button
+              type="button"
+              className="p-2 -ml-2 text-muted-foreground hover:text-foreground lg:hidden"
+              onClick={onMenuClick}
+            >
+              <MenuIcon className="h-6 w-6" />
+            </button>
+            <div className="hidden lg:flex lg:gap-8 ml-8">
+              {navItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`inline-flex items-center px-2 py-1 text-sm font-medium transition-colors 
+                    ${router.pathname === item.href 
+                      ? 'text-primary border-b-2 border-primary' 
+                      : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
           </div>
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <button className="p-2 text-muted-foreground hover:text-foreground">
               <SearchIcon className="h-5 w-5" />
             </button>
-            <button className="p-2 text-muted-foreground hover:text-foreground">
+            <button className="p-2 text-muted-foreground hover:text-foreground hidden sm:block">
               <BellIcon className="h-5 w-5" />
             </button>
-            <button className="p-2 text-muted-foreground hover:text-foreground">
+            <button className="p-2 text-muted-foreground hover:text-foreground hidden sm:block">
               <SettingsIcon className="h-5 w-5" />
             </button>
             <button className="ml-2">
@@ -52,6 +65,25 @@ export default function Navbar() {
         </div>
       </div>
     </nav>
+  );
+}
+
+function MenuIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M4 6h16M4 12h16M4 18h16"
+      />
+    </svg>
   );
 }
 

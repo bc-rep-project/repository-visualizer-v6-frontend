@@ -2,6 +2,10 @@ import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 
+interface SidebarProps {
+  onClose?: () => void;
+}
+
 const sidebarItems = [
   {
     label: 'Dashboard',
@@ -35,53 +39,79 @@ const sidebarItems = [
   },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ onClose }: SidebarProps) {
   const router = useRouter();
 
   return (
-    <aside className="fixed inset-y-0 left-0 w-64 bg-card border-r">
-      <div className="flex flex-col h-full">
-        <div className="p-6">
-          <h2 className="text-lg font-semibold">Repository Visualizer</h2>
-        </div>
+    <aside className="flex flex-col h-full bg-card border-r">
+      <div className="flex items-center justify-between p-6">
+        <h2 className="text-lg font-semibold">Repository Visualizer</h2>
+        {onClose && (
+          <button
+            type="button"
+            className="p-2 -mr-2 text-muted-foreground hover:text-foreground lg:hidden"
+            onClick={onClose}
+          >
+            <CloseIcon className="h-5 w-5" />
+          </button>
+        )}
+      </div>
 
-        <nav className="flex-1 px-4 space-y-1">
-          {sidebarItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = router.pathname === item.href;
+      <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
+        {sidebarItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = router.pathname === item.href;
 
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors
-                  ${isActive 
-                    ? 'bg-primary/10 text-primary' 
-                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                  }`}
-              >
-                <Icon className="h-5 w-5" />
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors
+                ${isActive 
+                  ? 'bg-primary/10 text-primary' 
+                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                }`}
+            >
+              <Icon className="h-5 w-5" />
+              {item.label}
+            </Link>
+          );
+        })}
+      </nav>
 
-        <div className="p-6 border-t">
-          <div className="flex items-center gap-3">
-            <img
-              src="https://github.com/shadcn.png"
-              alt="User"
-              className="h-10 w-10 rounded-full"
-            />
-            <div>
-              <p className="text-sm font-medium">Amanda</p>
-              <p className="text-xs text-muted-foreground">View profile</p>
-            </div>
+      <div className="p-6 border-t">
+        <div className="flex items-center gap-3">
+          <img
+            src="https://github.com/shadcn.png"
+            alt="User"
+            className="h-10 w-10 rounded-full"
+          />
+          <div>
+            <p className="text-sm font-medium">Amanda</p>
+            <p className="text-xs text-muted-foreground">View profile</p>
           </div>
         </div>
       </div>
     </aside>
+  );
+}
+
+function CloseIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M6 18L18 6M6 6l12 12"
+      />
+    </svg>
   );
 }
 
