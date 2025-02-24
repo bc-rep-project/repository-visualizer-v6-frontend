@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Repository } from '../../../types/repository.types';
-import { Button } from '../../common/Button';
-import { useRepositories } from '../../../hooks/useRepositories';
+import { Repository } from '@/types/repository.types';
+import { Button } from '@/components/common/Button';
+import { useRepositories } from '@/hooks/useRepositories';
 
 export const RepositoryList: React.FC = () => {
     const { repositories, loading, error, cloneRepository, deleteRepository } = useRepositories();
