@@ -1,10 +1,4 @@
-export const API_CONFIG = {
-    baseURL: process.env.NEXT_PUBLIC_API_URL,
-    endpoints: {
-      clone: '/clone',
-      progress: (repoId: string) => `/progress/${repoId}`,
-      convert: '/convert',
-      repositories: '/repositories',
-      repository: (repoId: string) => `/repository/${repoId}`,
-    }
-  };
+export const API_ENDPOINTS = {
+    repositories: '/api/repositories/',
+    repository: (id: string) => `/api/repositories/${id}/`,
+};

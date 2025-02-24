@@ -30,7 +30,7 @@ export interface ConversionResponse {
 
 export const api = {
     async cloneRepository(repoUrl: string): Promise<CloneResponse> {
-        const response = await fetch(`${API_BASE_URL}/clone`, {
+        const response = await fetch(`${API_BASE_URL}/api/repositories/`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

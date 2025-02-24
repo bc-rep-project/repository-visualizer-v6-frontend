@@ -1,144 +1,118 @@
 import React, { useEffect, useRef } from 'react';
 import * as d3 from 'd3';
-import { HierarchyNode as D3HierarchyNode } from 'd3';
-import { ConversionResponse } from '../utils/api';
+import { HierarchyNode, HierarchyRectangularNode } from 'd3';
 
 interface FileNode {
     name: string;
-    value: number;
-    lines: number;
-    extension: string;
+    size?: number;
+    children?: FileNode[];
 }
 
-interface HierarchyNode {
-    name: string;
-    children: FileNode[];
+interface VisualizationProps {
+    data: FileNode;
+    width?: number;
+    height?: number;
 }
 
-interface RepositoryVisualizationProps {
-    data: ConversionResponse['analysis'];
-}
+type TreemapNode = HierarchyRectangularNode<FileNode>;
 
-export const RepositoryVisualization: React.FC<RepositoryVisualizationProps> = ({ data }: RepositoryVisualizationProps) => {
+export const RepositoryVisualization: React.FC<VisualizationProps> = ({
+    data,
+    width = 928,
+    height = 600,
+}: VisualizationProps) => {
     const svgRef = useRef<SVGSVGElement>(null);
 
     useEffect(() => {
-        if (!data || !svgRef.current) return;
+        if (!svgRef.current || !data) return;
 
         // Clear previous visualization
         d3.select(svgRef.current).selectAll('*').remove();
 
-        const width = 800;
-        const height = 600;
-        const margin = { top: 40, right: 40, bottom: 40, left: 40 };
-
-        const svg = d3.select(svgRef.current)
-            .attr('width', width)
-            .attr('height', height);
-
-        // Create hierarchical data structure
-        const hierarchyData: HierarchyNode = {
-            name: 'root',
-            children: data.files.map((file: any) => ({
-                name: file.original_path,
-                value: file.size,
-                lines: file.lines,
-                extension: file.original_extension
-            }))
-        };
+        // Create hierarchy
+        const root = d3.hierarchy<FileNode>(data)
+            .sum((d: FileNode) => d.size || 0)
+            .sort((a: HierarchyNode<FileNode>, b: HierarchyNode<FileNode>) => (b.value || 0) - (a.value || 0));
 
         // Create treemap layout
-        const treemap = d3.treemap<HierarchyNode | FileNode>()
-            .size([width - margin.left - margin.right, height - margin.top - margin.bottom])
-            .padding(1);
+        const treemap = d3.treemap<FileNode>()
+            .size([width, height])
+            .paddingOuter(3)
+            .paddingTop(19)
+            .paddingInner(1)
+            .round(true);
 
-        const root = d3.hierarchy<HierarchyNode | FileNode>(hierarchyData)
-            .sum((d: HierarchyNode | FileNode) => 'value' in d ? d.value : 0)
-            .sort((a: D3HierarchyNode<HierarchyNode | FileNode>, b: D3HierarchyNode<HierarchyNode | FileNode>) => (b.value || 0) - (a.value || 0));
+        const rootWithLayout = treemap(root);
 
-        treemap(root);
+        // Create SVG
+        const svg = d3.select(svgRef.current)
+            .attr('viewBox', [0, 0, width, height])
+            .style('font', '10px sans-serif');
 
-        // Color scale for different file extensions
-        const colorScale = d3.scaleOrdinal(d3.schemeCategory10)
-            .domain(data.repository_stats.extensions);
+        // Create color scale
+        const color = d3.scaleOrdinal(d3.schemeCategory10);
 
-        // Create container for treemap
-        const g = svg.append('g')
-            .attr('transform', `translate(${margin.left},${margin.top})`);
+        const node = svg.selectAll<SVGGElement, TreemapNode>('g')
+            .data(rootWithLayout.descendants())
+            .join('g')
+            .attr('transform', (d: TreemapNode) => `translate(${d.x0},${d.y0})`);
 
-        // Add cells
-        const cell = g.selectAll('g')
-            .data(root.leaves())
-            .enter().append('g')
-            .attr('transform', d => `translate(${d.x0},${d.y0})`);
+        node.append('rect')
+            .attr('width', (d: TreemapNode) => Math.max(0, d.x1 - d.x0))
+            .attr('height', (d: TreemapNode) => Math.max(0, d.y1 - d.y0))
+            .attr('fill', (d: TreemapNode) => color(d.depth.toString()))
+            .attr('fill-opacity', 0.6)
+            .attr('stroke', '#fff');
 
-        // Add rectangles
-        cell.append('rect')
-            .attr('width', d => d.x1 - d.x0)
-            .attr('height', d => d.y1 - d.y0)
-            .attr('fill', d => colorScale(d.data.extension))
-            .attr('opacity', 0.8)
-            .on('mouseover', function() {
-                d3.select(this).attr('opacity', 1);
-            })
-            .on('mouseout', function() {
-                d3.select(this).attr('opacity', 0.8);
-            });
-
-        // Add file names
-        cell.append('text')
-            .attr('x', 5)
+        // Add labels
+        const text = node.append('text')
+            .attr('x', 3)
             .attr('y', 15)
-            .text(d => {
-                const name = d.data.name.split('/').pop() || '';
-                return name.length * 6 < (d.x1 - d.x0) ? name : '';
-            })
-            .attr('font-size', '10px')
-            .attr('fill', 'white');
-
-        // Add legend
-        const legend = svg.append('g')
-            .attr('font-family', 'sans-serif')
-            .attr('font-size', 10)
-            .attr('text-anchor', 'start')
-            .selectAll('g')
-            .data(data.repository_stats.extensions)
-            .enter().append('g')
-            .attr('transform', (d, i) => `translate(${width - margin.right - 100},${margin.top + i * 20})`);
-
-        legend.append('rect')
-            .attr('x', 0)
-            .attr('width', 15)
-            .attr('height', 15)
-            .attr('fill', d => colorScale(d));
-
-        legend.append('text')
-            .attr('x', 20)
-            .attr('y', 10)
-            .text(d => d);
+            .attr('fill', '#000');
 
         // Add title
-        svg.append('text')
-            .attr('x', width / 2)
-            .attr('y', margin.top / 2)
-            .attr('text-anchor', 'middle')
-            .attr('font-size', '16px')
-            .attr('font-weight', 'bold')
-            .text('Repository File Structure');
+        text.append('tspan')
+            .attr('font-weight', (d: TreemapNode) => d.depth ? null : 'bold')
+            .text((d: TreemapNode) => d.data.name);
 
-    }, [data]);
+        // Add size labels for files
+        node.filter((d: TreemapNode) => !d.children && d.value !== undefined && d.value > 0)
+            .append('text')
+            .attr('x', 3)
+            .attr('y', 25)
+            .attr('fill', '#000')
+            .attr('opacity', 0.7)
+            .text((d: TreemapNode) => formatBytes(d.value || 0));
+
+        // Add hover effects
+        node.on('mouseover', function(this: SVGGElement, event: MouseEvent, d: TreemapNode) {
+            d3.select(this).select('rect')
+                .attr('fill-opacity', 0.8)
+                .attr('stroke-width', 2);
+        }).on('mouseout', function(this: SVGGElement, event: MouseEvent, d: TreemapNode) {
+            d3.select(this).select('rect')
+                .attr('fill-opacity', 0.6)
+                .attr('stroke-width', 1);
+        });
+
+    }, [data, width, height]);
+
+    const formatBytes = (bytes: number): string => {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`;
+    };
 
     return (
-        <div className="visualization-container">
-            <svg ref={svgRef}></svg>
-            <style jsx>{`
-                .visualization-container {
-                    background: white;
-                    border-radius: 8px;
-                    padding: 20px;
-                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                }
-            `}</style>
+        <div className="relative w-full h-full bg-white rounded-lg shadow-lg">
+            <svg
+                ref={svgRef}
+                width={width}
+                height={height}
+                className="w-full h-full"
+            />
         </div>
     );
 }; 
