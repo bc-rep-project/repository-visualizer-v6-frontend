@@ -1,0 +1,806 @@
+{
+  "tree": {
+    "name": "67d13e263235b861459c736f",
+    "path": "",
+    "type": "directory",
+    "children": [
+      {
+        "name": "public",
+        "path": "public",
+        "type": "directory",
+        "children": [
+          {
+            "name": "data.json",
+            "path": "public/data.json",
+            "type": "file",
+            "language": "JSON",
+            "size": 599
+          }
+        ]
+      },
+      {
+        "name": "src",
+        "path": "src",
+        "type": "directory",
+        "children": [
+          {
+            "name": "components",
+            "path": "src/components",
+            "type": "directory",
+            "children": [
+              {
+                "name": "common",
+                "path": "src/components/common",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "Button.tsx",
+                    "path": "src/components/common/Button.tsx",
+                    "type": "file",
+                    "language": "TypeScript",
+                    "size": 1780
+                  }
+                ]
+              },
+              {
+                "name": "features",
+                "path": "src/components/features",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "repositories",
+                    "path": "src/components/features/repositories",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "RepositoryList.tsx",
+                        "path": "src/components/features/repositories/RepositoryList.tsx",
+                        "type": "file",
+                        "language": "TypeScript",
+                        "size": 6366
+                      }
+                    ]
+                  },
+                  {
+                    "name": "visualization",
+                    "path": "src/components/features/visualization",
+                    "type": "directory",
+                    "children": [
+                      {
+                        "name": "Visualization.tsx",
+                        "path": "src/components/features/visualization/Visualization.tsx",
+                        "type": "file",
+                        "language": "TypeScript",
+                        "size": 2968
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "name": "layout",
+                "path": "src/components/layout",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "Layout.tsx",
+                    "path": "src/components/layout/Layout.tsx",
+                    "type": "file",
+                    "language": "TypeScript",
+                    "size": 1052
+                  },
+                  {
+                    "name": "Navbar.tsx",
+                    "path": "src/components/layout/Navbar.tsx",
+                    "type": "file",
+                    "language": "TypeScript",
+                    "size": 8719
+                  },
+                  {
+                    "name": "Sidebar.tsx",
+                    "path": "src/components/layout/Sidebar.tsx",
+                    "type": "file",
+                    "language": "TypeScript",
+                    "size": 6014
+                  }
+                ]
+              },
+              {
+                "name": "RepositoryVisualization.tsx",
+                "path": "src/components/RepositoryVisualization.tsx",
+                "type": "file",
+                "language": "TypeScript",
+                "size": 3835
+              }
+            ]
+          },
+          {
+            "name": "config",
+            "path": "src/config",
+            "type": "directory",
+            "children": [
+              {
+                "name": "api.ts",
+                "path": "src/config/api.ts",
+                "type": "file",
+                "language": "TypeScript",
+                "size": 133
+              }
+            ]
+          },
+          {
+            "name": "hooks",
+            "path": "src/hooks",
+            "type": "directory",
+            "children": [
+              {
+                "name": "useRepositories.ts",
+                "path": "src/hooks/useRepositories.ts",
+                "type": "file",
+                "language": "TypeScript",
+                "size": 2734
+              }
+            ]
+          },
+          {
+            "name": "pages",
+            "path": "src/pages",
+            "type": "directory",
+            "children": [
+              {
+                "name": "_app.tsx",
+                "path": "src/pages/_app.tsx",
+                "type": "file",
+                "language": "TypeScript",
+                "size": 181
+              },
+              {
+                "name": "index.tsx",
+                "path": "src/pages/index.tsx",
+                "type": "file",
+                "language": "TypeScript",
+                "size": 619
+              },
+              {
+                "name": "settings.tsx",
+                "path": "src/pages/settings.tsx",
+                "type": "file",
+                "language": "TypeScript",
+                "size": 5569
+              }
+            ]
+          },
+          {
+            "name": "services",
+            "path": "src/services",
+            "type": "directory",
+            "children": [
+              {
+                "name": "api.ts",
+                "path": "src/services/api.ts",
+                "type": "file",
+                "language": "TypeScript",
+                "size": 4239
+              }
+            ]
+          },
+          {
+            "name": "styles",
+            "path": "src/styles",
+            "type": "directory",
+            "children": [
+              {
+                "name": "globals.css",
+                "path": "src/styles/globals.css",
+                "type": "file",
+                "language": "CSS",
+                "size": 3022
+              }
+            ]
+          },
+          {
+            "name": "types",
+            "path": "src/types",
+            "type": "directory",
+            "children": [
+              {
+                "name": "global.d.ts",
+                "path": "src/types/global.d.ts",
+                "type": "file",
+                "language": "TypeScript",
+                "size": 641
+              },
+              {
+                "name": "repository.types.ts",
+                "path": "src/types/repository.types.ts",
+                "type": "file",
+                "language": "TypeScript",
+                "size": 539
+              }
+            ]
+          },
+          {
+            "name": "utils",
+            "path": "src/utils",
+            "type": "directory",
+            "children": [
+              {
+                "name": "animations.ts",
+                "path": "src/utils/animations.ts",
+                "type": "file",
+                "language": "TypeScript",
+                "size": 296
+              },
+              {
+                "name": "api.ts",
+                "path": "src/utils/api.ts",
+                "type": "file",
+                "language": "TypeScript",
+                "size": 2033
+              },
+              {
+                "name": "cn.ts",
+                "path": "src/utils/cn.ts",
+                "type": "file",
+                "language": "TypeScript",
+                "size": 169
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "styles",
+        "path": "styles",
+        "type": "directory",
+        "children": [
+          {
+            "name": "global.css",
+            "path": "styles/global.css",
+            "type": "file",
+            "language": "CSS",
+            "size": 3022
+          }
+        ]
+      },
+      {
+        "name": ".gitignore",
+        "path": ".gitignore",
+        "type": "file",
+        "language": null,
+        "size": 414
+      },
+      {
+        "name": "README.md",
+        "path": "README.md",
+        "type": "file",
+        "language": "Markdown",
+        "size": 5372
+      },
+      {
+        "name": "next.config.js",
+        "path": "next.config.js",
+        "type": "file",
+        "language": "JavaScript",
+        "size": 801
+      },
+      {
+        "name": "package.json",
+        "path": "package.json",
+        "type": "file",
+        "language": "JSON",
+        "size": 938
+      },
+      {
+        "name": "postcss.config.js",
+        "path": "postcss.config.js",
+        "type": "file",
+        "language": "JavaScript",
+        "size": 82
+      },
+      {
+        "name": "tailwind.config.js",
+        "path": "tailwind.config.js",
+        "type": "file",
+        "language": "JavaScript",
+        "size": 2144
+      },
+      {
+        "name": "tsconfig.json",
+        "path": "tsconfig.json",
+        "type": "file",
+        "language": "JSON",
+        "size": 665
+      }
+    ]
+  },
+  "graph": {
+    "nodes": [
+      {
+        "id": "67d13e263235b861459c736f",
+        "label": "67d13e263235b861459c736f",
+        "type": "directory",
+        "path": "",
+        "size": 1000
+      },
+      {
+        "id": ".gitignore",
+        "label": ".gitignore",
+        "type": "file",
+        "path": ".gitignore",
+        "language": null,
+        "size": 414
+      },
+      {
+        "id": "README.md",
+        "label": "README.md",
+        "type": "file",
+        "path": "README.md",
+        "language": "Markdown",
+        "size": 5372
+      },
+      {
+        "id": "next.config.js",
+        "label": "next.config.js",
+        "type": "file",
+        "path": "next.config.js",
+        "language": "JavaScript",
+        "size": 801
+      },
+      {
+        "id": "package.json",
+        "label": "package.json",
+        "type": "file",
+        "path": "package.json",
+        "language": "JSON",
+        "size": 938
+      },
+      {
+        "id": "postcss.config.js",
+        "label": "postcss.config.js",
+        "type": "file",
+        "path": "postcss.config.js",
+        "language": "JavaScript",
+        "size": 82
+      },
+      {
+        "id": "tailwind.config.js",
+        "label": "tailwind.config.js",
+        "type": "file",
+        "path": "tailwind.config.js",
+        "language": "JavaScript",
+        "size": 2144
+      },
+      {
+        "id": "tsconfig.json",
+        "label": "tsconfig.json",
+        "type": "file",
+        "path": "tsconfig.json",
+        "language": "JSON",
+        "size": 665
+      },
+      {
+        "id": "public",
+        "label": "public",
+        "type": "directory",
+        "path": "public",
+        "size": 1000
+      },
+      {
+        "id": "public/data.json",
+        "label": "data.json",
+        "type": "file",
+        "path": "public/data.json",
+        "language": "JSON",
+        "size": 599
+      },
+      {
+        "id": "src",
+        "label": "src",
+        "type": "directory",
+        "path": "src",
+        "size": 1000
+      },
+      {
+        "id": "src/components",
+        "label": "components",
+        "type": "directory",
+        "path": "src/components",
+        "size": 1000
+      },
+      {
+        "id": "src/components/RepositoryVisualization.tsx",
+        "label": "RepositoryVisualization.tsx",
+        "type": "file",
+        "path": "src/components/RepositoryVisualization.tsx",
+        "language": "TypeScript",
+        "size": 3835
+      },
+      {
+        "id": "src/components/common",
+        "label": "common",
+        "type": "directory",
+        "path": "src/components/common",
+        "size": 1000
+      },
+      {
+        "id": "src/components/common/Button.tsx",
+        "label": "Button.tsx",
+        "type": "file",
+        "path": "src/components/common/Button.tsx",
+        "language": "TypeScript",
+        "size": 1780
+      },
+      {
+        "id": "src/components/features",
+        "label": "features",
+        "type": "directory",
+        "path": "src/components/features",
+        "size": 1000
+      },
+      {
+        "id": "src/components/features/repositories",
+        "label": "repositories",
+        "type": "directory",
+        "path": "src/components/features/repositories",
+        "size": 1000
+      },
+      {
+        "id": "src/components/features/repositories/RepositoryList.tsx",
+        "label": "RepositoryList.tsx",
+        "type": "file",
+        "path": "src/components/features/repositories/RepositoryList.tsx",
+        "language": "TypeScript",
+        "size": 6366
+      },
+      {
+        "id": "src/components/features/visualization",
+        "label": "visualization",
+        "type": "directory",
+        "path": "src/components/features/visualization",
+        "size": 1000
+      },
+      {
+        "id": "src/components/features/visualization/Visualization.tsx",
+        "label": "Visualization.tsx",
+        "type": "file",
+        "path": "src/components/features/visualization/Visualization.tsx",
+        "language": "TypeScript",
+        "size": 2968
+      },
+      {
+        "id": "src/components/layout",
+        "label": "layout",
+        "type": "directory",
+        "path": "src/components/layout",
+        "size": 1000
+      },
+      {
+        "id": "src/components/layout/Layout.tsx",
+        "label": "Layout.tsx",
+        "type": "file",
+        "path": "src/components/layout/Layout.tsx",
+        "language": "TypeScript",
+        "size": 1052
+      },
+      {
+        "id": "src/components/layout/Navbar.tsx",
+        "label": "Navbar.tsx",
+        "type": "file",
+        "path": "src/components/layout/Navbar.tsx",
+        "language": "TypeScript",
+        "size": 8719
+      },
+      {
+        "id": "src/components/layout/Sidebar.tsx",
+        "label": "Sidebar.tsx",
+        "type": "file",
+        "path": "src/components/layout/Sidebar.tsx",
+        "language": "TypeScript",
+        "size": 6014
+      },
+      {
+        "id": "src/config",
+        "label": "config",
+        "type": "directory",
+        "path": "src/config",
+        "size": 1000
+      },
+      {
+        "id": "src/config/api.ts",
+        "label": "api.ts",
+        "type": "file",
+        "path": "src/config/api.ts",
+        "language": "TypeScript",
+        "size": 133
+      },
+      {
+        "id": "src/hooks",
+        "label": "hooks",
+        "type": "directory",
+        "path": "src/hooks",
+        "size": 1000
+      },
+      {
+        "id": "src/hooks/useRepositories.ts",
+        "label": "useRepositories.ts",
+        "type": "file",
+        "path": "src/hooks/useRepositories.ts",
+        "language": "TypeScript",
+        "size": 2734
+      },
+      {
+        "id": "src/pages",
+        "label": "pages",
+        "type": "directory",
+        "path": "src/pages",
+        "size": 1000
+      },
+      {
+        "id": "src/pages/_app.tsx",
+        "label": "_app.tsx",
+        "type": "file",
+        "path": "src/pages/_app.tsx",
+        "language": "TypeScript",
+        "size": 181
+      },
+      {
+        "id": "src/pages/index.tsx",
+        "label": "index.tsx",
+        "type": "file",
+        "path": "src/pages/index.tsx",
+        "language": "TypeScript",
+        "size": 619
+      },
+      {
+        "id": "src/pages/settings.tsx",
+        "label": "settings.tsx",
+        "type": "file",
+        "path": "src/pages/settings.tsx",
+        "language": "TypeScript",
+        "size": 5569
+      },
+      {
+        "id": "src/services",
+        "label": "services",
+        "type": "directory",
+        "path": "src/services",
+        "size": 1000
+      },
+      {
+        "id": "src/services/api.ts",
+        "label": "api.ts",
+        "type": "file",
+        "path": "src/services/api.ts",
+        "language": "TypeScript",
+        "size": 4239
+      },
+      {
+        "id": "src/styles",
+        "label": "styles",
+        "type": "directory",
+        "path": "src/styles",
+        "size": 1000
+      },
+      {
+        "id": "src/styles/globals.css",
+        "label": "globals.css",
+        "type": "file",
+        "path": "src/styles/globals.css",
+        "language": "CSS",
+        "size": 3022
+      },
+      {
+        "id": "src/types",
+        "label": "types",
+        "type": "directory",
+        "path": "src/types",
+        "size": 1000
+      },
+      {
+        "id": "src/types/global.d.ts",
+        "label": "global.d.ts",
+        "type": "file",
+        "path": "src/types/global.d.ts",
+        "language": "TypeScript",
+        "size": 641
+      },
+      {
+        "id": "src/types/repository.types.ts",
+        "label": "repository.types.ts",
+        "type": "file",
+        "path": "src/types/repository.types.ts",
+        "language": "TypeScript",
+        "size": 539
+      },
+      {
+        "id": "src/utils",
+        "label": "utils",
+        "type": "directory",
+        "path": "src/utils",
+        "size": 1000
+      },
+      {
+        "id": "src/utils/animations.ts",
+        "label": "animations.ts",
+        "type": "file",
+        "path": "src/utils/animations.ts",
+        "language": "TypeScript",
+        "size": 296
+      },
+      {
+        "id": "src/utils/api.ts",
+        "label": "api.ts",
+        "type": "file",
+        "path": "src/utils/api.ts",
+        "language": "TypeScript",
+        "size": 2033
+      },
+      {
+        "id": "src/utils/cn.ts",
+        "label": "cn.ts",
+        "type": "file",
+        "path": "src/utils/cn.ts",
+        "language": "TypeScript",
+        "size": 169
+      },
+      {
+        "id": "styles",
+        "label": "styles",
+        "type": "directory",
+        "path": "styles",
+        "size": 1000
+      },
+      {
+        "id": "styles/global.css",
+        "label": "global.css",
+        "type": "file",
+        "path": "styles/global.css",
+        "language": "CSS",
+        "size": 3022
+      }
+    ],
+    "edges": [
+      {
+        "source": "67d13e263235b861459c736f",
+        "target": ".gitignore",
+        "type": "contains"
+      },
+      {
+        "source": "67d13e263235b861459c736f",
+        "target": "README.md",
+        "type": "contains"
+      },
+      {
+        "source": "67d13e263235b861459c736f",
+        "target": "next.config.js",
+        "type": "contains"
+      },
+      {
+        "source": "67d13e263235b861459c736f",
+        "target": "package.json",
+        "type": "contains"
+      },
+      {
+        "source": "67d13e263235b861459c736f",
+        "target": "postcss.config.js",
+        "type": "contains"
+      },
+      {
+        "source": "67d13e263235b861459c736f",
+        "target": "tailwind.config.js",
+        "type": "contains"
+      },
+      {
+        "source": "67d13e263235b861459c736f",
+        "target": "tsconfig.json",
+        "type": "contains"
+      },
+      {
+        "source": "public",
+        "target": "public/data.json",
+        "type": "contains"
+      },
+      {
+        "source": "src/components",
+        "target": "src/components/RepositoryVisualization.tsx",
+        "type": "contains"
+      },
+      {
+        "source": "src/components/common",
+        "target": "src/components/common/Button.tsx",
+        "type": "contains"
+      },
+      {
+        "source": "src/components/features/repositories",
+        "target": "src/components/features/repositories/RepositoryList.tsx",
+        "type": "contains"
+      },
+      {
+        "source": "src/components/features/visualization",
+        "target": "src/components/features/visualization/Visualization.tsx",
+        "type": "contains"
+      },
+      {
+        "source": "src/components/layout",
+        "target": "src/components/layout/Layout.tsx",
+        "type": "contains"
+      },
+      {
+        "source": "src/components/layout",
+        "target": "src/components/layout/Navbar.tsx",
+        "type": "contains"
+      },
+      {
+        "source": "src/components/layout",
+        "target": "src/components/layout/Sidebar.tsx",
+        "type": "contains"
+      },
+      {
+        "source": "src/config",
+        "target": "src/config/api.ts",
+        "type": "contains"
+      },
+      {
+        "source": "src/hooks",
+        "target": "src/hooks/useRepositories.ts",
+        "type": "contains"
+      },
+      {
+        "source": "src/pages",
+        "target": "src/pages/_app.tsx",
+        "type": "contains"
+      },
+      {
+        "source": "src/pages",
+        "target": "src/pages/index.tsx",
+        "type": "contains"
+      },
+      {
+        "source": "src/pages",
+        "target": "src/pages/settings.tsx",
+        "type": "contains"
+      },
+      {
+        "source": "src/services",
+        "target": "src/services/api.ts",
+        "type": "contains"
+      },
+      {
+        "source": "src/styles",
+        "target": "src/styles/globals.css",
+        "type": "contains"
+      },
+      {
+        "source": "src/types",
+        "target": "src/types/global.d.ts",
+        "type": "contains"
+      },
+      {
+        "source": "src/types",
+        "target": "src/types/repository.types.ts",
+        "type": "contains"
+      },
+      {
+        "source": "src/utils",
+        "target": "src/utils/animations.ts",
+        "type": "contains"
+      },
+      {
+        "source": "src/utils",
+        "target": "src/utils/api.ts",
+        "type": "contains"
+      },
+      {
+        "source": "src/utils",
+        "target": "src/utils/cn.ts",
+        "type": "contains"
+      },
+      {
+        "source": "styles",
+        "target": "styles/global.css",
+        "type": "contains"
+      }
+    ]
+  }
+}
