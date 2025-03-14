@@ -4,13 +4,18 @@ import { Repository, RepositoryResponse, CloneRepositoryRequest } from '../types
 // Remove /api from the base URL as it's already included in the routes
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://repository-visualizer-v6-backend.onrender.com';
 
+console.log('API Base URL:', API_BASE_URL);
+
 const api = axios.create({
     baseURL: API_BASE_URL,
     headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Origin': typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000',
     },
     timeout: 60000, // Increase timeout to 60 seconds
     timeoutErrorMessage: 'Request timed out - the server is taking too long to respond',
+    withCredentials: false, // Don't send cookies with cross-origin requests
 });
 
 // Add response interceptor for error handling
@@ -30,6 +35,12 @@ api.interceptors.response.use(
             } else if (error.request) {
                 // The request was made but no response was received
                 console.error('Network Error:', error.request);
+                
+                // Check if this might be a CORS error
+                if (error.message && error.message.includes('Network Error')) {
+                    throw new Error('Unable to connect to the server. This might be due to a CORS issue. Please check the server configuration.');
+                }
+                
                 throw new Error('Unable to connect to the server. Please check your internet connection.');
             }
         }

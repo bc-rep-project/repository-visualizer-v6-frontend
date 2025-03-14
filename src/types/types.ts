@@ -10,7 +10,7 @@ export interface FileNode {
   functions?: {
     name: string;
     type: string;
-    dependencies?: string[];
+    dependencies?: string[] | { target: string; type: string; }[];
   }[];
   classes?: {
     name: string;
@@ -18,10 +18,11 @@ export interface FileNode {
     methods?: {
       name: string;
       type: string;
-      dependencies?: string[];
+      dependencies?: string[] | { target: string; type: string; }[];
     }[];
   }[];
-  imports?: string[];
+  imports?: string[] | { source: string }[];
+  lines?: number;
 }
 
 export interface Node {

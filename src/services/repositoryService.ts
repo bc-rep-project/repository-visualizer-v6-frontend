@@ -71,5 +71,22 @@ export const repositoryService = {
       console.error(`Error deleting repository ${id}:`, error);
       throw error;
     }
+  },
+  
+  async getAllLanguages(): Promise<Record<string, number>> {
+    try {
+      const response = await axios.get(`${API_URL}/api/repositories/languages`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Origin': typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000',
+        },
+        withCredentials: false
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error getting all languages:', error);
+      throw error;
+    }
   }
 }; 

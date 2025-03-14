@@ -100,7 +100,7 @@ export function transformAnalysisData(data: FileNode, filters: FilterOptions): A
           for (const dep of func.dependencies) {
             edges.push({
               source: funcId,
-              target: dep,
+              target: typeof dep === 'string' ? dep : dep.target,
               type: 'calls'
             });
           }
@@ -137,7 +137,7 @@ export function transformAnalysisData(data: FileNode, filters: FilterOptions): A
       for (const imp of node.imports) {
         edges.push({
           source: nodeId,
-          target: imp,
+          target: typeof imp === 'string' ? imp : imp.source,
           type: 'imports'
         });
       }
@@ -161,7 +161,7 @@ export function transformAnalysisData(data: FileNode, filters: FilterOptions): A
       nodeMap.has(edge.source) && nodeMap.has(edge.target)
     )
   };
-
+  
   return {
     graph,
     tree: data
@@ -181,7 +181,7 @@ const filterTree = (tree: FileNode, filters: any): FileNode => {
         // Apply type filters
         if (child.type === 'file' && !filters.showFiles) return false;
         if (child.type === 'directory' && !filters.showDirectories) return false;
-        if ((child.type === 'function' || child.type === 'method') && !filters.showFunctions) return false;
+        if (child.type === 'function' && !filters.showFunctions) return false;
         if (child.type === 'class' && !filters.showClasses) return false;
         
         // Apply search filter

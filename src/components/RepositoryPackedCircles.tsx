@@ -15,7 +15,7 @@ interface FileNode {
   extension?: string;
   children?: FileNode[];
   dependencies?: string[];
-  imports?: { source: string }[];
+  imports?: string[] | { source: string }[];
   functions?: { name: string; dependencies?: { target: string; type: string }[] }[];
   classes?: { name: string; methods?: { name: string; dependencies?: { target: string; type: string }[] }[] }[];
 }
@@ -364,9 +364,9 @@ export const RepositoryPackedCircles: React.FC<RepositoryPackedCirclesProps> = (
         const source = findNodeByPath(packedRoot, dep.source);
         const target = findNodeByPath(packedRoot, dep.target);
 
-        if (source && target) {
+        if (source && target && 'r' in source && 'r' in target) {
           // Calculate link path
-          const path = calculateLinkPath(source, target, dep.type);
+          const path = calculateLinkPath(source as ExtendedHierarchyCircleNode, target as ExtendedHierarchyCircleNode, dep.type);
 
           // Draw the link with animation
           linksGroup.append('path')
@@ -391,11 +391,16 @@ export const RepositoryPackedCircles: React.FC<RepositoryPackedCirclesProps> = (
       function extractDependencies(n: FileNode) {
         if (n.imports) {
           n.imports.forEach(imp => {
-            deps.push({
-              source: n.path,
-              target: imp.source,
-              type: 'import'
-            });
+            const importPath = typeof imp === 'string' ? imp : imp.source;
+            // Find the target node by path
+            const targetNode = findNodeByPath(root, importPath);
+            if (targetNode && targetNode.data) {
+              deps.push({
+                source: n.path,
+                target: targetNode.data.path,
+                type: 'import'
+              });
+            }
           });
         }
 
@@ -439,20 +444,20 @@ export const RepositoryPackedCircles: React.FC<RepositoryPackedCirclesProps> = (
     }
 
     // Helper function to find a node by path
-    function findNodeByPath(root: ExtendedHierarchyCircleNode, path: string) {
-      let result: ExtendedHierarchyCircleNode | null = null;
+    function findNodeByPath(root: ExtendedHierarchyCircleNode | d3.HierarchyNode<FileNode>, path: string) {
+      let result: ExtendedHierarchyCircleNode | d3.HierarchyNode<FileNode> | null = null;
       
-      function traverse(node: ExtendedHierarchyCircleNode) {
+      function traverse(node: ExtendedHierarchyCircleNode | d3.HierarchyNode<FileNode>) {
         if (node.data.path === path) {
           result = node;
           return;
         }
         
-        node.children?.forEach(traverse);
+        node.children?.forEach(child => traverse(child as ExtendedHierarchyCircleNode | d3.HierarchyNode<FileNode>));
       }
       
       traverse(root);
-      return result;
+      return result as ExtendedHierarchyCircleNode | null;
     }
 
     // Helper function to calculate link path
