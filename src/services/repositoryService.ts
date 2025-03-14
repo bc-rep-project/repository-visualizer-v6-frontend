@@ -75,18 +75,45 @@ export const repositoryService = {
   
   async getAllLanguages(): Promise<Record<string, number>> {
     try {
-      const response = await axios.get(`${API_URL}/api/repositories/languages`, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Origin': typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000',
-        },
-        withCredentials: false
-      });
-      return response.data;
+      console.log('Fetching all languages from API...');
+      console.log('API URL:', `${API_URL}/api/repositories/languages`);
+      
+      // Add retry logic
+      let retries = 3;
+      let lastError;
+      
+      while (retries > 0) {
+        try {
+          const response = await axios.get(`${API_URL}/api/repositories/languages`, {
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'Origin': typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000',
+            },
+            withCredentials: false,
+            timeout: 10000 // 10 second timeout
+          });
+          
+          console.log('Languages response:', response.data);
+          return response.data;
+        } catch (error) {
+          lastError = error;
+          retries--;
+          console.error(`Error getting languages (retries left: ${retries}):`, error);
+          
+          if (retries > 0) {
+            // Wait before retrying (exponential backoff)
+            await new Promise(resolve => setTimeout(resolve, (3 - retries) * 1000));
+          }
+        }
+      }
+      
+      // If we get here, all retries failed
+      throw lastError;
     } catch (error) {
-      console.error('Error getting all languages:', error);
-      throw error;
+      console.error('Error getting all languages after all retries:', error);
+      // Return empty object instead of throwing to prevent UI errors
+      return {};
     }
   }
 }; 
