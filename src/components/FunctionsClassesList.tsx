@@ -6,6 +6,7 @@ import { FaCode, FaCodeBranch, FaSearch, FaSortAlphaDown, FaSortAlphaUp } from '
 
 interface FunctionsClassesListProps {
   data: FileNode;
+  searchQuery?: string;
 }
 
 interface FunctionInfo {
@@ -15,10 +16,13 @@ interface FunctionInfo {
   type: 'function' | 'class';
 }
 
-const FunctionsClassesList: React.FC<FunctionsClassesListProps> = ({ data }) => {
-  const [searchTerm, setSearchTerm] = useState('');
+const FunctionsClassesList: React.FC<FunctionsClassesListProps> = ({ data, searchQuery }) => {
+  const [internalSearchTerm, setInternalSearchTerm] = useState('');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [filter, setFilter] = useState<'all' | 'function' | 'class'>('all');
+  
+  // Use external searchQuery if provided, otherwise use internal state
+  const searchTerm = searchQuery !== undefined ? searchQuery : internalSearchTerm;
   
   // Extract all functions and classes from the repository
   const allItems = useMemo(() => {
@@ -108,8 +112,12 @@ const FunctionsClassesList: React.FC<FunctionsClassesListProps> = ({ data }) => 
             type="text"
             placeholder="Search functions and classes..."
             className="pl-10 w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            value={searchQuery !== undefined ? searchQuery : internalSearchTerm}
+            onChange={(e) => {
+              if (searchQuery === undefined) {
+                setInternalSearchTerm(e.target.value);
+              }
+            }}
           />
         </div>
         

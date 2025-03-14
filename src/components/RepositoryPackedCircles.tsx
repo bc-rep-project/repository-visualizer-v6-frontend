@@ -15,7 +15,7 @@ interface FileNode {
   extension?: string;
   children?: FileNode[];
   dependencies?: string[];
-  imports?: { source: string }[];
+  imports?: string[] | { source: string }[];
   functions?: { name: string; dependencies?: { target: string; type: string }[] }[];
   classes?: { name: string; methods?: { name: string; dependencies?: { target: string; type: string }[] }[] }[];
 }
@@ -391,11 +391,16 @@ export const RepositoryPackedCircles: React.FC<RepositoryPackedCirclesProps> = (
       function extractDependencies(n: FileNode) {
         if (n.imports) {
           n.imports.forEach(imp => {
-            deps.push({
-              source: n.path,
-              target: imp.source,
-              type: 'import'
-            });
+            const importPath = typeof imp === 'string' ? imp : imp.source;
+            // Find the target node by path
+            const targetNode = findNodeByPath(root, importPath);
+            if (targetNode && targetNode.data) {
+              deps.push({
+                source: n.path,
+                target: targetNode.data.path,
+                type: 'import'
+              });
+            }
           });
         }
 

@@ -6,6 +6,7 @@ import { FileNode } from '@/types/types';
 
 interface DirectoryStructureProps {
   data: FileNode;
+  searchQuery?: string;
 }
 
 interface TreeNodeProps {
@@ -80,11 +81,14 @@ const TreeNode: React.FC<TreeNodeProps> = ({ node, level, expanded, toggleExpand
   );
 };
 
-const DirectoryStructure: React.FC<DirectoryStructureProps> = ({ data }) => {
+const DirectoryStructure: React.FC<DirectoryStructureProps> = ({ data, searchQuery }) => {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({
     [data.path]: true // Root is expanded by default
   });
-  const [searchTerm, setSearchTerm] = useState('');
+  const [internalSearchTerm, setInternalSearchTerm] = useState('');
+  
+  // Use external searchQuery if provided, otherwise use internal state
+  const searchTerm = searchQuery !== undefined ? searchQuery : internalSearchTerm;
   
   const toggleExpand = (path: string) => {
     setExpanded(prev => ({
@@ -94,7 +98,9 @@ const DirectoryStructure: React.FC<DirectoryStructureProps> = ({ data }) => {
   };
   
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
+    if (searchQuery === undefined) {
+      setInternalSearchTerm(e.target.value);
+    }
   };
   
   // Filter the tree based on search term
