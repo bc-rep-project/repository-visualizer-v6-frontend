@@ -21,7 +21,8 @@ export interface FileNode {
       dependencies?: string[];
     }[];
   }[];
-  imports?: string[];
+  imports?: string[] | { source: string }[];
+  lines?: number;
 }
 
 export interface Node {

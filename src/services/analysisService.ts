@@ -161,7 +161,7 @@ export function transformAnalysisData(data: FileNode, filters: FilterOptions): A
       nodeMap.has(edge.source) && nodeMap.has(edge.target)
     )
   };
-
+  
   return {
     graph,
     tree: data

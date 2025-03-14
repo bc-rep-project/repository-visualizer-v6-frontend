@@ -499,23 +499,29 @@ export default function RepositoryList() {
 
                 {viewMode === 'list' && (
                   <div className="flex ml-4 space-x-2">
-                    <button
-                      onClick={() => router.push(`/repositories/${repo._id}/analyze`)}
-                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium flex items-center gap-1 p-2"
+                    <Link
+                      href={`/repositories/${repo._id}/analyze`}
+                      className="px-3 py-1.5 bg-blue-600 text-white rounded-md flex items-center text-sm"
                     >
-                      <BiAnalyse /> Analyze
-                    </button>
-                    <button
-                      onClick={() => router.push(`/repositories/${repo._id}`)}
-                      className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-300 font-medium flex items-center gap-1 p-2"
+                      <BiAnalyse className="mr-1" /> Analyze
+                    </Link>
+                    <Link
+                      href={`/repositories/${repo._id}/enhanced`}
+                      className="px-3 py-1.5 bg-purple-600 text-white rounded-md flex items-center text-sm"
                     >
-                      <FiEye /> Details
-                    </button>
+                      <FiEye className="mr-1" /> Enhanced View
+                    </Link>
                     <button
                       onClick={() => handleDeleteRepository(repo._id)}
-                      className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-medium flex items-center gap-1 p-2"
+                      className="px-3 py-1.5 bg-red-600 text-white rounded-md flex items-center text-sm"
+                      disabled={deleteInProgress === repo._id}
                     >
-                      <FaTrash /> Delete
+                      {deleteInProgress === repo._id ? (
+                        <LoadingSpinner size="small" />
+                      ) : (
+                        <FaTrash className="mr-1" />
+                      )}
+                      Delete
                     </button>
                   </div>
                 )}
@@ -523,23 +529,28 @@ export default function RepositoryList() {
 
               {viewMode === 'grid' && (
                 <div className="flex justify-between border-t border-gray-200 dark:border-gray-700">
-                  <button
-                    onClick={() => router.push(`/repositories/${repo._id}/analyze`)}
+                  <Link
+                    href={`/repositories/${repo._id}/analyze`}
                     className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium flex items-center gap-1 p-3 flex-1 justify-center"
                   >
                     <BiAnalyse /> Analyze
-                  </button>
-                  <button
-                    onClick={() => router.push(`/repositories/${repo._id}`)}
-                    className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-300 font-medium flex items-center gap-1 p-3 flex-1 justify-center border-l border-r border-gray-200 dark:border-gray-700"
+                  </Link>
+                  <Link
+                    href={`/repositories/${repo._id}/enhanced`}
+                    className="text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 font-medium flex items-center gap-1 p-3 flex-1 justify-center border-l border-r border-gray-200 dark:border-gray-700"
                   >
-                    <FiEye /> Details
-                  </button>
+                    <FiEye /> Enhanced
+                  </Link>
                   <button
                     onClick={() => handleDeleteRepository(repo._id)}
                     className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-medium flex items-center gap-1 p-3 flex-1 justify-center"
                   >
-                    <FaTrash /> Delete
+                    {deleteInProgress === repo._id ? (
+                      <LoadingSpinner size="small" />
+                    ) : (
+                      <FaTrash />
+                    )}
+                    Delete
                   </button>
                 </div>
               )}

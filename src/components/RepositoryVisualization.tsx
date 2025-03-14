@@ -10,8 +10,8 @@ import { FileNode, AnalysisData } from '@/types/types';
 
 interface VisualizationProps {
   repositoryId: string;
-  width?: number;
-  height?: number;
+    width?: number;
+    height?: number;
 }
 
 export const RepositoryVisualization: React.FC<VisualizationProps> = ({
@@ -33,7 +33,7 @@ export const RepositoryVisualization: React.FC<VisualizationProps> = ({
   });
 
   // Fetch repository analysis data
-  useEffect(() => {
+    useEffect(() => {
     if (!repositoryId) return;
     
     console.log(`Fetching analysis data for repository: ${repositoryId}`);
@@ -129,9 +129,9 @@ export const RepositoryVisualization: React.FC<VisualizationProps> = ({
     const processed = transformAnalysisData(mockData, filters);
     setProcessedData(processed);
     setError(null);
-  };
+    };
 
-  return (
+    return (
     <div className="flex flex-col w-full h-full bg-white rounded-lg shadow-lg overflow-hidden">
       {/* Tabs */}
       <div className="flex border-b border-gray-200">
@@ -320,8 +320,8 @@ export const RepositoryVisualization: React.FC<VisualizationProps> = ({
           </div>
         </div>
       </div>
-    </div>
-  );
-};
+        </div>
+    );
+}; 
 
 export default RepositoryVisualization; 
