@@ -100,7 +100,7 @@ export function transformAnalysisData(data: FileNode, filters: FilterOptions): A
           for (const dep of func.dependencies) {
             edges.push({
               source: funcId,
-              target: dep,
+              target: typeof dep === 'string' ? dep : dep.target,
               type: 'calls'
             });
           }
