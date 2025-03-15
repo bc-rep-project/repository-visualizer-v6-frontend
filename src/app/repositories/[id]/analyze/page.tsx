@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { FaFolder, FaCode, FaSearch, FaFilter, FaDownload, FaShare } from 'react-icons/fa';
+import { FaFolder, FaCode, FaSearch, FaFilter, FaDownload, FaShare, FaSync } from 'react-icons/fa';
 import { BiZoomIn, BiZoomOut } from 'react-icons/bi';
 import { MdOutlineFullscreen } from 'react-icons/md';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -11,13 +11,22 @@ import { RepositoryTree } from '@/components/RepositoryTree';
 import { SimpleSunburst } from '@/components/SimpleSunburst';
 import Navigation from '@/components/Navigation';
 import axios from 'axios';
-import { transformAnalysisData } from '@/services/analysisService';
+import { transformAnalysisData, analysisService } from '@/services/analysisService';
 import { FileNode, AnalysisData } from '@/types/types';
+import Link from 'next/link';
 
 interface Repository {
   _id: string;
   repo_url: string;
   repo_name: string;
+}
+
+interface AnalysisStatus {
+  repository_id: string;
+  standard_analysis_available: boolean;
+  enhanced_analysis_available: boolean;
+  standard_analysis_date: string | null;
+  enhanced_analysis_date: string | null;
 }
 
 interface FilterOptions {
@@ -39,9 +48,11 @@ export default function RepositoryAnalyze() {
   const [rawData, setRawData] = useState<FileNode | null>(null);
   const [processedData, setProcessedData] = useState<AnalysisData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [visualizationType, setVisualizationType] = useState<'graph' | 'tree' | 'sunburst'>('graph');
   const [searchQuery, setSearchQuery] = useState('');
+  const [analysisStatus, setAnalysisStatus] = useState<AnalysisStatus | null>(null);
   const [filters, setFilters] = useState<FilterOptions>({
     showFiles: true,
     showDirectories: true,
@@ -54,6 +65,7 @@ export default function RepositoryAnalyze() {
 
   useEffect(() => {
     fetchRepositoryDetails();
+    fetchAnalysisStatus();
     fetchGraphData();
   }, [repoId]);
   
@@ -64,6 +76,15 @@ export default function RepositoryAnalyze() {
     } catch (err) {
       setError('Error loading repository details');
       console.error(err);
+    }
+  };
+  
+  const fetchAnalysisStatus = async () => {
+    try {
+      const status = await analysisService.getAnalysisStatus(repoId);
+      setAnalysisStatus(status);
+    } catch (err) {
+      console.error('Error fetching analysis status:', err);
     }
   };
   
@@ -94,6 +115,25 @@ export default function RepositoryAnalyze() {
       setError(`Error analyzing repository: ${err.response?.data?.error || err.message}`);
     } finally {
       setLoading(false);
+    }
+  };
+  
+  const handleRefreshAnalysis = async () => {
+    try {
+      setRefreshing(true);
+      setError(null);
+      
+      await analysisService.refreshAnalysis(repoId);
+      
+      // Fetch updated data
+      await fetchGraphData();
+      await fetchAnalysisStatus();
+      
+      setRefreshing(false);
+    } catch (err: any) {
+      console.error('Error refreshing analysis:', err);
+      setError(`Error refreshing analysis: ${err.message}`);
+      setRefreshing(false);
     }
   };
   
@@ -182,11 +222,47 @@ export default function RepositoryAnalyze() {
           <h1 className="text-2xl font-bold dark:text-white">
             {repository?.repo_name || 'Repository Analysis'}
           </h1>
+          <Link
+            href={`/repositories/${repoId}/dashboard`}
+            className="ml-4 px-3 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 rounded-md text-sm"
+          >
+            Dashboard View
+          </Link>
         </div>
       
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
             <p>{error}</p>
+          </div>
+        )}
+        
+        {analysisStatus && (
+          <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded mb-4 flex justify-between items-center">
+            <div>
+              <p className="font-medium">Analysis Status</p>
+              <p className="text-sm">
+                {analysisStatus.enhanced_analysis_available 
+                  ? `Enhanced analysis available (Last updated: ${new Date(analysisStatus.enhanced_analysis_date || '').toLocaleString()})` 
+                  : 'No enhanced analysis available'}
+              </p>
+            </div>
+            <button
+              onClick={handleRefreshAnalysis}
+              disabled={refreshing}
+              className="px-3 py-1 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-md flex items-center"
+            >
+              {refreshing ? (
+                <>
+                  <LoadingSpinner size="small" />
+                  <span className="ml-2">Refreshing...</span>
+                </>
+              ) : (
+                <>
+                  <FaSync className="mr-2" />
+                  Refresh Analysis
+                </>
+              )}
+            </button>
           </div>
         )}
       

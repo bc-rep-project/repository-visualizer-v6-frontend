@@ -219,5 +219,32 @@ export const analysisService = {
       throw new Error(`Failed to fetch repository analysis: ${response.statusText}`);
     }
     return response.json();
+  },
+  
+  async getAnalysisStatus(repositoryId: string): Promise<{
+    repository_id: string;
+    standard_analysis_available: boolean;
+    enhanced_analysis_available: boolean;
+    standard_analysis_date: string | null;
+    enhanced_analysis_date: string | null;
+  }> {
+    const response = await fetch(`${API_BASE_URL}/repositories/${repositoryId}/analysis/status`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch analysis status: ${response.statusText}`);
+    }
+    return response.json();
+  },
+  
+  async refreshAnalysis(repositoryId: string): Promise<{ status: string; message: string }> {
+    const response = await fetch(`${API_BASE_URL}/repositories/${repositoryId}/analyze/refresh`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to refresh analysis: ${response.statusText}`);
+    }
+    return response.json();
   }
 }; 
