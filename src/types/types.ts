@@ -3,7 +3,7 @@ import * as d3 from 'd3';
 export interface FileNode {
   name: string;
   path: string;
-  type: 'file' | 'directory' | 'function' | 'class';
+  type: 'file' | 'directory' | 'function' | 'class' | 'method';
   size?: number;
   language?: string;
   children?: FileNode[];
