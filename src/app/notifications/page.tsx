@@ -187,7 +187,7 @@ export default function NotificationsPage() {
                 Success
               </button>
             </div>
-            
+      
             {unreadCount > 0 && (
               <div className="mt-6">
                 <button
@@ -231,8 +231,8 @@ export default function NotificationsPage() {
                 {error}
               </div>
             )}
-            
-            {loading ? (
+      
+      {loading ? (
               <div className="flex justify-center items-center h-64">
                 <LoadingSpinner size="medium" />
               </div>
@@ -265,7 +265,7 @@ export default function NotificationsPage() {
                           </div>
                           <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
                             {notification.message}
-                          </p>
+                  </p>
                           {notification.details && (
                             <div className="mt-2 p-2 bg-gray-50 dark:bg-gray-700/50 rounded text-xs text-gray-600 dark:text-gray-400">
                               {Object.entries(notification.details).map(([key, value]) => (
@@ -276,17 +276,17 @@ export default function NotificationsPage() {
                               ))}
                             </div>
                           )}
-                        </div>
+                </div>
                         <div className="ml-4 flex-shrink-0 flex space-x-2">
-                          {!notification.read && (
-                            <button
+                {!notification.read && (
+                  <button
                               onClick={() => markAsRead(notification.id)}
                               className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                              title="Mark as read"
-                            >
-                              <FaCheck />
-                            </button>
-                          )}
+                            title="Mark as read"
+                  >
+                            <FaCheck />
+                  </button>
+                )}
                           <button
                             onClick={() => deleteNotification(notification.id)}
                             className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
@@ -304,17 +304,17 @@ export default function NotificationsPage() {
                 {totalPages > 1 && (
                   <div className="p-4 flex justify-center">
                     <nav className="flex items-center space-x-1">
-                      <button
+                    <button
                         onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                        disabled={currentPage === 1}
-                        className={`px-3 py-1 rounded-md ${
-                          currentPage === 1
+                      disabled={currentPage === 1}
+                      className={`px-3 py-1 rounded-md ${
+                        currentPage === 1
                             ? 'text-gray-400 cursor-not-allowed'
                             : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
-                        }`}
-                      >
-                        Previous
-                      </button>
+                      }`}
+                    >
+                      Previous
+                    </button>
                       
                       {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
                         <button
@@ -330,25 +330,25 @@ export default function NotificationsPage() {
                         </button>
                       ))}
                       
-                      <button
+                        <button
                         onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                        disabled={currentPage === totalPages}
-                        className={`px-3 py-1 rounded-md ${
-                          currentPage === totalPages
+                      disabled={currentPage === totalPages}
+                      className={`px-3 py-1 rounded-md ${
+                        currentPage === totalPages
                             ? 'text-gray-400 cursor-not-allowed'
                             : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
-                        }`}
-                      >
-                        Next
-                      </button>
+                      }`}
+                    >
+                      Next
+                    </button>
                     </nav>
                   </div>
                 )}
               </div>
             )}
-          </div>
+            </div>
         </div>
-      </div>
+        </div>
     </div>
   );
 } 

@@ -1,6 +1,8 @@
+'use client';
+
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/router';
+import { usePathname } from 'next/navigation';
 import { repositoryApi } from '@/services/api';
 import { Button } from '@/components/common/Button';
 import NotificationBell from '@/components/notifications/NotificationBell';
@@ -16,7 +18,7 @@ const navItems = [
 ];
 
 export default function Navbar({ onMenuClick }: NavbarProps) {
-  const router = useRouter();
+  const pathname = usePathname();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [showSearch, setShowSearch] = useState(false);
@@ -61,7 +63,7 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                   key={item.href}
                   href={item.href}
                   className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                    router.pathname === item.href
+                    pathname === item.href
                       ? 'border-indigo-500 text-gray-900 dark:text-white'
                       : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100'
                   }`}
