@@ -1,17 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/common/Button';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Slider } from '@/components/ui/slider';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
 import axios from 'axios';
 import Layout from '@/components/layout/Layout';
+import { Button } from '@/components/common/Button';
 
 interface Settings {
   theme: {
@@ -98,7 +90,7 @@ export default function SettingsPage() {
       setSuccessMessage(category 
         ? `${category.charAt(0).toUpperCase() + category.slice(1)} settings reset to defaults!`
         : 'All settings reset to defaults!');
-      
+    
       // Clear success message after 3 seconds
       setTimeout(() => {
         setSuccessMessage(null);
@@ -139,7 +131,8 @@ export default function SettingsPage() {
     
     setSettings(updatedSettings);
     updateSettings({ 
-      visualization: { 
+      visualization: {
+        ...settings.visualization,
         [key]: value 
       } 
     });
@@ -158,7 +151,8 @@ export default function SettingsPage() {
     
     setSettings(updatedSettings);
     updateSettings({ 
-      notifications: { 
+      notifications: {
+        ...settings.notifications,
         [key]: value 
       } 
     });
@@ -177,7 +171,8 @@ export default function SettingsPage() {
     
     setSettings(updatedSettings);
     updateSettings({ 
-      system: { 
+      system: {
+        ...settings.system,
         [key]: value 
       } 
     });
@@ -197,251 +192,321 @@ export default function SettingsPage() {
     <Layout>
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-6 dark:text-white">Settings</h1>
-        
+
         {error && (
-          <Alert variant="destructive" className="mb-6">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            {error}
+          </div>
         )}
         
         {successMessage && (
-          <Alert className="mb-6 bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-400">
-            <AlertDescription>{successMessage}</AlertDescription>
-          </Alert>
+          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+            {successMessage}
+          </div>
         )}
         
         {settings && (
-          <Tabs defaultValue="theme" value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="mb-6">
-              <TabsTrigger value="theme">Theme</TabsTrigger>
-              <TabsTrigger value="visualization">Visualization</TabsTrigger>
-              <TabsTrigger value="notifications">Notifications</TabsTrigger>
-              <TabsTrigger value="system">System</TabsTrigger>
-            </TabsList>
+          <div className="space-y-8">
+            {/* Tabs */}
+            <div className="flex border-b border-gray-200 dark:border-gray-700">
+              <button
+                className={`px-4 py-2 font-medium ${activeTab === 'theme' ? 'text-blue-600 border-b-2 border-blue-600 dark:text-blue-400 dark:border-blue-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
+                onClick={() => setActiveTab('theme')}
+              >
+                Theme
+              </button>
+              <button
+                className={`px-4 py-2 font-medium ${activeTab === 'visualization' ? 'text-blue-600 border-b-2 border-blue-600 dark:text-blue-400 dark:border-blue-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
+                onClick={() => setActiveTab('visualization')}
+              >
+                Visualization
+              </button>
+              <button
+                className={`px-4 py-2 font-medium ${activeTab === 'notifications' ? 'text-blue-600 border-b-2 border-blue-600 dark:text-blue-400 dark:border-blue-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
+                onClick={() => setActiveTab('notifications')}
+              >
+                Notifications
+              </button>
+              <button
+                className={`px-4 py-2 font-medium ${activeTab === 'system' ? 'text-blue-600 border-b-2 border-blue-600 dark:text-blue-400 dark:border-blue-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'}`}
+                onClick={() => setActiveTab('system')}
+              >
+                System
+              </button>
+            </div>
             
-            <TabsContent value="theme">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Theme Preferences</CardTitle>
-                  <CardDescription>
-                    Customize the appearance of the application.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
+            {/* Theme Settings */}
+            {activeTab === 'theme' && (
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+                <div className="mb-4">
+                  <h2 className="text-xl font-semibold mb-2 dark:text-white">Theme Preferences</h2>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">Customize the appearance of the application.</p>
+                </div>
+                
+                <div className="space-y-6">
                   <div className="space-y-2">
-                    <Label htmlFor="theme-mode">Theme Mode</Label>
-                    <Select 
-                      value={settings.theme.mode} 
-                      onValueChange={handleThemeChange}
+                    <label htmlFor="theme-mode" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Theme Mode
+                    </label>
+                    <select
+                      id="theme-mode"
+                      value={settings.theme.mode}
+                      onChange={(e) => handleThemeChange(e.target.value)}
+                      className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     >
-                      <SelectTrigger id="theme-mode">
-                        <SelectValue placeholder="Select theme mode" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="light">Light</SelectItem>
-                        <SelectItem value="dark">Dark</SelectItem>
-                      </SelectContent>
-                    </Select>
+                      <option value="light">Light</option>
+                      <option value="dark">Dark</option>
+                    </select>
                   </div>
-                </CardContent>
-                <CardFooter className="flex justify-between">
+                </div>
+                
+                <div className="mt-6 flex justify-between">
                   <Button 
-                    variant="outline" 
+                    variant="secondary" 
                     onClick={() => resetSettings('theme')}
                     disabled={saving}
                   >
-                    Reset to Defaults
+                    Reset Theme Settings
                   </Button>
-                </CardFooter>
-              </Card>
-            </TabsContent>
+                </div>
+              </div>
+            )}
             
-            <TabsContent value="visualization">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Visualization Settings</CardTitle>
-                  <CardDescription>
-                    Configure how repository visualizations are displayed.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
+            {/* Visualization Settings */}
+            {activeTab === 'visualization' && (
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+                <div className="mb-4">
+                  <h2 className="text-xl font-semibold mb-2 dark:text-white">Visualization Settings</h2>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">Customize how repository visualizations are displayed.</p>
+                </div>
+                
+                <div className="space-y-6">
                   <div className="space-y-2">
-                    <Label htmlFor="default-view">Default View</Label>
-                    <Select 
-                      value={settings.visualization.defaultView} 
-                      onValueChange={(value) => handleVisualizationChange('defaultView', value)}
+                    <label htmlFor="default-view" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Default View
+                    </label>
+                    <select
+                      id="default-view"
+                      value={settings.visualization.defaultView}
+                      onChange={(e) => handleVisualizationChange('defaultView', e.target.value)}
+                      className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     >
-                      <SelectTrigger id="default-view">
-                        <SelectValue placeholder="Select default view" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="forceGraph">Force Graph</SelectItem>
-                        <SelectItem value="tree">Tree</SelectItem>
-                        <SelectItem value="sunburst">Sunburst</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="show-labels">Show Labels</Label>
-                    <Switch 
-                      id="show-labels" 
-                      checked={settings.visualization.showLabels}
-                      onCheckedChange={(checked) => handleVisualizationChange('showLabels', checked)}
-                    />
+                      <option value="forceGraph">Force Graph</option>
+                      <option value="treeMap">Tree Map</option>
+                      <option value="sunburst">Sunburst</option>
+                    </select>
                   </div>
                   
                   <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <Label htmlFor="label-font-size">Label Font Size: {settings.visualization.labelFontSize}px</Label>
+                    <div className="flex items-center justify-between">
+                      <label htmlFor="show-labels" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Show Labels
+                      </label>
+                      <div className="relative inline-block w-10 mr-2 align-middle select-none">
+                        <input
+                          type="checkbox"
+                          id="show-labels"
+                          checked={settings.visualization.showLabels}
+                          onChange={(e) => handleVisualizationChange('showLabels', e.target.checked)}
+                          className="sr-only"
+                        />
+                        <div className={`block w-14 h-8 rounded-full ${settings.visualization.showLabels ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'}`}></div>
+                        <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${settings.visualization.showLabels ? 'transform translate-x-6' : ''}`}></div>
+                      </div>
                     </div>
-                    <Slider
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label htmlFor="label-font-size" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Label Font Size: {settings.visualization.labelFontSize}px
+                    </label>
+                    <input
+                      type="range"
                       id="label-font-size"
-                      min={8}
-                      max={24}
-                      step={1}
-                      value={[settings.visualization.labelFontSize]}
-                      onValueChange={(value) => handleVisualizationChange('labelFontSize', value[0])}
+                      min="8"
+                      max="24"
+                      value={settings.visualization.labelFontSize}
+                      onChange={(e) => handleVisualizationChange('labelFontSize', parseInt(e.target.value))}
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
                     />
                   </div>
-                </CardContent>
-                <CardFooter className="flex justify-between">
+                </div>
+                
+                <div className="mt-6 flex justify-between">
                   <Button 
-                    variant="outline" 
+                    variant="secondary" 
                     onClick={() => resetSettings('visualization')}
                     disabled={saving}
                   >
-                    Reset to Defaults
+                    Reset Visualization Settings
                   </Button>
-                </CardFooter>
-              </Card>
-            </TabsContent>
+                </div>
+              </div>
+            )}
             
-            <TabsContent value="notifications">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Notification Settings</CardTitle>
-                  <CardDescription>
-                    Configure how you receive notifications.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="enable-sound">Enable Sound</Label>
-                    <Switch 
-                      id="enable-sound" 
-                      checked={settings.notifications.enableSound}
-                      onCheckedChange={(checked) => handleNotificationChange('enableSound', checked)}
-                    />
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="desktop-notifications">Show Desktop Notifications</Label>
-                    <Switch 
-                      id="desktop-notifications" 
-                      checked={settings.notifications.showDesktopNotifications}
-                      onCheckedChange={(checked) => handleNotificationChange('showDesktopNotifications', checked)}
-                    />
+            {/* Notifications Settings */}
+            {activeTab === 'notifications' && (
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+                <div className="mb-4">
+                  <h2 className="text-xl font-semibold mb-2 dark:text-white">Notification Settings</h2>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">Configure how you receive notifications.</p>
+                </div>
+                
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label htmlFor="enable-sound" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Enable Sound
+                      </label>
+                      <div className="relative inline-block w-10 mr-2 align-middle select-none">
+                        <input
+                          type="checkbox"
+                          id="enable-sound"
+                          checked={settings.notifications.enableSound}
+                          onChange={(e) => handleNotificationChange('enableSound', e.target.checked)}
+                          className="sr-only"
+                        />
+                        <div className={`block w-14 h-8 rounded-full ${settings.notifications.enableSound ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'}`}></div>
+                        <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${settings.notifications.enableSound ? 'transform translate-x-6' : ''}`}></div>
+                      </div>
+                    </div>
                   </div>
                   
                   <div className="space-y-2">
-                    <Label>Notification Types</Label>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center justify-between">
+                      <label htmlFor="show-desktop" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Show Desktop Notifications
+                      </label>
+                      <div className="relative inline-block w-10 mr-2 align-middle select-none">
+                        <input
+                          type="checkbox"
+                          id="show-desktop"
+                          checked={settings.notifications.showDesktopNotifications}
+                          onChange={(e) => handleNotificationChange('showDesktopNotifications', e.target.checked)}
+                          className="sr-only"
+                        />
+                        <div className={`block w-14 h-8 rounded-full ${settings.notifications.showDesktopNotifications ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'}`}></div>
+                        <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${settings.notifications.showDesktopNotifications ? 'transform translate-x-6' : ''}`}></div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Notification Types
+                    </label>
+                    <div className="space-y-2">
                       {['error', 'warning', 'info', 'success'].map((type) => (
-                        <div key={type} className="flex items-center space-x-2">
+                        <div key={type} className="flex items-center">
                           <input
                             type="checkbox"
                             id={`notification-type-${type}`}
                             checked={settings.notifications.notificationTypes.includes(type)}
                             onChange={(e) => {
-                              const types = e.target.checked
+                              const updatedTypes = e.target.checked
                                 ? [...settings.notifications.notificationTypes, type]
                                 : settings.notifications.notificationTypes.filter(t => t !== type);
-                              handleNotificationChange('notificationTypes', types);
+                              handleNotificationChange('notificationTypes', updatedTypes);
                             }}
-                            className="rounded border-gray-300 text-primary focus:ring-primary"
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600"
                           />
-                          <Label htmlFor={`notification-type-${type}`} className="capitalize">
+                          <label htmlFor={`notification-type-${type}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300 capitalize">
                             {type}
-                          </Label>
+                          </label>
                         </div>
                       ))}
                     </div>
                   </div>
-                </CardContent>
-                <CardFooter className="flex justify-between">
+                </div>
+                
+                <div className="mt-6 flex justify-between">
                   <Button 
-                    variant="outline" 
+                    variant="secondary" 
                     onClick={() => resetSettings('notifications')}
                     disabled={saving}
                   >
-                    Reset to Defaults
+                    Reset Notification Settings
                   </Button>
-                </CardFooter>
-              </Card>
-            </TabsContent>
+                </div>
+              </div>
+            )}
             
-            <TabsContent value="system">
-              <Card>
-                <CardHeader>
-                  <CardTitle>System Settings</CardTitle>
-                  <CardDescription>
-                    Configure system-level settings.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="auto-update">Auto Update</Label>
-                    <Switch 
-                      id="auto-update" 
-                      checked={settings.system.autoUpdate}
-                      onCheckedChange={(checked) => handleSystemChange('autoUpdate', checked)}
-                    />
+            {/* System Settings */}
+            {activeTab === 'system' && (
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+                <div className="mb-4">
+                  <h2 className="text-xl font-semibold mb-2 dark:text-white">System Settings</h2>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">Configure general system settings.</p>
+                </div>
+                
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label htmlFor="auto-update" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Auto Update
+                      </label>
+                      <div className="relative inline-block w-10 mr-2 align-middle select-none">
+                        <input
+                          type="checkbox"
+                          id="auto-update"
+                          checked={settings.system.autoUpdate}
+                          onChange={(e) => handleSystemChange('autoUpdate', e.target.checked)}
+                          className="sr-only"
+                        />
+                        <div className={`block w-14 h-8 rounded-full ${settings.system.autoUpdate ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'}`}></div>
+                        <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${settings.system.autoUpdate ? 'transform translate-x-6' : ''}`}></div>
+                      </div>
+                    </div>
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="language">Language</Label>
-                    <Select 
-                      value={settings.system.language} 
-                      onValueChange={(value) => handleSystemChange('language', value)}
+                    <label htmlFor="language" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Language
+                    </label>
+                    <select
+                      id="language"
+                      value={settings.system.language}
+                      onChange={(e) => handleSystemChange('language', e.target.value)}
+                      className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     >
-                      <SelectTrigger id="language">
-                        <SelectValue placeholder="Select language" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="en">English</SelectItem>
-                        <SelectItem value="fr">French</SelectItem>
-                        <SelectItem value="es">Spanish</SelectItem>
-                        <SelectItem value="de">German</SelectItem>
-                      </SelectContent>
-                    </Select>
+                      <option value="en">English</option>
+                      <option value="fr">French</option>
+                      <option value="es">Spanish</option>
+                      <option value="de">German</option>
+                    </select>
                   </div>
-                </CardContent>
-                <CardFooter className="flex justify-between">
+                </div>
+                
+                <div className="mt-6 flex justify-between">
                   <Button 
-                    variant="outline" 
+                    variant="secondary" 
                     onClick={() => resetSettings('system')}
                     disabled={saving}
                   >
-                    Reset to Defaults
+                    Reset System Settings
                   </Button>
-                </CardFooter>
-              </Card>
-            </TabsContent>
-          </Tabs>
+                </div>
+              </div>
+            )}
+            
+            <div className="flex justify-end mt-8">
+              <Button 
+                onClick={() => resetSettings()} 
+                variant="secondary" 
+                className="mr-4"
+                disabled={saving}
+              >
+                Reset All Settings
+              </Button>
+              <Button 
+                onClick={fetchSettings}
+                disabled={saving}
+              >
+                Refresh Settings
+              </Button>
+            </div>
+          </div>
         )}
-        
-        <div className="mt-8 flex justify-end">
-          <Button 
-            onClick={() => resetSettings()} 
-            variant="outline" 
-            className="mr-4"
-            disabled={saving}
-          >
-            Reset All Settings
-          </Button>
-        </div>
       </div>
     </Layout>
   );
