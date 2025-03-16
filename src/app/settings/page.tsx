@@ -1,489 +1,448 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { FiSettings, FiMonitor, FiEye, FiBell, FiServer } from 'react-icons/fi';
-import LoadingSpinner from '@/components/LoadingSpinner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/common/Button';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
+import axios from 'axios';
+import Layout from '@/components/layout/Layout';
 
 interface Settings {
-  theme: 'light' | 'dark' | 'system';
-  visualization_defaults: {
-    graph_type: string;
-    enable_animations: boolean;
+  theme: {
+    mode: string;
+  };
+  visualization: {
+    defaultView: string;
+    showLabels: boolean;
+    labelFontSize: number;
   };
   notifications: {
-    enabled: boolean;
-    frequency: 'real-time' | 'hourly' | 'daily' | 'weekly';
+    enableSound: boolean;
+    showDesktopNotifications: boolean;
+    notificationTypes: string[];
   };
   system: {
-    auto_refresh: boolean;
-    refresh_interval_seconds: number;
+    autoUpdate: boolean;
+    language: string;
   };
 }
 
 export default function SettingsPage() {
-  const [settings, setSettings] = useState<Settings>({
-    theme: 'system',
-    visualization_defaults: {
-      graph_type: 'Bar Chart',
-      enable_animations: true,
-    },
-    notifications: {
-      enabled: true,
-      frequency: 'real-time',
-    },
-    system: {
-      auto_refresh: true,
-      refresh_interval_seconds: 60,
-    },
-  });
-  
+  const [settings, setSettings] = useState<Settings | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-  const [activeSection, setActiveSection] = useState('theme');
+  const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState('theme');
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  // Fetch settings on component mount
   useEffect(() => {
     fetchSettings();
   }, []);
 
   const fetchSettings = async () => {
+    setLoading(true);
+    setError(null);
     try {
-      setLoading(true);
-      const response = await fetch('http://localhost:8000/api/settings');
-      if (!response.ok) {
-        throw new Error('Failed to fetch settings');
-      }
-      const data = await response.json();
-      setSettings(data);
-      setError(null);
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/settings`);
+      setSettings(response.data);
     } catch (err) {
+      console.error('Error fetching settings:', err);
       setError('Error loading settings. Please try again.');
-      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  const saveSettings = async () => {
+  const updateSettings = async (updatedSettings: Partial<Settings>) => {
+    setSaving(true);
+    setError(null);
+    setSuccessMessage(null);
     try {
-      setSaving(true);
-      const response = await fetch('http://localhost:8000/api/settings', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(settings),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to save settings');
-      }
-      
-      setSuccess('Settings saved successfully!');
-      setError(null);
+      const response = await axios.patch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/settings`,
+        updatedSettings
+      );
+      setSettings(response.data);
+      setSuccessMessage('Settings saved successfully!');
       
       // Clear success message after 3 seconds
       setTimeout(() => {
-        setSuccess(null);
+        setSuccessMessage(null);
       }, 3000);
     } catch (err) {
-      setError('Error saving settings. Please try again.');
-      console.error(err);
+      console.error('Error updating settings:', err);
+      setError('Failed to save settings. Please try again.');
     } finally {
       setSaving(false);
     }
   };
 
-  const resetToDefaults = () => {
-    setSettings({
-      theme: 'system',
-      visualization_defaults: {
-        graph_type: 'Bar Chart',
-        enable_animations: true,
-      },
-      notifications: {
-        enabled: true,
-        frequency: 'real-time',
-      },
-      system: {
-        auto_refresh: true,
-        refresh_interval_seconds: 60,
-      },
-    });
-    setSuccess('Settings reset to defaults!');
-    
-    // Clear success message after 3 seconds
-    setTimeout(() => {
-      setSuccess(null);
-    }, 3000);
+  const resetSettings = async (category?: string) => {
+    setSaving(true);
+    setError(null);
+    setSuccessMessage(null);
+    try {
+      const url = category 
+        ? `${process.env.NEXT_PUBLIC_API_URL}/api/settings/reset?category=${category}`
+        : `${process.env.NEXT_PUBLIC_API_URL}/api/settings/reset`;
+      
+      const response = await axios.post(url);
+      setSettings(response.data);
+      setSuccessMessage(category 
+        ? `${category.charAt(0).toUpperCase() + category.slice(1)} settings reset to defaults!`
+        : 'All settings reset to defaults!');
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setSuccessMessage(null);
+      }, 3000);
+    } catch (err) {
+      console.error('Error resetting settings:', err);
+      setError('Failed to reset settings. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleThemeChange = (theme: 'light' | 'dark' | 'system') => {
-    setSettings({
+  const handleThemeChange = (mode: string) => {
+    if (!settings) return;
+    
+    const updatedSettings = {
       ...settings,
-      theme,
-    });
+      theme: {
+        ...settings.theme,
+        mode
+      }
+    };
+    
+    setSettings(updatedSettings);
+    updateSettings({ theme: { mode } });
   };
 
   const handleVisualizationChange = (key: string, value: any) => {
-    setSettings({
+    if (!settings) return;
+    
+    const updatedSettings = {
       ...settings,
-      visualization_defaults: {
-        ...settings.visualization_defaults,
-        [key]: value,
-      },
+      visualization: {
+        ...settings.visualization,
+        [key]: value
+      }
+    };
+    
+    setSettings(updatedSettings);
+    updateSettings({ 
+      visualization: { 
+        [key]: value 
+      } 
     });
   };
 
   const handleNotificationChange = (key: string, value: any) => {
-    setSettings({
+    if (!settings) return;
+    
+    const updatedSettings = {
       ...settings,
       notifications: {
         ...settings.notifications,
-        [key]: value,
-      },
+        [key]: value
+      }
+    };
+    
+    setSettings(updatedSettings);
+    updateSettings({ 
+      notifications: { 
+        [key]: value 
+      } 
     });
   };
 
   const handleSystemChange = (key: string, value: any) => {
-    setSettings({
+    if (!settings) return;
+    
+    const updatedSettings = {
       ...settings,
       system: {
         ...settings.system,
-        [key]: value,
-      },
+        [key]: value
+      }
+    };
+    
+    setSettings(updatedSettings);
+    updateSettings({ 
+      system: { 
+        [key]: value 
+      } 
     });
   };
 
   if (loading) {
-    return <LoadingSpinner size="large" message="Loading settings..." />;
+    return (
+      <Layout>
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        </div>
+      </Layout>
+    );
   }
 
-    return (
-    <div className="container mx-auto px-4 py-6">
-      <div className="flex items-center mb-6">
-        <FiSettings className="text-2xl mr-2 text-gray-700 dark:text-gray-300" />
-        <h1 className="text-2xl font-bold dark:text-white">Settings</h1>
-      </div>
-
-      {error && (
-        <div className="bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-400 px-4 py-3 rounded mb-6">
-          <p>{error}</p>
-        </div>
-      )}
-      
-      {success && (
-        <div className="bg-green-100 dark:bg-green-900/30 border border-green-400 dark:border-green-700 text-green-700 dark:text-green-400 px-4 py-3 rounded mb-6">
-          <p>{success}</p>
-        </div>
-      )}
-      
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {/* Sidebar */}
-        <div className="md:col-span-1">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
-            <nav className="space-y-1">
-              <button
-                className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md ${
-                  activeSection === 'theme'
-                    ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400'
-                    : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50'
-                }`}
-                onClick={() => setActiveSection('theme')}
-              >
-                <FiMonitor className="mr-3 text-lg" />
-              Theme
-              </button>
-              <button
-                className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md ${
-                  activeSection === 'visualization'
-                    ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400'
-                    : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50'
-                }`}
-                onClick={() => setActiveSection('visualization')}
-              >
-                <FiEye className="mr-3 text-lg" />
-                Visualization
-              </button>
-              <button
-                className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md ${
-                  activeSection === 'notifications'
-                    ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400'
-                    : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50'
-                }`}
-                onClick={() => setActiveSection('notifications')}
-              >
-                <FiBell className="mr-3 text-lg" />
-                Notifications
-              </button>
-              <button
-                className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md ${
-                  activeSection === 'system'
-                    ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400'
-                    : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50'
-                }`}
-                onClick={() => setActiveSection('system')}
-              >
-                <FiServer className="mr-3 text-lg" />
-                System
-              </button>
-            </nav>
-          </div>
-        </div>
-
-        {/* Main Content */}
-        <div className="md:col-span-3">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-            {/* Theme Preferences */}
-            {activeSection === 'theme' && (
-              <div>
-                <h2 className="text-xl font-semibold mb-6 dark:text-white">Theme Preferences</h2>
-                
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Theme Mode
-                  </label>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                    Choose between light and dark mode
-                  </p>
-                  <div className="flex space-x-2">
-                    <button
-                      className={`px-4 py-2 rounded-md ${
-                        settings.theme === 'light'
-                          ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-white'
-                          : 'bg-white text-gray-800 border border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700'
-                      }`}
-                      onClick={() => handleThemeChange('light')}
+  return (
+    <Layout>
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-6 dark:text-white">Settings</h1>
+        
+        {error && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        
+        {successMessage && (
+          <Alert className="mb-6 bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-400">
+            <AlertDescription>{successMessage}</AlertDescription>
+          </Alert>
+        )}
+        
+        {settings && (
+          <Tabs defaultValue="theme" value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="mb-6">
+              <TabsTrigger value="theme">Theme</TabsTrigger>
+              <TabsTrigger value="visualization">Visualization</TabsTrigger>
+              <TabsTrigger value="notifications">Notifications</TabsTrigger>
+              <TabsTrigger value="system">System</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="theme">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Theme Preferences</CardTitle>
+                  <CardDescription>
+                    Customize the appearance of the application.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="theme-mode">Theme Mode</Label>
+                    <Select 
+                      value={settings.theme.mode} 
+                      onValueChange={handleThemeChange}
                     >
-                      Light
-                    </button>
-                    <button
-                      className={`px-4 py-2 rounded-md ${
-                        settings.theme === 'dark'
-                          ? 'bg-gray-800 text-white'
-                          : 'bg-white text-gray-800 border border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700'
-                      }`}
-                      onClick={() => handleThemeChange('dark')}
+                      <SelectTrigger id="theme-mode">
+                        <SelectValue placeholder="Select theme mode" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="light">Light</SelectItem>
+                        <SelectItem value="dark">Dark</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CardContent>
+                <CardFooter className="flex justify-between">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => resetSettings('theme')}
+                    disabled={saving}
+                  >
+                    Reset to Defaults
+                  </Button>
+                </CardFooter>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="visualization">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Visualization Settings</CardTitle>
+                  <CardDescription>
+                    Configure how repository visualizations are displayed.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="default-view">Default View</Label>
+                    <Select 
+                      value={settings.visualization.defaultView} 
+                      onValueChange={(value) => handleVisualizationChange('defaultView', value)}
                     >
-                      Dark
-                    </button>
+                      <SelectTrigger id="default-view">
+                        <SelectValue placeholder="Select default view" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="forceGraph">Force Graph</SelectItem>
+                        <SelectItem value="tree">Tree</SelectItem>
+                        <SelectItem value="sunburst">Sunburst</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                </div>
-              </div>
-            )}
-
-            {/* Visualization Defaults */}
-            {activeSection === 'visualization' && (
-              <div>
-                <h2 className="text-xl font-semibold mb-6 dark:text-white">Visualization Defaults</h2>
-                
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Default Graph Type
-            </label>
-            <select
-                    value={settings.visualization_defaults.graph_type}
-                    onChange={(e) => handleVisualizationChange('graph_type', e.target.value)}
-                    className="w-full p-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
-                  >
-                    <option>Bar Chart</option>
-                    <option>Line Chart</option>
-                    <option>Pie Chart</option>
-                    <option>Force Graph</option>
-                    <option>Tree View</option>
-            </select>
-          </div>
-          
-                <div className="mb-6">
+                  
                   <div className="flex items-center justify-between">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Enable Animations
-                      </label>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Show animations in visualizations
-                      </p>
-                    </div>
-                    <div className="relative inline-block w-12 mr-2 align-middle select-none">
-              <input
-                type="checkbox"
-                        id="toggle-animations"
-                        checked={settings.visualization_defaults.enable_animations}
-                        onChange={(e) => handleVisualizationChange('enable_animations', e.target.checked)}
-                        className="sr-only"
-                      />
-                      <label
-                        htmlFor="toggle-animations"
-                        className={`block overflow-hidden h-6 rounded-full cursor-pointer ${
-                          settings.visualization_defaults.enable_animations
-                            ? 'bg-blue-500'
-                            : 'bg-gray-300 dark:bg-gray-700'
-                        }`}
-                      >
-                        <span
-                          className={`block h-6 w-6 rounded-full bg-white transform transition-transform ${
-                            settings.visualization_defaults.enable_animations ? 'translate-x-6' : 'translate-x-0'
-                          }`}
-                        ></span>
-            </label>
-          </div>
-        </div>
-                </div>
-              </div>
-            )}
-
-            {/* Notification Settings */}
-            {activeSection === 'notifications' && (
-              <div>
-                <h2 className="text-xl font-semibold mb-6 dark:text-white">Notification Settings</h2>
-        
-        <div className="mb-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Enable Notifications
-            </label>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Receive updates and alerts
-                      </p>
-          </div>
-                    <div className="relative inline-block w-12 mr-2 align-middle select-none">
-              <input
-                type="checkbox"
-                        id="toggle-notifications"
-                        checked={settings.notifications.enabled}
-                        onChange={(e) => handleNotificationChange('enabled', e.target.checked)}
-                        className="sr-only"
-                      />
-                      <label
-                        htmlFor="toggle-notifications"
-                        className={`block overflow-hidden h-6 rounded-full cursor-pointer ${
-                          settings.notifications.enabled
-                            ? 'bg-blue-500'
-                            : 'bg-gray-300 dark:bg-gray-700'
-                        }`}
-                      >
-                        <span
-                          className={`block h-6 w-6 rounded-full bg-white transform transition-transform ${
-                            settings.notifications.enabled ? 'translate-x-6' : 'translate-x-0'
-                          }`}
-                        ></span>
-            </label>
-          </div>
-            </div>
-        </div>
-        
-        <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Notification Frequency
-                  </label>
-                  <select
-                    value={settings.notifications.frequency}
-                    onChange={(e) => handleNotificationChange('frequency', e.target.value)}
-                    disabled={!settings.notifications.enabled}
-                    className={`w-full p-2 border border-gray-300 dark:border-gray-700 rounded-md ${
-                      settings.notifications.enabled
-                        ? 'bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100'
-                        : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-500 cursor-not-allowed'
-                    }`}
-                  >
-                    <option value="real-time">Real-time</option>
-                    <option value="hourly">Hourly</option>
-                    <option value="daily">Daily</option>
-                    <option value="weekly">Weekly</option>
-                  </select>
-                </div>
-              </div>
-            )}
-
-            {/* System Settings */}
-            {activeSection === 'system' && (
-              <div>
-                <h2 className="text-xl font-semibold mb-6 dark:text-white">System Settings</h2>
-                
-                <div className="mb-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Auto-refresh
-                      </label>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Automatically refresh data
-                      </p>
-                    </div>
-                    <div className="relative inline-block w-12 mr-2 align-middle select-none">
-              <input
-                type="checkbox"
-                        id="toggle-auto-refresh"
-                        checked={settings.system.auto_refresh}
-                        onChange={(e) => handleSystemChange('auto_refresh', e.target.checked)}
-                        className="sr-only"
-                      />
-                      <label
-                        htmlFor="toggle-auto-refresh"
-                        className={`block overflow-hidden h-6 rounded-full cursor-pointer ${
-                          settings.system.auto_refresh
-                            ? 'bg-blue-500'
-                            : 'bg-gray-300 dark:bg-gray-700'
-                        }`}
-                      >
-                        <span
-                          className={`block h-6 w-6 rounded-full bg-white transform transition-transform ${
-                            settings.system.auto_refresh ? 'translate-x-6' : 'translate-x-0'
-                          }`}
-                        ></span>
-            </label>
-          </div>
-        </div>
-        
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Auto-refresh Interval
-                  </label>
-                  <input
-                    type="range"
-                    min="0"
-                    max="900"
-                    step="30"
-                    value={settings.system.refresh_interval_seconds}
-                    onChange={(e) => handleSystemChange('refresh_interval_seconds', parseInt(e.target.value))}
-                    disabled={!settings.system.auto_refresh}
-                    className={`w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 ${
-                      !settings.system.auto_refresh && 'opacity-50 cursor-not-allowed'
-                    }`}
-                  />
-                  <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    <span>Off</span>
-                    <span>30s</span>
-                    <span>1m</span>
-                    <span>5m</span>
-                    <span>15m</span>
+                    <Label htmlFor="show-labels">Show Labels</Label>
+                    <Switch 
+                      id="show-labels" 
+                      checked={settings.visualization.showLabels}
+                      onCheckedChange={(checked) => handleVisualizationChange('showLabels', checked)}
+                    />
                   </div>
-                </div>
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="flex justify-between mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
-              <button
-                onClick={resetToDefaults}
-                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-500 dark:hover:text-gray-400"
-              >
-                Reset to Defaults
-              </button>
-          <button
-                onClick={saveSettings}
+                  
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <Label htmlFor="label-font-size">Label Font Size: {settings.visualization.labelFontSize}px</Label>
+                    </div>
+                    <Slider
+                      id="label-font-size"
+                      min={8}
+                      max={24}
+                      step={1}
+                      value={[settings.visualization.labelFontSize]}
+                      onValueChange={(value) => handleVisualizationChange('labelFontSize', value[0])}
+                    />
+                  </div>
+                </CardContent>
+                <CardFooter className="flex justify-between">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => resetSettings('visualization')}
+                    disabled={saving}
+                  >
+                    Reset to Defaults
+                  </Button>
+                </CardFooter>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="notifications">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Notification Settings</CardTitle>
+                  <CardDescription>
+                    Configure how you receive notifications.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="enable-sound">Enable Sound</Label>
+                    <Switch 
+                      id="enable-sound" 
+                      checked={settings.notifications.enableSound}
+                      onCheckedChange={(checked) => handleNotificationChange('enableSound', checked)}
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="desktop-notifications">Show Desktop Notifications</Label>
+                    <Switch 
+                      id="desktop-notifications" 
+                      checked={settings.notifications.showDesktopNotifications}
+                      onCheckedChange={(checked) => handleNotificationChange('showDesktopNotifications', checked)}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>Notification Types</Label>
+                    <div className="grid grid-cols-2 gap-4">
+                      {['error', 'warning', 'info', 'success'].map((type) => (
+                        <div key={type} className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id={`notification-type-${type}`}
+                            checked={settings.notifications.notificationTypes.includes(type)}
+                            onChange={(e) => {
+                              const types = e.target.checked
+                                ? [...settings.notifications.notificationTypes, type]
+                                : settings.notifications.notificationTypes.filter(t => t !== type);
+                              handleNotificationChange('notificationTypes', types);
+                            }}
+                            className="rounded border-gray-300 text-primary focus:ring-primary"
+                          />
+                          <Label htmlFor={`notification-type-${type}`} className="capitalize">
+                            {type}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter className="flex justify-between">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => resetSettings('notifications')}
+                    disabled={saving}
+                  >
+                    Reset to Defaults
+                  </Button>
+                </CardFooter>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="system">
+              <Card>
+                <CardHeader>
+                  <CardTitle>System Settings</CardTitle>
+                  <CardDescription>
+                    Configure system-level settings.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="auto-update">Auto Update</Label>
+                    <Switch 
+                      id="auto-update" 
+                      checked={settings.system.autoUpdate}
+                      onCheckedChange={(checked) => handleSystemChange('autoUpdate', checked)}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="language">Language</Label>
+                    <Select 
+                      value={settings.system.language} 
+                      onValueChange={(value) => handleSystemChange('language', value)}
+                    >
+                      <SelectTrigger id="language">
+                        <SelectValue placeholder="Select language" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="en">English</SelectItem>
+                        <SelectItem value="fr">French</SelectItem>
+                        <SelectItem value="es">Spanish</SelectItem>
+                        <SelectItem value="de">German</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CardContent>
+                <CardFooter className="flex justify-between">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => resetSettings('system')}
+                    disabled={saving}
+                  >
+                    Reset to Defaults
+                  </Button>
+                </CardFooter>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        )}
+        
+        <div className="mt-8 flex justify-end">
+          <Button 
+            onClick={() => resetSettings()} 
+            variant="outline" 
+            className="mr-4"
             disabled={saving}
-                className={`px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md ${
-                  saving && 'opacity-75 cursor-not-allowed'
-                }`}
           >
-                {saving ? 'Saving...' : 'Save Changes'}
-          </button>
-        </div>
-          </div>
+            Reset All Settings
+          </Button>
         </div>
       </div>
-    </div>
+    </Layout>
   );
 } 
