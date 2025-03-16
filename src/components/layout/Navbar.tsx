@@ -1,18 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { repositoryApi } from '@/services/api';
 import { Button } from '@/components/common/Button';
+import NotificationBell from '@/components/notifications/NotificationBell';
 
 interface NavbarProps {
   onMenuClick: () => void;
-}
-
-interface Notification {
-  type: string;
-  repository: string;
-  message: string;
-  timestamp: string;
 }
 
 const navItems = [
@@ -26,142 +20,114 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [showSearch, setShowSearch] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [showNotifications, setShowNotifications] = useState(false);
-
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      try {
-        const data = await repositoryApi.getNotifications();
-        setNotifications(data.notifications);
-      } catch (error) {
-        console.error('Failed to fetch notifications:', error);
-      }
-    };
-
-    fetchNotifications();
-    // Refresh notifications every 5 minutes
-    const interval = setInterval(fetchNotifications, 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
     
     try {
-      const data = await repositoryApi.search(searchQuery);
-      setSearchResults(data.results);
-      setShowSearch(true);
+      const results = await repositoryApi.search(searchQuery);
+      setSearchResults(results.results || []);
     } catch (error) {
       console.error('Search failed:', error);
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
+
   return (
-    <nav className="sticky top-0 z-20 bg-background/80 backdrop-blur-sm border-b">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between">
+    <nav className="bg-white dark:bg-gray-800 shadow-sm">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16">
           <div className="flex items-center">
             <button
-              type="button"
-              className="p-2 -ml-2 text-muted-foreground hover:text-foreground lg:hidden"
+              className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 dark:hover:text-gray-300"
               onClick={onMenuClick}
             >
+              <span className="sr-only">Open sidebar</span>
               <MenuIcon className="h-6 w-6" />
             </button>
-            <div className="hidden lg:flex lg:gap-8 ml-8">
+            <div className="flex-shrink-0 flex items-center">
+              <Link href="/">
+                <span className="text-xl font-bold text-gray-900 dark:text-white">Repository Visualizer</span>
+              </Link>
+            </div>
+            <div className="hidden lg:ml-6 lg:flex lg:space-x-8">
               {navItems.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`inline-flex items-center px-2 py-1 text-sm font-medium transition-colors 
-                    ${router.pathname === item.href 
-                      ? 'text-primary border-b-2 border-primary' 
-                      : 'text-muted-foreground hover:text-foreground'
-                    }`}
+                  className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                    router.pathname === item.href
+                      ? 'border-indigo-500 text-gray-900 dark:text-white'
+                      : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100'
+                  }`}
                 >
                   {item.label}
                 </Link>
               ))}
             </div>
           </div>
-
-          <div className="flex items-center gap-2">
+          <div className="flex items-center">
             <div className="relative">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search repositories..."
-                className="input w-64"
-                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-              />
-              <button 
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-muted-foreground hover:text-foreground"
-                onClick={handleSearch}
+              <button
+                className="p-2 text-gray-400 hover:text-gray-500 dark:text-gray-300 dark:hover:text-gray-100"
+                onClick={() => setShowSearch(!showSearch)}
               >
-                <SearchIcon className="h-5 w-5" />
+                <span className="sr-only">Search</span>
+                <SearchIcon className="h-6 w-6" />
               </button>
-
-              {showSearch && searchResults.length > 0 && (
-                <div className="absolute top-full mt-2 w-full bg-background border rounded-md shadow-lg">
-                  {searchResults.map((result: any, index: number) => (
-                    <div
-                      key={index}
-                      className="p-3 hover:bg-accent cursor-pointer border-b last:border-b-0"
-                      onClick={() => {
-                        setShowSearch(false);
-                        if (result.type === 'repository') {
-                          router.push(`/repository/${result.name}`);
-                        }
-                      }}
-                    >
-                      <div className="font-medium">{result.name}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {result.type === 'repository' ? 'Repository' : 'File'}
-                      </div>
+              {showSearch && (
+                <div className="origin-top-right absolute right-0 mt-2 w-96 rounded-md shadow-lg bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5 focus:outline-none">
+                  <div className="p-4">
+                    <div className="flex">
+                      <input
+                        type="text"
+                        className="flex-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-800 dark:text-white"
+                        placeholder="Search repositories..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                      />
+                      <Button
+                        className="ml-2"
+                        onClick={handleSearch}
+                      >
+                        Search
+                      </Button>
                     </div>
-                  ))}
+                    {searchResults.length > 0 && (
+                      <div className="mt-2 max-h-60 overflow-y-auto">
+                        <ul className="divide-y divide-gray-200 dark:divide-gray-600">
+                          {searchResults.map((repo: any) => (
+                            <li key={repo.id} className="py-2">
+                              <Link
+                                href={`/repositories/${repo.id}`}
+                                className="block hover:bg-gray-50 dark:hover:bg-gray-600 p-2 rounded"
+                                onClick={() => setShowSearch(false)}
+                              >
+                                <div className="text-sm font-medium text-gray-900 dark:text-white">{repo.name}</div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400">{repo.description}</div>
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
 
-            <div className="relative">
-              <button 
-                className="p-2 text-muted-foreground hover:text-foreground"
-                onClick={() => setShowNotifications(!showNotifications)}
-              >
-                <BellIcon className="h-5 w-5" />
-                {notifications.length > 0 && (
-                  <span className="absolute -top-1 -right-1 h-4 w-4 bg-primary text-primary-foreground rounded-full text-xs flex items-center justify-center">
-                    {notifications.length}
-                  </span>
-                )}
-              </button>
-
-              {showNotifications && notifications.length > 0 && (
-                <div className="absolute top-full right-0 mt-2 w-80 bg-background border rounded-md shadow-lg">
-                  {notifications.map((notification, index) => (
-                    <div
-                      key={index}
-                      className="p-3 hover:bg-accent cursor-pointer border-b last:border-b-0"
-                    >
-                      <div className="font-medium">{notification.repository}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {notification.message}
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {new Date(notification.timestamp).toLocaleString()}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            <NotificationBell />
 
             <Link href="/settings">
-              <button className="p-2 text-muted-foreground hover:text-foreground">
-                <SettingsIcon className="h-5 w-5" />
+              <button className="p-2 text-gray-400 hover:text-gray-500 dark:text-gray-300 dark:hover:text-gray-100">
+                <span className="sr-only">Settings</span>
+                <SettingsIcon className="h-6 w-6" />
               </button>
             </Link>
           </div>
@@ -204,25 +170,6 @@ function SearchIcon(props: React.SVGProps<SVGSVGElement>) {
         strokeLinejoin="round"
         strokeWidth={2}
         d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-      />
-    </svg>
-  );
-}
-
-function BellIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
       />
     </svg>
   );

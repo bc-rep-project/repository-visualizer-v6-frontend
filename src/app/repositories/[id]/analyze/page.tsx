@@ -68,8 +68,8 @@ export default function RepositoryAnalyze() {
   };
   
   const fetchGraphData = async () => {
-    try {
-      setLoading(true);
+      try {
+        setLoading(true);
       setError(null);
       
       const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/repositories/${repoId}/analyze`);
@@ -89,14 +89,14 @@ export default function RepositoryAnalyze() {
       } else {
         setError('Invalid graph data received from server');
       }
-    } catch (err: any) {
+      } catch (err: any) {
       console.error('Error analyzing repository:', err);
       setError(`Error analyzing repository: ${err.response?.data?.error || err.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-  
+      } finally {
+        setLoading(false);
+      }
+    };
+    
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
     if (rawData) {
@@ -182,13 +182,13 @@ export default function RepositoryAnalyze() {
           <h1 className="text-2xl font-bold dark:text-white">
             {repository?.repo_name || 'Repository Analysis'}
           </h1>
-        </div>
+      </div>
       
-        {error && (
+      {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-            <p>{error}</p>
-          </div>
-        )}
+          <p>{error}</p>
+        </div>
+      )}
       
         {loading && !processedData ? (
           <div className="flex justify-center items-center h-64">
@@ -258,7 +258,7 @@ export default function RepositoryAnalyze() {
                 </div>
                 
                 {/* Visualization Type */}
-                <div className="mb-4">
+      <div className="mb-4">
                   <h3 className="text-sm font-medium mb-2 dark:text-white">Visualization Type</h3>
                   <div className="flex flex-wrap gap-2">
                     <button
@@ -271,7 +271,7 @@ export default function RepositoryAnalyze() {
                     >
                       Force Graph
                     </button>
-                    <button
+            <button
                       onClick={() => setVisualizationType('tree')}
                       className={`px-3 py-1 text-sm rounded-md ${
                         visualizationType === 'tree' 
@@ -280,8 +280,8 @@ export default function RepositoryAnalyze() {
                       }`}
                     >
                       Tree
-                    </button>
-                    <button
+            </button>
+            <button
                       onClick={() => setVisualizationType('sunburst')}
                       className={`px-3 py-1 text-sm rounded-md ${
                         visualizationType === 'sunburst' 
@@ -290,7 +290,7 @@ export default function RepositoryAnalyze() {
                       }`}
                     >
                       Sunburst
-                    </button>
+            </button>
                   </div>
                 </div>
                 
@@ -305,8 +305,8 @@ export default function RepositoryAnalyze() {
                     <p>Dependencies: {processedData?.graph.edges.filter(e => e.type === 'import').length || 0}</p>
                   </div>
                 </div>
-              </div>
-            </div>
+        </div>
+      </div>
       
             {/* Graph Visualization */}
             <div className="md:col-span-3">
