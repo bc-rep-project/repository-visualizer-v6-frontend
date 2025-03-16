@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useNotifications } from '@/contexts/NotificationContext';
-import { Button } from '@/components/common/Button';
+import { Button } from '@/components/ui/button';
 
 export default function NotificationTest() {
   const { addNotification } = useNotifications();

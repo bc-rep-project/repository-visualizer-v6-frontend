@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Layout from '@/components/layout/Layout';
-import { Button } from '@/components/common/Button';
+import { Button } from '@/components/ui/button';
 
 export default function SettingsTestPage() {
   const [settings, setSettings] = useState<any>(null);
