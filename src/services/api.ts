@@ -2,7 +2,7 @@ import axios from 'axios';
 import { Repository, RepositoryResponse, CloneRepositoryRequest } from '../types/repository.types';
 
 // Remove /api from the base URL as it's already included in the routes
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://repository-visualizer-v6-backend.onrender.com';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 console.log('API Base URL:', API_BASE_URL);
 

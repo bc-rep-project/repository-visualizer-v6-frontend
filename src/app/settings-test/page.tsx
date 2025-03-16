@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '@/services/api';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 
@@ -19,7 +19,7 @@ export default function SettingsTestPage() {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/settings`);
+      const response = await api.get(`/api/settings`);
       setSettings(response.data);
     } catch (err) {
       console.error('Error fetching settings:', err);
@@ -35,8 +35,8 @@ export default function SettingsTestPage() {
     setSuccessMessage(null);
     try {
       const newMode = settings?.theme?.mode === 'light' ? 'dark' : 'light';
-      const response = await axios.patch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/settings`,
+      const response = await api.patch(
+        `/api/settings`,
         { theme: { mode: newMode } }
       );
       setSettings(response.data);
@@ -58,8 +58,8 @@ export default function SettingsTestPage() {
     setError(null);
     setSuccessMessage(null);
     try {
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/settings/reset`
+      const response = await api.post(
+        `/api/settings/reset`
       );
       setSettings(response.data);
       setSuccessMessage('All settings reset to defaults!');

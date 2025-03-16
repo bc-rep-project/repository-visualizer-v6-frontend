@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
-import axios from 'axios';
+import api from '@/services/api';
 import Layout from '@/components/layout/Layout';
 
 interface Settings {
@@ -56,7 +56,7 @@ export default function SettingsPage() {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/settings`);
+      const response = await api.get(`/api/settings`);
       setSettings(response.data);
     } catch (err) {
       console.error('Error fetching settings:', err);
@@ -71,8 +71,8 @@ export default function SettingsPage() {
     setError(null);
     setSuccessMessage(null);
     try {
-      const response = await axios.patch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/settings`,
+      const response = await api.patch(
+        `/api/settings`,
         updatedSettings
       );
       setSettings(response.data);
@@ -96,10 +96,10 @@ export default function SettingsPage() {
     setSuccessMessage(null);
     try {
       const url = category 
-        ? `${process.env.NEXT_PUBLIC_API_URL}/api/settings/reset?category=${category}`
-        : `${process.env.NEXT_PUBLIC_API_URL}/api/settings/reset`;
+        ? `/api/settings/reset?category=${category}`
+        : `/api/settings/reset`;
       
-      const response = await axios.post(url);
+      const response = await api.post(url);
       setSettings(response.data);
       setSuccessMessage(category 
         ? `${category.charAt(0).toUpperCase() + category.slice(1)} settings reset to defaults!`
