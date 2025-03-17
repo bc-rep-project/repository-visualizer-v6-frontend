@@ -55,11 +55,11 @@ export default function RepositoryAnalyze() {
   });
 
   useEffect(() => {
-    if (params.id) {
+    if (params?.id) {
       fetchRepositoryDetails();
       fetchGraphData();
     }
-  }, [params.id]);
+  }, [params?.id]);
 
   // Reprocess data when filters change
   useEffect(() => {
@@ -77,12 +77,14 @@ export default function RepositoryAnalyze() {
 
   const fetchRepositoryDetails = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-      const response = await axios.get(`${apiUrl}/api/repositories/${params.id}`);
+      setLoading(true);
+      const response = await axios.get<Repository>(`/api/repositories/${params?.id}`);
       setRepository(response.data);
-    } catch (err) {
-      console.error('Error fetching repository details:', err);
-      setError('Failed to fetch repository details');
+    } catch (error) {
+      console.error("Error fetching repository details:", error);
+      setError("Failed to load repository details.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -90,7 +92,7 @@ export default function RepositoryAnalyze() {
     try {
       setLoading(true);
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-      const response = await axios.get(`${apiUrl}/api/repositories/${params.id}/analyze`);
+      const response = await axios.get(`${apiUrl}/api/repositories/${params?.id}/analyze`);
       setRawData(response.data);
       
       // Process the data for visualization

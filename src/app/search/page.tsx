@@ -22,7 +22,7 @@ interface SearchResult {
 export default function SearchPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const query = searchParams.get('q') || '';
+  const query = searchParams?.get('q') || '';
   
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(true);

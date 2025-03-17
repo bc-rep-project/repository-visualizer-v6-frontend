@@ -33,7 +33,7 @@ interface FilterOptions {
 export default function RepositoryAnalyze() {
   const params = useParams();
   const router = useRouter();
-  const repoId = params.id as string;
+  const repoId = params?.id as string;
   
   const [repository, setRepository] = useState<Repository | null>(null);
   const [rawData, setRawData] = useState<FileNode | null>(null);
