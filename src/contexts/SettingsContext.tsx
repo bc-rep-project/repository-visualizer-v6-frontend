@@ -6,13 +6,29 @@ import axios from 'axios';
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export interface AppSettings {
-  theme: 'light' | 'dark' | 'system';
-  max_repo_size_mb: number;
-  default_visualization: 'graph' | 'treemap';
-  enable_animations: boolean;
-  auto_refresh: boolean;
-  refresh_interval_seconds: number;
-  notifications_enabled: boolean;
+  theme: {
+    mode: string;
+    accentColor: string;
+    fontSize: string;
+  };
+  visualization: {
+    defaultView: string;
+    enableAnimations: boolean;
+    nodeSize: string;
+    showLabels: boolean;
+  };
+  notifications: {
+    enableSound: boolean;
+    enablePopups: boolean;
+    notifyOnUpdates: boolean;
+    emailNotifications: boolean;
+  };
+  system: {
+    autoUpdate: boolean;
+    updateInterval: number;
+    logLevel: string;
+    dataCache: boolean;
+  };
   last_updated: string;
 }
 
@@ -24,13 +40,29 @@ interface SettingsContextType {
 }
 
 const defaultSettings: AppSettings = {
-  theme: 'light',
-  max_repo_size_mb: 500,
-  default_visualization: 'graph',
-  enable_animations: true,
-  auto_refresh: false,
-  refresh_interval_seconds: 30,
-  notifications_enabled: true,
+  theme: {
+    mode: 'light',
+    accentColor: '#4a90e2',
+    fontSize: 'medium'
+  },
+  visualization: {
+    defaultView: 'forceGraph',
+    enableAnimations: true,
+    nodeSize: 'medium',
+    showLabels: true
+  },
+  notifications: {
+    enableSound: true,
+    enablePopups: true,
+    notifyOnUpdates: true,
+    emailNotifications: false
+  },
+  system: {
+    autoUpdate: false,
+    updateInterval: 30,
+    logLevel: 'info',
+    dataCache: true
+  },
   last_updated: new Date().toISOString()
 };
 
@@ -57,13 +89,13 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         setError(null);
         
         // Apply theme immediately
-        applyTheme(response.data.theme);
+        applyTheme(response.data.theme.mode);
       } catch (err) {
         console.error('Error fetching settings:', err);
         setError('Failed to load settings');
         // Use default settings if API fails
         setSettings(defaultSettings);
-        applyTheme(defaultSettings.theme);
+        applyTheme(defaultSettings.theme.mode);
       } finally {
         setLoading(false);
       }
@@ -76,16 +108,41 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     if (!settings) return;
     
     try {
-      const updatedSettings = { ...settings, ...newSettings };
+      // Create a deep copy of current settings
+      const updatedSettings = JSON.parse(JSON.stringify(settings));
+      
+      // Apply updates (handles nested objects correctly)
+      Object.keys(newSettings).forEach(key => {
+        if (key === 'last_updated') return; // Skip last_updated which is handled by backend
+        
+        if (typeof newSettings[key as keyof AppSettings] === 'object' && newSettings[key as keyof AppSettings] !== null) {
+          // Handle nested object updates
+          const categoryKey = key as keyof AppSettings;
+          const currentSettings = updatedSettings[categoryKey] as Record<string, any>;
+          const newCategorySettings = newSettings[categoryKey] as Record<string, any>;
+          
+          updatedSettings[categoryKey] = {
+            ...currentSettings,
+            ...newCategorySettings
+          };
+        } else {
+          // Handle top-level primitive updates
+          updatedSettings[key as keyof AppSettings] = newSettings[key as keyof AppSettings];
+        }
+      });
+      
+      // Update local state with the updated settings
       setSettings(updatedSettings);
       
       // Apply theme immediately if it changed
-      if (newSettings.theme && newSettings.theme !== settings.theme) {
-        applyTheme(newSettings.theme);
+      if (newSettings.theme?.mode && newSettings.theme.mode !== settings.theme.mode) {
+        applyTheme(newSettings.theme.mode);
       }
       
-      // Save to API
-      await axios.put(`${API_URL}/api/settings`, updatedSettings);
+      // Send update to backend - only send the changed parts
+      await axios.patch(`${API_URL}/api/settings`, newSettings);
+      
+      return updatedSettings;
     } catch (err) {
       console.error('Error updating settings:', err);
       throw new Error('Failed to update settings');

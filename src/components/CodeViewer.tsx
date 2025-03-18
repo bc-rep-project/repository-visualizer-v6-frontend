@@ -108,14 +108,14 @@ export default function CodeViewer({ code, language, fileName }: CodeViewerProps
       <div className="overflow-auto max-h-[600px]">
         <SyntaxHighlighter
           language={getLanguage()}
-          style={settings?.theme === 'dark' ? vscDarkPlus : vs}
+          style={settings?.theme?.mode === 'dark' ? vscDarkPlus : vs}
           showLineNumbers={lineNumbers}
           wrapLines={wrapLines}
           customStyle={{
             margin: 0,
             padding: '1rem',
             fontSize: '0.875rem',
-            backgroundColor: settings?.theme === 'dark' ? '#1e1e1e' : '#ffffff',
+            backgroundColor: settings?.theme?.mode === 'dark' ? '#1e1e1e' : '#ffffff',
           }}
         >
           {code}

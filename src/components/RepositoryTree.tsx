@@ -127,16 +127,16 @@ export const RepositoryTree: React.FC<RepositoryTreeProps> = ({
       .attr('transform', d => d.x >= Math.PI ? 'rotate(180)' : null)
       .text(d => d.data.name)
       .style('font-size', '10px')
-      .style('fill', settings?.theme === 'dark' ? '#fff' : '#333')
+      .style('fill', settings?.theme?.mode === 'dark' ? '#fff' : '#333')
       .clone(true).lower()
-      .attr('stroke', settings?.theme === 'dark' ? '#1a202c' : 'white')
+      .attr('stroke', settings?.theme?.mode === 'dark' ? '#1a202c' : 'white')
       .attr('stroke-width', 3);
 
     // Add tooltips
     node.append('title')
       .text(d => `${d.data.name}\nType: ${d.data.type}${d.data.language ? `\nLanguage: ${d.data.language}` : ''}`);
 
-  }, [data, width, height, settings?.theme]);
+  }, [data, width, height, settings?.theme?.mode]);
 
   return (
     <div 
