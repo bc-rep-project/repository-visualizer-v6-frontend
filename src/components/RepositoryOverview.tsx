@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { FileNode } from '@/types/types';
+import RepositoryLanguages from './RepositoryLanguages';
 
 interface RepositoryOverviewProps {
   data: FileNode;
@@ -72,6 +73,11 @@ const RepositoryOverview: React.FC<RepositoryOverviewProps> = ({ data }) => {
           <div className="text-2xl font-bold text-purple-600 dark:text-purple-300">{formatSize(stats.totalSize)}</div>
           <div className="text-sm text-purple-600 dark:text-purple-300">Total Size</div>
         </div>
+      </div>
+
+      {/* Add the RepositoryLanguages component for debugging */}
+      <div className="mt-6 p-4 bg-white dark:bg-gray-800 shadow rounded-lg">
+        <RepositoryLanguages />
       </div>
     </div>
   );
