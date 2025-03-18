@@ -5,10 +5,30 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'edge';
 
 import React, { useState, useEffect } from 'react';
-import { AlertCircle } from 'lucide-react';
+// Remove lucide-react import and create a simple AlertCircle component
 import axios from 'axios';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/common/Button';
+
+// Simple alert circle icon component
+const AlertCircle = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <circle cx="12" cy="12" r="10" />
+    <line x1="12" y1="8" x2="12" y2="12" />
+    <line x1="12" y1="16" x2="12.01" y2="16" />
+  </svg>
+);
 
 interface Settings {
   theme: {
