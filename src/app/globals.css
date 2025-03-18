@@ -2,9 +2,37 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Add CSS variables at the :root level for theme settings */
 :root {
   --foreground-rgb: 0, 0, 0;
   --background-rgb: 255, 255, 255;
+  --base-font-size: 1rem;
+  --accent-color: #4a90e2;
+  --animation-duration: 0.3s;
+  
+  /* Other app variables can be added here */
+}
+
+html {
+  font-size: var(--base-font-size);
+}
+
+/* Transitions for theme elements should respect animation settings */
+* {
+  transition-duration: var(--animation-duration);
+}
+
+/* Accent color application */
+.accent-color {
+  color: var(--accent-color);
+}
+
+.accent-bg {
+  background-color: var(--accent-color);
+}
+
+.accent-border {
+  border-color: var(--accent-color);
 }
 
 body {
@@ -119,4 +147,43 @@ body {
 
 .zoom-button:hover {
   background-color: #f7fafc;
+}
+
+/* Toggle Switch Styles */
+.toggle-checkbox {
+  right: 0;
+  z-index: 5;
+  opacity: 0;
+}
+
+.toggle-label {
+  transition: background-color 0.2s ease;
+}
+
+.toggle-checkbox:checked + .toggle-label {
+  background-color: var(--accent-color, #4a90e2);
+}
+
+.toggle-checkbox:checked + .toggle-label:before {
+  right: 0;
+}
+
+.toggle-checkbox:focus + .toggle-label {
+  box-shadow: 0 0 0 2px rgba(var(--accent-color, 74, 144, 226), 0.2);
+}
+
+.toggle-checkbox + .toggle-label:before {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background-color: white;
+  top: 3px;
+  left: 3px;
+  transition: transform 0.3s ease;
+}
+
+.toggle-checkbox:checked + .toggle-label:before {
+  transform: translateX(18px);
 } 

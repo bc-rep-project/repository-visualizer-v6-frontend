@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
+'use client';
+
+import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
+import { useSettings } from '@/contexts/SettingsContext';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -8,6 +11,47 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { settings, loading } = useSettings();
+
+  // Apply global settings whenever they change
+  useEffect(() => {
+    if (!settings || loading) return;
+
+    // Apply various settings to the app
+    const applyGlobalSettings = () => {
+      // Apply theme settings
+      if (settings.theme.mode === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else if (settings.theme.mode === 'light') {
+        document.documentElement.classList.remove('dark');
+      }
+
+      // Apply font size
+      if (settings.theme.fontSize) {
+        const fontSize = settings.theme.fontSize;
+        document.documentElement.style.setProperty('--base-font-size', 
+          fontSize === 'small' ? '0.875rem' : 
+          fontSize === 'large' ? '1.125rem' : 
+          '1rem'); // medium or default
+      }
+      
+      // Apply accent color if available
+      if (settings.theme.accentColor) {
+        document.documentElement.style.setProperty('--accent-color', settings.theme.accentColor);
+      }
+      
+      // Apply animation settings
+      if (settings.visualization?.enableAnimations !== undefined) {
+        if (!settings.visualization.enableAnimations) {
+          document.documentElement.style.setProperty('--animation-duration', '0s');
+        } else {
+          document.documentElement.style.setProperty('--animation-duration', '0.3s');
+        }
+      }
+    };
+    
+    applyGlobalSettings();
+  }, [settings, loading]);
 
   return (
     <div className="min-h-screen bg-background">

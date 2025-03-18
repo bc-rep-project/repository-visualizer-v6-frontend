@@ -24,7 +24,7 @@ export default function Navbar() {
       }
     };
     
-    if (settings?.notifications_enabled) {
+    if (settings?.notifications?.notifyOnUpdates) {
       fetchNotifications();
       
       // Set up polling for notifications
@@ -32,7 +32,7 @@ export default function Navbar() {
       
       return () => clearInterval(interval);
     }
-  }, [settings?.notifications_enabled]);
+  }, [settings?.notifications?.notifyOnUpdates]);
   
   const isActive = (path: string) => {
     return pathname === path || pathname?.startsWith(path + '/');

@@ -1,489 +1,529 @@
 'use client';
 
+// Mark page as client-side only to avoid static generation
+export const dynamic = 'force-dynamic';
+export const runtime = 'edge';
+
 import React, { useState, useEffect } from 'react';
-import { FiSettings, FiMonitor, FiEye, FiBell, FiServer } from 'react-icons/fi';
-import LoadingSpinner from '@/components/LoadingSpinner';
+import { AlertCircle } from 'lucide-react';
+import axios from 'axios';
+import Layout from '@/components/layout/Layout';
+import { Button } from '@/components/common/Button';
 
 interface Settings {
-  theme: 'light' | 'dark' | 'system';
-  visualization_defaults: {
-    graph_type: string;
-    enable_animations: boolean;
+  theme: {
+    mode: string;
+  };
+  visualization: {
+    defaultView: string;
+    showLabels: boolean;
+    labelFontSize: number;
   };
   notifications: {
-    enabled: boolean;
-    frequency: 'real-time' | 'hourly' | 'daily' | 'weekly';
+    enableSound: boolean;
+    showDesktopNotifications: boolean;
+    notificationTypes: string[];
   };
   system: {
-    auto_refresh: boolean;
-    refresh_interval_seconds: number;
+    autoUpdate: boolean;
+    language: string;
   };
 }
 
-export default function SettingsPage() {
-  const [settings, setSettings] = useState<Settings>({
-    theme: 'system',
-    visualization_defaults: {
-      graph_type: 'Bar Chart',
-      enable_animations: true,
-    },
-    notifications: {
-      enabled: true,
-      frequency: 'real-time',
-    },
-    system: {
-      auto_refresh: true,
-      refresh_interval_seconds: 60,
-    },
-  });
-  
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-  const [activeSection, setActiveSection] = useState('theme');
+// Define partial types for updates
+type PartialSettings = Partial<Settings>;
+type VisualizationUpdate = Partial<Settings['visualization']>;
+type NotificationsUpdate = Partial<Settings['notifications']>;
+type SystemUpdate = Partial<Settings['system']>;
 
+export default function SettingsPage() {
+  const [settings, setSettings] = useState<Settings | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState('theme');
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Fetch settings on component mount
   useEffect(() => {
     fetchSettings();
   }, []);
 
   const fetchSettings = async () => {
+    setLoading(true);
+    setError(null);
     try {
-      setLoading(true);
-      const response = await fetch('http://localhost:8000/api/settings');
-      if (!response.ok) {
-        throw new Error('Failed to fetch settings');
-      }
-      const data = await response.json();
-      setSettings(data);
-      setError(null);
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/settings`);
+      setSettings(response.data);
     } catch (err) {
+      console.error('Error fetching settings:', err);
       setError('Error loading settings. Please try again.');
-      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  const saveSettings = async () => {
+  const updateSettings = async (updatedSettings: Partial<Settings>) => {
+    setSaving(true);
+    setError(null);
+    setSuccessMessage(null);
     try {
-      setSaving(true);
-      const response = await fetch('http://localhost:8000/api/settings', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(settings),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to save settings');
-      }
-      
-      setSuccess('Settings saved successfully!');
-      setError(null);
+      const response = await axios.patch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/settings`,
+        updatedSettings
+      );
+      setSettings(response.data);
+      setSuccessMessage('Settings saved successfully!');
       
       // Clear success message after 3 seconds
       setTimeout(() => {
-        setSuccess(null);
+        setSuccessMessage(null);
       }, 3000);
     } catch (err) {
-      setError('Error saving settings. Please try again.');
-      console.error(err);
+      console.error('Error updating settings:', err);
+      setError('Failed to save settings. Please try again.');
     } finally {
       setSaving(false);
     }
   };
 
-  const resetToDefaults = () => {
-    setSettings({
-      theme: 'system',
-      visualization_defaults: {
-        graph_type: 'Bar Chart',
-        enable_animations: true,
-      },
-      notifications: {
-        enabled: true,
-        frequency: 'real-time',
-      },
-      system: {
-        auto_refresh: true,
-        refresh_interval_seconds: 60,
-      },
-    });
-    setSuccess('Settings reset to defaults!');
+  const resetSettings = async (category?: string) => {
+    setSaving(true);
+    setError(null);
+    setSuccessMessage(null);
+    try {
+      const url = category 
+        ? `${process.env.NEXT_PUBLIC_API_URL}/api/settings/reset?category=${category}`
+        : `${process.env.NEXT_PUBLIC_API_URL}/api/settings/reset`;
+      
+      const response = await axios.post(url);
+      setSettings(response.data);
+      setSuccessMessage(category 
+        ? `${category.charAt(0).toUpperCase() + category.slice(1)} settings reset to defaults!`
+        : 'All settings reset to defaults!');
     
-    // Clear success message after 3 seconds
-    setTimeout(() => {
-      setSuccess(null);
-    }, 3000);
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+          setSuccessMessage(null);
+      }, 3000);
+    } catch (err) {
+      console.error('Error resetting settings:', err);
+      setError('Failed to reset settings. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleThemeChange = (theme: 'light' | 'dark' | 'system') => {
-    setSettings({
+  const handleThemeChange = (mode: string) => {
+    if (!settings) return;
+    
+    // Update the local state
+    const updatedSettings = {
       ...settings,
-      theme,
+      theme: {
+        ...settings.theme,
+        mode
+      }
+    };
+    
+    setSettings(updatedSettings);
+    
+    // Send only the updated theme object to the backend
+    updateSettings({ 
+      theme: { 
+        mode 
+      } 
     });
   };
 
   const handleVisualizationChange = (key: string, value: any) => {
-    setSettings({
+    if (!settings) return;
+    
+    // Update local state
+    const updatedSettings = {
       ...settings,
-      visualization_defaults: {
-        ...settings.visualization_defaults,
-        [key]: value,
-      },
+      visualization: {
+        ...settings.visualization,
+        [key]: value
+      }
+    };
+    
+    setSettings(updatedSettings);
+    
+    // Send only the updated visualization object to the backend
+    const visualizationUpdate = {
+      [key]: value
+    };
+    
+    updateSettings({ 
+      visualization: visualizationUpdate as any
     });
   };
 
   const handleNotificationChange = (key: string, value: any) => {
-    setSettings({
+    if (!settings) return;
+    
+    // Update local state
+    const updatedSettings = {
       ...settings,
       notifications: {
         ...settings.notifications,
-        [key]: value,
-      },
+        [key]: value
+      }
+    };
+    
+    setSettings(updatedSettings);
+    
+    // Send only the updated notifications object to the backend
+    const notificationsUpdate = {
+      [key]: value
+    };
+    
+    updateSettings({ 
+      notifications: notificationsUpdate as any
     });
   };
 
   const handleSystemChange = (key: string, value: any) => {
-    setSettings({
+    if (!settings) return;
+    
+    // Update local state
+    const updatedSettings = {
       ...settings,
       system: {
         ...settings.system,
-        [key]: value,
-      },
+        [key]: value
+      }
+    };
+    
+    setSettings(updatedSettings);
+    
+    // Send only the updated system object to the backend
+    const systemUpdate = {
+      [key]: value
+    };
+    
+    updateSettings({ 
+      system: systemUpdate as any
     });
   };
 
   if (loading) {
-    return <LoadingSpinner size="large" message="Loading settings..." />;
+    return (
+      <Layout>
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        </div>
+      </Layout>
+    );
   }
 
-    return (
-    <div className="container mx-auto px-4 py-6">
-      <div className="flex items-center mb-6">
-        <FiSettings className="text-2xl mr-2 text-gray-700 dark:text-gray-300" />
-        <h1 className="text-2xl font-bold dark:text-white">Settings</h1>
-      </div>
+  return (
+    <Layout>
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-6 dark:text-white">Settings</h1>
 
-      {error && (
-        <div className="bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-400 px-4 py-3 rounded mb-6">
-          <p>{error}</p>
-        </div>
-      )}
-      
-      {success && (
-        <div className="bg-green-100 dark:bg-green-900/30 border border-green-400 dark:border-green-700 text-green-700 dark:text-green-400 px-4 py-3 rounded mb-6">
-          <p>{success}</p>
-        </div>
-      )}
-      
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {/* Sidebar */}
-        <div className="md:col-span-1">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
-            <nav className="space-y-1">
-              <button
-                className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md ${
-                  activeSection === 'theme'
-                    ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400'
-                    : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50'
-                }`}
-                onClick={() => setActiveSection('theme')}
-              >
-                <FiMonitor className="mr-3 text-lg" />
-              Theme
-              </button>
-              <button
-                className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md ${
-                  activeSection === 'visualization'
-                    ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400'
-                    : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50'
-                }`}
-                onClick={() => setActiveSection('visualization')}
-              >
-                <FiEye className="mr-3 text-lg" />
-                Visualization
-              </button>
-              <button
-                className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md ${
-                  activeSection === 'notifications'
-                    ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400'
-                    : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50'
-                }`}
-                onClick={() => setActiveSection('notifications')}
-              >
-                <FiBell className="mr-3 text-lg" />
-                Notifications
-              </button>
-              <button
-                className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md ${
-                  activeSection === 'system'
-                    ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400'
-                    : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700/50'
-                }`}
-                onClick={() => setActiveSection('system')}
-              >
-                <FiServer className="mr-3 text-lg" />
-                System
-              </button>
-            </nav>
-          </div>
-        </div>
-
-        {/* Main Content */}
-        <div className="md:col-span-3">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-            {/* Theme Preferences */}
-            {activeSection === 'theme' && (
-              <div>
-                <h2 className="text-xl font-semibold mb-6 dark:text-white">Theme Preferences</h2>
-                
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Theme Mode
-                  </label>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                    Choose between light and dark mode
-                  </p>
-                  <div className="flex space-x-2">
-                    <button
-                      className={`px-4 py-2 rounded-md ${
-                        settings.theme === 'light'
-                          ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-white'
-                          : 'bg-white text-gray-800 border border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700'
-                      }`}
-                      onClick={() => handleThemeChange('light')}
-                    >
-                      Light
-                    </button>
-                    <button
-                      className={`px-4 py-2 rounded-md ${
-                        settings.theme === 'dark'
-                          ? 'bg-gray-800 text-white'
-                          : 'bg-white text-gray-800 border border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700'
-                      }`}
-                      onClick={() => handleThemeChange('dark')}
-                    >
-                      Dark
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Visualization Defaults */}
-            {activeSection === 'visualization' && (
-              <div>
-                <h2 className="text-xl font-semibold mb-6 dark:text-white">Visualization Defaults</h2>
-                
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Default Graph Type
-            </label>
-            <select
-                    value={settings.visualization_defaults.graph_type}
-                    onChange={(e) => handleVisualizationChange('graph_type', e.target.value)}
-                    className="w-full p-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
-                  >
-                    <option>Bar Chart</option>
-                    <option>Line Chart</option>
-                    <option>Pie Chart</option>
-                    <option>Force Graph</option>
-                    <option>Tree View</option>
-            </select>
-          </div>
-          
-                <div className="mb-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Enable Animations
-                      </label>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Show animations in visualizations
-                      </p>
-                    </div>
-                    <div className="relative inline-block w-12 mr-2 align-middle select-none">
-              <input
-                type="checkbox"
-                        id="toggle-animations"
-                        checked={settings.visualization_defaults.enable_animations}
-                        onChange={(e) => handleVisualizationChange('enable_animations', e.target.checked)}
-                        className="sr-only"
-                      />
-                      <label
-                        htmlFor="toggle-animations"
-                        className={`block overflow-hidden h-6 rounded-full cursor-pointer ${
-                          settings.visualization_defaults.enable_animations
-                            ? 'bg-blue-500'
-                            : 'bg-gray-300 dark:bg-gray-700'
-                        }`}
-                      >
-                        <span
-                          className={`block h-6 w-6 rounded-full bg-white transform transition-transform ${
-                            settings.visualization_defaults.enable_animations ? 'translate-x-6' : 'translate-x-0'
-                          }`}
-                        ></span>
-            </label>
-          </div>
-        </div>
-                </div>
-              </div>
-            )}
-
-            {/* Notification Settings */}
-            {activeSection === 'notifications' && (
-              <div>
-                <h2 className="text-xl font-semibold mb-6 dark:text-white">Notification Settings</h2>
-        
-        <div className="mb-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Enable Notifications
-            </label>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Receive updates and alerts
-                      </p>
-          </div>
-                    <div className="relative inline-block w-12 mr-2 align-middle select-none">
-              <input
-                type="checkbox"
-                        id="toggle-notifications"
-                        checked={settings.notifications.enabled}
-                        onChange={(e) => handleNotificationChange('enabled', e.target.checked)}
-                        className="sr-only"
-                      />
-                      <label
-                        htmlFor="toggle-notifications"
-                        className={`block overflow-hidden h-6 rounded-full cursor-pointer ${
-                          settings.notifications.enabled
-                            ? 'bg-blue-500'
-                            : 'bg-gray-300 dark:bg-gray-700'
-                        }`}
-                      >
-                        <span
-                          className={`block h-6 w-6 rounded-full bg-white transform transition-transform ${
-                            settings.notifications.enabled ? 'translate-x-6' : 'translate-x-0'
-                          }`}
-                        ></span>
-            </label>
-          </div>
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-800 rounded-md p-4 mb-6 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800">
+            <div className="flex items-center">
+              <AlertCircle className="h-4 w-4 mr-2" />
+              <p>{error}</p>
             </div>
-        </div>
+          </div>
+        )}
         
-        <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Notification Frequency
-                  </label>
-                  <select
-                    value={settings.notifications.frequency}
-                    onChange={(e) => handleNotificationChange('frequency', e.target.value)}
-                    disabled={!settings.notifications.enabled}
-                    className={`w-full p-2 border border-gray-300 dark:border-gray-700 rounded-md ${
-                      settings.notifications.enabled
-                        ? 'bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100'
-                        : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-500 cursor-not-allowed'
+        {successMessage && (
+          <div className="bg-green-50 border border-green-200 text-green-800 rounded-md p-4 mb-6 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800">
+            <p>{successMessage}</p>
+          </div>
+        )}
+        
+        {settings && (
+          <div className="space-y-6">
+            {/* Tabs navigation */}
+            <div className="border-b border-gray-200 dark:border-gray-700">
+              <nav className="flex space-x-8" aria-label="Tabs">
+                {['theme', 'visualization', 'notifications', 'system'].map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm capitalize ${
+                      activeTab === tab
+                        ? 'border-blue-500 text-blue-600 dark:text-blue-400 dark:border-blue-400'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
                     }`}
                   >
-                    <option value="real-time">Real-time</option>
-                    <option value="hourly">Hourly</option>
-                    <option value="daily">Daily</option>
-                    <option value="weekly">Weekly</option>
-                  </select>
+                    {tab}
+                  </button>
+                ))}
+              </nav>
+            </div>
+            
+            {/* Theme settings */}
+            {activeTab === 'theme' && (
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <div className="mb-4">
+                  <h2 className="text-lg font-medium text-gray-900 dark:text-white">Theme Preferences</h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Customize the appearance of the application.
+                  </p>
                 </div>
-              </div>
-            )}
-
-            {/* System Settings */}
-            {activeSection === 'system' && (
-              <div>
-                <h2 className="text-xl font-semibold mb-6 dark:text-white">System Settings</h2>
-                
-                <div className="mb-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Auto-refresh
-                      </label>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Automatically refresh data
-                      </p>
-                    </div>
-                    <div className="relative inline-block w-12 mr-2 align-middle select-none">
-              <input
-                type="checkbox"
-                        id="toggle-auto-refresh"
-                        checked={settings.system.auto_refresh}
-                        onChange={(e) => handleSystemChange('auto_refresh', e.target.checked)}
-                        className="sr-only"
-                      />
-                      <label
-                        htmlFor="toggle-auto-refresh"
-                        className={`block overflow-hidden h-6 rounded-full cursor-pointer ${
-                          settings.system.auto_refresh
-                            ? 'bg-blue-500'
-                            : 'bg-gray-300 dark:bg-gray-700'
-                        }`}
-                      >
-                        <span
-                          className={`block h-6 w-6 rounded-full bg-white transform transition-transform ${
-                            settings.system.auto_refresh ? 'translate-x-6' : 'translate-x-0'
-                          }`}
-                        ></span>
-            </label>
-          </div>
-        </div>
-        
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Auto-refresh Interval
-                  </label>
-                  <input
-                    type="range"
-                    min="0"
-                    max="900"
-                    step="30"
-                    value={settings.system.refresh_interval_seconds}
-                    onChange={(e) => handleSystemChange('refresh_interval_seconds', parseInt(e.target.value))}
-                    disabled={!settings.system.auto_refresh}
-                    className={`w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 ${
-                      !settings.system.auto_refresh && 'opacity-50 cursor-not-allowed'
-                    }`}
-                  />
-                  <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    <span>Off</span>
-                    <span>30s</span>
-                    <span>1m</span>
-                    <span>5m</span>
-                    <span>15m</span>
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <label htmlFor="theme-mode" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Theme Mode
+                    </label>
+                    <select
+                      id="theme-mode"
+                      value={settings.theme.mode}
+                      onChange={(e) => handleThemeChange(e.target.value)}
+                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    >
+                      <option value="light">Light</option>
+                      <option value="dark">Dark</option>
+                    </select>
                   </div>
                 </div>
+                <div className="mt-6 flex justify-between">
+                  <Button 
+                    onClick={() => resetSettings('theme')}
+                    disabled={saving}
+                  >
+                    Reset to Defaults
+                  </Button>
+                </div>
               </div>
             )}
-
-            {/* Action Buttons */}
-            <div className="flex justify-between mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
-              <button
-                onClick={resetToDefaults}
-                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-500 dark:hover:text-gray-400"
-              >
-                Reset to Defaults
-              </button>
-          <button
-                onClick={saveSettings}
-            disabled={saving}
-                className={`px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md ${
-                  saving && 'opacity-75 cursor-not-allowed'
-                }`}
-          >
-                {saving ? 'Saving...' : 'Save Changes'}
-          </button>
-        </div>
+            
+            {/* Visualization settings */}
+            {activeTab === 'visualization' && (
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <div className="mb-4">
+                  <h2 className="text-lg font-medium text-gray-900 dark:text-white">Visualization Settings</h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Configure how repository visualizations are displayed.
+                  </p>
+                </div>
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <label htmlFor="default-view" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Default View
+                    </label>
+                    <select
+                      id="default-view"
+                      value={settings.visualization.defaultView}
+                      onChange={(e) => handleVisualizationChange('defaultView', e.target.value)}
+                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    >
+                      <option value="forceGraph">Force Graph</option>
+                      <option value="tree">Tree</option>
+                      <option value="sunburst">Sunburst</option>
+                    </select>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <label htmlFor="show-labels" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Show Labels
+                    </label>
+                    <div className="relative inline-block w-10 mr-2 align-middle select-none">
+                      <input
+                        type="checkbox"
+                        id="show-labels"
+                        checked={settings.visualization.showLabels}
+                        onChange={(e) => handleVisualizationChange('showLabels', e.target.checked)}
+                        className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
+                      />
+                      <label
+                        htmlFor="show-labels"
+                        className="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"
+                      ></label>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <label htmlFor="label-font-size" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Label Font Size: {settings.visualization.labelFontSize}px
+                      </label>
+                    </div>
+                    <input
+                      type="range"
+                      id="label-font-size"
+                      min={8}
+                      max={24}
+                      step={1}
+                      value={settings.visualization.labelFontSize}
+                      onChange={(e) => handleVisualizationChange('labelFontSize', parseInt(e.target.value))}
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+                    />
+                  </div>
+                </div>
+                <div className="mt-6 flex justify-between">
+                  <Button 
+                    onClick={() => resetSettings('visualization')}
+                    disabled={saving}
+                  >
+                    Reset to Defaults
+                  </Button>
+                </div>
+              </div>
+            )}
+            
+            {/* Notifications settings */}
+            {activeTab === 'notifications' && (
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <div className="mb-4">
+                  <h2 className="text-lg font-medium text-gray-900 dark:text-white">Notification Settings</h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Configure how you receive notifications.
+                  </p>
+                </div>
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <label htmlFor="enable-sound" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Enable Sound
+                    </label>
+                    <div className="relative inline-block w-10 mr-2 align-middle select-none">
+                      <input
+                        type="checkbox"
+                        id="enable-sound"
+                        checked={settings.notifications.enableSound}
+                        onChange={(e) => handleNotificationChange('enableSound', e.target.checked)}
+                        className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
+                      />
+                      <label
+                        htmlFor="enable-sound"
+                        className="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"
+                      ></label>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <label htmlFor="desktop-notifications" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Show Desktop Notifications
+                    </label>
+                    <div className="relative inline-block w-10 mr-2 align-middle select-none">
+                      <input
+                        type="checkbox"
+                        id="desktop-notifications"
+                        checked={settings.notifications.showDesktopNotifications}
+                        onChange={(e) => handleNotificationChange('showDesktopNotifications', e.target.checked)}
+                        className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
+                      />
+                      <label
+                        htmlFor="desktop-notifications"
+                        className="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"
+                      ></label>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Notification Types
+                    </label>
+                    <div className="grid grid-cols-2 gap-4">
+                      {['error', 'warning', 'info', 'success'].map((type) => (
+                        <div key={type} className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id={`notification-type-${type}`}
+                            checked={settings.notifications.notificationTypes.includes(type)}
+                            onChange={(e) => {
+                              const types = e.target.checked
+                                ? [...settings.notifications.notificationTypes, type]
+                                : settings.notifications.notificationTypes.filter(t => t !== type);
+                              handleNotificationChange('notificationTypes', types);
+                            }}
+                            className="rounded border-gray-300 text-primary focus:ring-primary"
+                          />
+                          <label htmlFor={`notification-type-${type}`} className="text-sm font-medium text-gray-700 dark:text-gray-300 capitalize">
+                            {type}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-6 flex justify-between">
+                  <Button 
+                    onClick={() => resetSettings('notifications')}
+                    disabled={saving}
+                  >
+                    Reset to Defaults
+                  </Button>
+                </div>
+              </div>
+            )}
+            
+            {/* System settings */}
+            {activeTab === 'system' && (
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <div className="mb-4">
+                  <h2 className="text-lg font-medium text-gray-900 dark:text-white">System Settings</h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Configure system-level settings.
+                  </p>
+                </div>
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <label htmlFor="auto-update" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Auto Update
+                    </label>
+                    <div className="relative inline-block w-10 mr-2 align-middle select-none">
+                      <input
+                        type="checkbox"
+                        id="auto-update"
+                        checked={settings.system.autoUpdate}
+                        onChange={(e) => handleSystemChange('autoUpdate', e.target.checked)}
+                        className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
+                      />
+                      <label
+                        htmlFor="auto-update"
+                        className="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"
+                      ></label>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label htmlFor="language" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Language
+                    </label>
+                    <select
+                      id="language"
+                      value={settings.system.language}
+                      onChange={(e) => handleSystemChange('language', e.target.value)}
+                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    >
+                      <option value="en">English</option>
+                      <option value="fr">French</option>
+                      <option value="es">Spanish</option>
+                      <option value="de">German</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="mt-6 flex justify-between">
+                  <Button 
+                    onClick={() => resetSettings('system')}
+                    disabled={saving}
+                  >
+                    Reset to Defaults
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
+        )}
+        
+        <div className="mt-8 flex justify-end">
+          <Button 
+            onClick={() => resetSettings()} 
+            className="mr-4"
+            disabled={saving}
+          >
+            Reset All Settings
+          </Button>
         </div>
       </div>
-    </div>
+    </Layout>
   );
 } 
