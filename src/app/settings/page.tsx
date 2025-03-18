@@ -102,10 +102,10 @@ export default function SettingsPage() {
         ? `${category.charAt(0).toUpperCase() + category.slice(1)} settings reset to defaults!`
         : 'All settings reset to defaults!');
     
-      // Clear success message after 3 seconds
-      setTimeout(() => {
-          setSuccessMessage(null);
-      }, 3000);
+    // Clear success message after 3 seconds
+    setTimeout(() => {
+        setSuccessMessage(null);
+    }, 3000);
     } catch (err) {
       console.error('Error resetting settings:', err);
       setError('Failed to reset settings. Please try again.');
@@ -218,12 +218,12 @@ export default function SettingsPage() {
     );
   }
 
-  return (
+    return (
     <Layout>
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-6 dark:text-white">Settings</h1>
 
-        {error && (
+      {error && (
           <div className="bg-red-50 border border-red-200 text-red-800 rounded-md p-4 mb-6 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800">
             <div className="flex items-center">
               <AlertCircle className="h-4 w-4 mr-2" />
@@ -275,7 +275,7 @@ export default function SettingsPage() {
                     </label>
                     <select
                       id="theme-mode"
-                      value={settings.theme.mode}
+                      value={settings.theme.mode} 
                       onChange={(e) => handleThemeChange(e.target.value)}
                       className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     >
@@ -311,7 +311,7 @@ export default function SettingsPage() {
                     </label>
                     <select
                       id="default-view"
-                      value={settings.visualization.defaultView}
+                      value={settings.visualization.defaultView} 
                       onChange={(e) => handleVisualizationChange('defaultView', e.target.value)}
                       className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     >
@@ -319,8 +319,8 @@ export default function SettingsPage() {
                       <option value="tree">Tree</option>
                       <option value="sunburst">Sunburst</option>
                     </select>
-                  </div>
-                  
+          </div>
+          
                   <div className="flex items-center justify-between">
                     <label htmlFor="show-labels" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                       Show Labels
@@ -328,11 +328,11 @@ export default function SettingsPage() {
                     <div className="relative inline-block w-10 mr-2 align-middle select-none">
                       <input
                         type="checkbox"
-                        id="show-labels"
-                        checked={settings.visualization.showLabels}
+                      id="show-labels" 
+                      checked={settings.visualization.showLabels}
                         onChange={(e) => handleVisualizationChange('showLabels', e.target.checked)}
                         className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
-                      />
+                    />
                       <label
                         htmlFor="show-labels"
                         className="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"
@@ -386,17 +386,17 @@ export default function SettingsPage() {
                     <div className="relative inline-block w-10 mr-2 align-middle select-none">
                       <input
                         type="checkbox"
-                        id="enable-sound"
-                        checked={settings.notifications.enableSound}
+                      id="enable-sound" 
+                      checked={settings.notifications.enableSound}
                         onChange={(e) => handleNotificationChange('enableSound', e.target.checked)}
                         className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
-                      />
+                    />
                       <label
                         htmlFor="enable-sound"
                         className="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"
                       ></label>
                     </div>
-                  </div>
+              </div>
                   
                   <div className="flex items-center justify-between">
                     <label htmlFor="desktop-notifications" className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -405,17 +405,17 @@ export default function SettingsPage() {
                     <div className="relative inline-block w-10 mr-2 align-middle select-none">
                       <input
                         type="checkbox"
-                        id="desktop-notifications"
-                        checked={settings.notifications.showDesktopNotifications}
+                      id="desktop-notifications" 
+                      checked={settings.notifications.showDesktopNotifications}
                         onChange={(e) => handleNotificationChange('showDesktopNotifications', e.target.checked)}
                         className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
-                      />
+                    />
                       <label
                         htmlFor="desktop-notifications"
                         className="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"
                       ></label>
                     </div>
-                  </div>
+          </div>
                   
                   <div className="space-y-2">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -424,8 +424,8 @@ export default function SettingsPage() {
                     <div className="grid grid-cols-2 gap-4">
                       {['error', 'warning', 'info', 'success'].map((type) => (
                         <div key={type} className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
+              <input
+                type="checkbox"
                             id={`notification-type-${type}`}
                             checked={settings.notifications.notificationTypes.includes(type)}
                             onChange={(e) => {
@@ -439,10 +439,10 @@ export default function SettingsPage() {
                           <label htmlFor={`notification-type-${type}`} className="text-sm font-medium text-gray-700 dark:text-gray-300 capitalize">
                             {type}
                           </label>
-                        </div>
+          </div>
                       ))}
-                    </div>
-                  </div>
+            </div>
+        </div>
                 </div>
                 <div className="mt-6 flex justify-between">
                   <Button 
@@ -472,25 +472,25 @@ export default function SettingsPage() {
                     <div className="relative inline-block w-10 mr-2 align-middle select-none">
                       <input
                         type="checkbox"
-                        id="auto-update"
-                        checked={settings.system.autoUpdate}
+                      id="auto-update" 
+                      checked={settings.system.autoUpdate}
                         onChange={(e) => handleSystemChange('autoUpdate', e.target.checked)}
                         className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
-                      />
+                    />
                       <label
                         htmlFor="auto-update"
                         className="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"
                       ></label>
                     </div>
-                  </div>
-                  
+        </div>
+        
                   <div className="space-y-2">
                     <label htmlFor="language" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                       Language
                     </label>
                     <select
                       id="language"
-                      value={settings.system.language}
+                      value={settings.system.language} 
                       onChange={(e) => handleSystemChange('language', e.target.value)}
                       className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     >
