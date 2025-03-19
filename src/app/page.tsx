@@ -1,7 +1,7 @@
 'use client';
 
 import Navigation from '@/components/Navigation';
-import RepositoryList from '@/components/RepositoryList';
+import HomeRepositoryGrid from '@/components/HomeRepositoryGrid';
 
 export default function Home() {
   return (
@@ -11,7 +11,7 @@ export default function Home() {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold dark:text-white">Repository Manager</h1>
         </div>
-        <RepositoryList />
+        <HomeRepositoryGrid />
       </main>
     </>
   );
