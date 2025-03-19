@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FaGithub, FaHome, FaDatabase, FaChartBar, FaBell, FaCog, FaSearch } from 'react-icons/fa';
+import { FaGithub, FaHome, FaDatabase, FaChartBar, FaBell, FaSearch } from 'react-icons/fa';
 
 export default function Navigation() {
   const pathname = usePathname();
@@ -57,16 +57,6 @@ export default function Navigation() {
                 }`}
               >
                 <FaBell className="mr-1" /> Notifications
-              </Link>
-              <Link
-                href="/settings"
-                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                  pathname === '/settings'
-                    ? 'border-blue-500 text-gray-900 dark:text-white'
-                    : 'border-transparent text-gray-500 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
-                }`}
-              >
-                <FaCog className="mr-1" /> Settings
               </Link>
             </div>
           </div>

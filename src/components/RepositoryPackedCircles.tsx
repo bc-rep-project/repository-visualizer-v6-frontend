@@ -2,7 +2,6 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import * as d3 from 'd3';
-import { useSettings } from '@/contexts/SettingsContext';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
 // Define types for the data
@@ -44,7 +43,6 @@ export const RepositoryPackedCircles: React.FC<RepositoryPackedCirclesProps> = (
   height = 800,
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
-  const { settings } = useSettings();
   const [loading, setLoading] = useState(true);
   const [selectedNode, setSelectedNode] = useState<ExtendedHierarchyCircleNode | null>(null);
   const [hoveredNode, setHoveredNode] = useState<ExtendedHierarchyCircleNode | null>(null);

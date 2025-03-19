@@ -1,11 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 // @ts-ignore
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 // @ts-ignore
 import { vscDarkPlus, vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { useSettings } from '@/contexts/SettingsContext';
 import { FaDownload, FaCopy } from 'react-icons/fa';
 
 interface CodeViewerProps {
@@ -41,10 +40,15 @@ const languageMap: Record<string, string> = {
 };
 
 export default function CodeViewer({ code, language, fileName }: CodeViewerProps) {
-  const { settings } = useSettings();
   const [copied, setCopied] = useState(false);
   const [lineNumbers, setLineNumbers] = useState(true);
   const [wrapLines, setWrapLines] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  useEffect(() => {
+    // Check if dark mode is enabled
+    setIsDarkMode(document.documentElement.classList.contains('dark'));
+  }, []);
 
   // Determine language for syntax highlighting
   const getLanguage = () => {
@@ -108,14 +112,14 @@ export default function CodeViewer({ code, language, fileName }: CodeViewerProps
       <div className="overflow-auto max-h-[600px]">
         <SyntaxHighlighter
           language={getLanguage()}
-          style={settings?.theme === 'dark' ? vscDarkPlus : vs}
+          style={isDarkMode ? vscDarkPlus : vs}
           showLineNumbers={lineNumbers}
           wrapLines={wrapLines}
           customStyle={{
             margin: 0,
             padding: '1rem',
             fontSize: '0.875rem',
-            backgroundColor: settings?.theme === 'dark' ? '#1e1e1e' : '#ffffff',
+            backgroundColor: isDarkMode ? '#1e1e1e' : '#ffffff',
           }}
         >
           {code}

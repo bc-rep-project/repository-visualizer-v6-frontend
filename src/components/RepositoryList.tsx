@@ -7,7 +7,6 @@ import { BiAnalyse } from 'react-icons/bi';
 import { FiEye } from 'react-icons/fi';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useSettings } from '@/contexts/SettingsContext';
 import LoadingSpinner from './LoadingSpinner';
 import axios from 'axios';
 
@@ -54,7 +53,6 @@ export default function RepositoryList() {
   const [deleteInProgress, setDeleteInProgress] = useState<string | null>(null);
   
   const router = useRouter();
-  const { settings } = useSettings();
 
   // Size range options
   const sizeRanges = [

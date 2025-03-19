@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
-import { useSettings } from '@/contexts/SettingsContext';
 
 interface TreeNode {
   name: string;
@@ -24,7 +23,12 @@ export const RepositoryTree: React.FC<RepositoryTreeProps> = ({
   height = 800,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const { settings } = useSettings();
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  useEffect(() => {
+    // Check if dark mode is enabled
+    setIsDarkMode(document.documentElement.classList.contains('dark'));
+  }, []);
 
   useEffect(() => {
     if (!containerRef.current || !data) return;
@@ -127,16 +131,16 @@ export const RepositoryTree: React.FC<RepositoryTreeProps> = ({
       .attr('transform', d => d.x >= Math.PI ? 'rotate(180)' : null)
       .text(d => d.data.name)
       .style('font-size', '10px')
-      .style('fill', settings?.theme === 'dark' ? '#fff' : '#333')
+      .style('fill', isDarkMode ? '#fff' : '#333')
       .clone(true).lower()
-      .attr('stroke', settings?.theme === 'dark' ? '#1a202c' : 'white')
+      .attr('stroke', isDarkMode ? '#1a202c' : 'white')
       .attr('stroke-width', 3);
 
     // Add tooltips
     node.append('title')
       .text(d => `${d.data.name}\nType: ${d.data.type}${d.data.language ? `\nLanguage: ${d.data.language}` : ''}`);
 
-  }, [data, width, height, settings?.theme]);
+  }, [data, width, height, isDarkMode]);
 
   return (
     <div 
