@@ -5,11 +5,88 @@
 :root {
   --foreground-rgb: 0, 0, 0;
   --background-rgb: 255, 255, 255;
+  
+  /* Default theme colors for light mode */
+  --primary-color: 37, 99, 235;
+  --secondary-color: 59, 130, 246;
+  --accent-color: 96, 165, 250;
+  --hover-color: 30, 64, 175;
+}
+
+/* Default dark mode colors */
+.dark {
+  --foreground-rgb: 255, 255, 255;
+  --background-rgb: 17, 24, 39;
+  --primary-color: 59, 130, 246;
+  --secondary-color: 96, 165, 250;
+  --accent-color: 147, 197, 253;
+  --hover-color: 30, 64, 175;
+}
+
+/* Midnight theme */
+.theme-midnight.dark {
+  --background-rgb: 17, 17, 50;
+  --primary-color: 99, 102, 241;
+  --secondary-color: 129, 140, 248;
+  --accent-color: 165, 180, 252;
+  --hover-color: 67, 56, 202;
+}
+
+/* Ocean theme */
+.theme-ocean.dark {
+  --background-rgb: 12, 25, 41;
+  --primary-color: 14, 165, 233;
+  --secondary-color: 56, 189, 248;
+  --accent-color: 125, 211, 252;
+  --hover-color: 2, 132, 199;
+}
+
+/* Forest theme */
+.theme-forest.dark {
+  --background-rgb: 2, 44, 34;
+  --primary-color: 16, 185, 129;
+  --secondary-color: 52, 211, 153;
+  --accent-color: 110, 231, 183;
+  --hover-color: 4, 120, 87;
+}
+
+/* Ember theme */
+.theme-ember.dark {
+  --background-rgb: 76, 5, 25;
+  --primary-color: 244, 63, 94;
+  --secondary-color: 251, 113, 133;
+  --accent-color: 253, 164, 175;
+  --hover-color: 225, 29, 72;
 }
 
 body {
   color: rgb(var(--foreground-rgb));
   background: rgb(var(--background-rgb));
+}
+
+/* Utility classes for theme colors */
+.bg-theme-primary {
+  background-color: rgb(var(--primary-color));
+}
+
+.text-theme-primary {
+  color: rgb(var(--primary-color));
+}
+
+.border-theme-primary {
+  border-color: rgb(var(--primary-color));
+}
+
+.bg-theme-secondary {
+  background-color: rgb(var(--secondary-color));
+}
+
+.text-theme-secondary {
+  color: rgb(var(--secondary-color));
+}
+
+.hover\:bg-theme-hover:hover {
+  background-color: rgb(var(--hover-color));
 }
 
 /* Animations for repository visualization */

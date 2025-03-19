@@ -1,11 +1,15 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { FiSettings, FiMonitor, FiEye, FiBell, FiServer } from 'react-icons/fi';
+import { FiSettings, FiMonitor, FiEye, FiBell, FiServer, FiCheckCircle } from 'react-icons/fi';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import { ThemeColorOption } from '@/contexts/SettingsContext';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 interface Settings {
   theme: 'light' | 'dark' | 'system';
+  themeColor: ThemeColorOption;
   visualization_defaults: {
     graph_type: string;
     enable_animations: boolean;
@@ -20,9 +24,57 @@ interface Settings {
   };
 }
 
+// Theme color options with display name and sample colors
+interface ThemeColorConfig {
+  id: ThemeColorOption;
+  name: string;
+  primary: string;
+  secondary: string;
+  background: string;
+}
+
+const themeColorOptions: ThemeColorConfig[] = [
+  {
+    id: 'default',
+    name: 'Default Blue',
+    primary: '#3b82f6',
+    secondary: '#60a5fa',
+    background: '#111827'
+  },
+  {
+    id: 'midnight',
+    name: 'Midnight Purple',
+    primary: '#6366f1',
+    secondary: '#a5b4fc',
+    background: '#111132'
+  },
+  {
+    id: 'ocean',
+    name: 'Ocean Blue',
+    primary: '#0ea5e9',
+    secondary: '#7dd3fc',
+    background: '#0c1929'
+  },
+  {
+    id: 'forest',
+    name: 'Forest Green',
+    primary: '#10b981',
+    secondary: '#6ee7b7',
+    background: '#022c22'
+  },
+  {
+    id: 'ember',
+    name: 'Ember Red',
+    primary: '#f43f5e',
+    secondary: '#fda4af',
+    background: '#4c0519'
+  }
+];
+
 export default function SettingsPage() {
   const [settings, setSettings] = useState<Settings>({
     theme: 'system',
+    themeColor: 'default',
     visualization_defaults: {
       graph_type: 'Bar Chart',
       enable_animations: true,
@@ -50,13 +102,22 @@ export default function SettingsPage() {
   const fetchSettings = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:8000/api/settings');
+      const response = await fetch(`${API_URL}/api/settings`);
       if (!response.ok) {
         throw new Error('Failed to fetch settings');
       }
       const data = await response.json();
+      
+      // If the backend doesn't have themeColor yet, add the default
+      if (!data.themeColor) {
+        data.themeColor = 'default';
+      }
+      
       setSettings(data);
       setError(null);
+      
+      // Apply theme immediately
+      applyTheme(data.theme, data.themeColor);
     } catch (err) {
       setError('Error loading settings. Please try again.');
       console.error(err);
@@ -68,7 +129,7 @@ export default function SettingsPage() {
   const saveSettings = async () => {
     try {
       setSaving(true);
-      const response = await fetch('http://localhost:8000/api/settings', {
+      const response = await fetch(`${API_URL}/api/settings`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -98,6 +159,7 @@ export default function SettingsPage() {
   const resetToDefaults = () => {
     setSettings({
       theme: 'system',
+      themeColor: 'default',
       visualization_defaults: {
         graph_type: 'Bar Chart',
         enable_animations: true,
@@ -117,6 +179,9 @@ export default function SettingsPage() {
     setTimeout(() => {
       setSuccess(null);
     }, 3000);
+    
+    // Apply default theme
+    applyTheme('system', 'default');
   };
 
   const handleThemeChange = (theme: 'light' | 'dark' | 'system') => {
@@ -124,6 +189,49 @@ export default function SettingsPage() {
       ...settings,
       theme,
     });
+    
+    // Apply theme immediately
+    applyTheme(theme, settings.themeColor);
+  };
+  
+  const handleThemeColorChange = (themeColor: ThemeColorOption) => {
+    setSettings({
+      ...settings,
+      themeColor,
+    });
+    
+    // Apply theme color immediately
+    applyTheme(settings.theme, themeColor);
+  };
+
+  // Function to apply theme changes immediately in the UI
+  const applyTheme = (theme: string, themeColor: ThemeColorOption) => {
+    // Remove all theme color classes first
+    document.documentElement.classList.remove(
+      'theme-default',
+      'theme-midnight',
+      'theme-ocean',
+      'theme-forest',
+      'theme-ember'
+    );
+    
+    // Add the selected theme color class
+    document.documentElement.classList.add(`theme-${themeColor}`);
+    
+    // Apply dark/light theme
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else if (theme === 'light') {
+      document.documentElement.classList.remove('dark');
+    } else if (theme === 'system') {
+      // Check system preference
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (prefersDark) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    }
   };
 
   const handleVisualizationChange = (key: string, value: any) => {
@@ -160,7 +268,7 @@ export default function SettingsPage() {
     return <LoadingSpinner size="large" message="Loading settings..." />;
   }
 
-    return (
+  return (
     <div className="container mx-auto px-4 py-6">
       <div className="flex items-center mb-6">
         <FiSettings className="text-2xl mr-2 text-gray-700 dark:text-gray-300" />
@@ -240,7 +348,7 @@ export default function SettingsPage() {
               <div>
                 <h2 className="text-xl font-semibold mb-6 dark:text-white">Theme Preferences</h2>
                 
-                <div className="mb-6">
+                <div className="mb-8">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Theme Mode
                   </label>
@@ -268,8 +376,65 @@ export default function SettingsPage() {
                     >
                       Dark
                     </button>
+                    <button
+                      className={`px-4 py-2 rounded-md ${
+                        settings.theme === 'system'
+                          ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-white'
+                          : 'bg-white text-gray-800 border border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700'
+                      }`}
+                      onClick={() => handleThemeChange('system')}
+                    >
+                      System
+                    </button>
                   </div>
                 </div>
+                
+                {(settings.theme === 'dark' || (settings.theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) && (
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Dark Theme Variant
+                    </label>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                      Choose a color scheme for dark mode
+                    </p>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {themeColorOptions.map((option) => (
+                        <div 
+                          key={option.id}
+                          className={`
+                            p-4 rounded-lg cursor-pointer border-2 transition-all
+                            ${settings.themeColor === option.id 
+                              ? 'border-blue-500 dark:border-blue-400 shadow-md' 
+                              : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600'}
+                          `}
+                          onClick={() => handleThemeColorChange(option.id)}
+                          style={{
+                            background: option.background,
+                          }}
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <span className="font-medium text-white">{option.name}</span>
+                            {settings.themeColor === option.id && (
+                              <FiCheckCircle className="text-blue-400" />
+                            )}
+                          </div>
+                          
+                          <div className="flex space-x-2 mt-2">
+                            <div 
+                              className="w-8 h-8 rounded-full" 
+                              style={{ backgroundColor: option.primary }}
+                            ></div>
+                            <div 
+                              className="w-8 h-8 rounded-full" 
+                              style={{ backgroundColor: option.secondary }}
+                            ></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -471,16 +636,16 @@ export default function SettingsPage() {
               >
                 Reset to Defaults
               </button>
-          <button
+              <button
                 onClick={saveSettings}
-            disabled={saving}
-                className={`px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md ${
+                disabled={saving}
+                className={`px-4 py-2 bg-theme-primary hover:bg-theme-hover text-white font-medium rounded-md ${
                   saving && 'opacity-75 cursor-not-allowed'
                 }`}
-          >
+              >
                 {saving ? 'Saving...' : 'Save Changes'}
-          </button>
-        </div>
+              </button>
+            </div>
           </div>
         </div>
       </div>
