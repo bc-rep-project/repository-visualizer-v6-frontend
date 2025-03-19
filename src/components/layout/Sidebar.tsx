@@ -1,6 +1,8 @@
+'use client';
+
 import React from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/router';
+import { usePathname } from 'next/navigation';
 
 interface SidebarProps {
   onClose?: () => void;
@@ -40,7 +42,7 @@ const sidebarItems = [
 ];
 
 export default function Sidebar({ onClose }: SidebarProps) {
-  const router = useRouter();
+  const pathname = usePathname();
 
   return (
     <aside className="flex flex-col h-full bg-card border-r">
@@ -60,7 +62,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
       <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
         {sidebarItems.map((item) => {
           const Icon = item.icon;
-          const isActive = router.pathname === item.href;
+          const isActive = pathname === item.href;
 
           return (
             <Link
