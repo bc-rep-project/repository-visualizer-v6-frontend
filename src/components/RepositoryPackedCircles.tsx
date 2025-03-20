@@ -39,637 +39,300 @@ interface RepositoryPackedCirclesProps {
 
 export const RepositoryPackedCircles: React.FC<RepositoryPackedCirclesProps> = ({
   data,
-  width = 1000,
-  height = 800,
+  width = 900,
+  height = 600,
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
-  const defaultSettings = {
-    enable_animations: true
-  };
+  const containerRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedNode, setSelectedNode] = useState<ExtendedHierarchyCircleNode | null>(null);
-  const [hoveredNode, setHoveredNode] = useState<ExtendedHierarchyCircleNode | null>(null);
-  const [zoomedNode, setZoomedNode] = useState<ExtendedHierarchyCircleNode | null>(null);
-  const [dependencies, setDependencies] = useState<{source: string, target: string, type: string}[]>([]);
-  const [zoomLevel, setZoomLevel] = useState(1);
-  const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [dimensions, setDimensions] = useState({ width, height });
+  const [isMobile, setIsMobile] = useState(false);
+  const [selectedNode, setSelectedNode] = useState<any>(null);
 
-  // Color scale for file types
-  const fileTypeColorScale = d3.scaleOrdinal<string>()
-    .domain(['.js', '.jsx', '.ts', '.tsx', '.css', '.scss', '.html', '.json', '.md', '.py', '.java'])
-    .range(['#f6e05e', '#f6ad55', '#4fd1c5', '#38b2ac', '#63b3ed', '#b794f4', '#fc8181', '#68d391', '#a0aec0', '#667eea', '#f687b3']);
-
-  // Get node color based on type and extension
-  const getNodeColor = useCallback((node: FileNode) => {
-    if (node.type === 'directory') {
-      return '#f9f9f9';
-    }
-    
-    if (node.type === 'function' || node.type === 'method') {
-      return '#b794f4'; // Purple for functions
-    }
-    
-    if (node.type === 'class') {
-      return '#f687b3'; // Pink for classes
-    }
-    
-    // For files, use the extension
-    if (node.extension) {
-      return fileTypeColorScale(`.${node.extension}`);
-    }
-    
-    return '#cbd5e0'; // Default gray
-  }, []);
-
-  // Extract dependencies from the data
+  // Detect mobile devices and set responsive dimensions
   useEffect(() => {
-    if (!data) {
-      console.log('No data provided to RepositoryPackedCircles');
-      return;
-    }
-    
-    console.log('RepositoryPackedCircles data:', data);
-    console.log('Data structure check:', {
-      hasChildren: Boolean(data.children),
-      childrenCount: data.children?.length || 0,
-      firstChild: data.children?.[0],
-      type: data.type,
-      name: data.name,
-      path: data.path
-    });
-    
-    const deps: {source: string, target: string, type: string}[] = [];
-    
-    // Function to recursively extract dependencies
-    const extractDependencies = (node: FileNode) => {
-      if (node.dependencies) {
-        node.dependencies.forEach(dep => {
-          deps.push({
-            source: node.path,
-            target: dep,
-            type: 'calls'
-          });
-        });
-      }
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
       
-      if (node.children) {
-        node.children.forEach(child => {
-          // Add parent-child relationship
-          deps.push({
-            source: node.path,
-            target: child.path,
-            type: 'contains'
+      if (containerRef.current) {
+        const containerWidth = containerRef.current.clientWidth;
+        // On mobile, use full width and adjust height ratio
+        if (mobile) {
+          setDimensions({
+            width: containerWidth,
+            height: Math.min(containerWidth * 0.8, 500)
           });
-          
-          // Process child's dependencies
-          extractDependencies(child);
-        });
+        } else {
+          setDimensions({
+            width: Math.min(containerWidth, 900),
+            height: Math.min(containerWidth * 0.6, 600)
+          });
+        }
       }
     };
     
-    try {
-      extractDependencies(data);
-      console.log(`Extracted ${deps.length} dependencies`);
-      setDependencies(deps);
-    } catch (error) {
-      console.error('Error extracting dependencies:', error);
-    }
-  }, [data]);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+    };
+  }, []);
 
-  // Create and update visualization
   useEffect(() => {
-    if (!svgRef.current || !data) {
+    if (!svgRef.current || !data || !data.children || data.children.length === 0) {
+      if (data && (!data.children || data.children.length === 0)) {
+        setError('No data available to visualize');
+      }
       setLoading(false);
       return;
     }
-    
-    setLoading(true);
 
-    // Clear previous visualization
-    d3.select(svgRef.current).selectAll('*').remove();
+    try {
+      setLoading(true);
+      setError(null);
 
-    // Create hierarchy
-    const root = d3.hierarchy(data)
-      .sum(d => {
-        // Use file size for leaf nodes, or calculate based on children
-        if (d.size) {
-          return d.size;
-        }
-        return d.children && d.children.length > 0 ? 0 : 100;
-      })
-      .sort((a, b) => (b.value || 0) - (a.value || 0));
+      // Clear previous visualization
+      d3.select(svgRef.current).selectAll('*').remove();
 
-    // Create pack layout
-    const pack = d3.pack<FileNode>()
-      .size([width - 40, height - 40])
-      .padding(d => {
-        // Add more padding between levels
-        if (d.depth === 0) return 20;
-        if (d.depth === 1) return 10;
-        return 3;
-      });
+      // Process the data to create a hierarchy
+      const root = d3.hierarchy(data)
+        .sum(d => {
+          // Use file size for leaf nodes, or 1 for directories
+          if (d.type === 'file' && d.size) {
+            return d.size;
+          }
+          return d.children && d.children.length > 0 ? 0 : 1;
+        })
+        .sort((a, b) => (b.value || 0) - (a.value || 0));
 
-    // Apply pack layout
-    const packedRoot = pack(root) as ExtendedHierarchyCircleNode;
+      // Create a pack layout
+      const pack = d3.pack<FileNode>()
+        .size([dimensions.width, dimensions.height])
+        .padding(3);
 
-    // Create SVG
-    const svg = d3.select(svgRef.current)
-      .attr('width', width)
-      .attr('height', height)
-      .attr('viewBox', [0, 0, width, height]);
+      // Apply the pack layout to the hierarchy
+      const rootWithLayout = pack(root as d3.HierarchyNode<FileNode>);
 
-    // Add zoom behavior
-    const zoom = d3.zoom<SVGSVGElement, unknown>()
-      .scaleExtent([0.1, 8])
-      .on('zoom', (event) => {
-        g.attr('transform', event.transform);
-        setZoomLevel(event.transform.k);
-      });
-    
-    svg.call(zoom);
-    zoomRef.current = zoom;
+      // Create the SVG visualization
+      const svg = d3.select(svgRef.current)
+        .attr('width', dimensions.width)
+        .attr('height', dimensions.height)
+        .attr('viewBox', [0, 0, dimensions.width, dimensions.height])
+        .attr('style', 'max-width: 100%; height: auto;');
 
-    // Create a group for the visualization
-    const g = svg.append('g')
-      .attr('transform', 'translate(20, 20)');
+      // Create a group for the circles
+      const g = svg.append('g');
 
-    // Create a container for links
-    const linksGroup = g.append('g')
-      .attr('class', 'links');
+      // Add zoom behavior - adjust zoom levels for mobile
+      const zoom = d3.zoom()
+        .scaleExtent([0.5, isMobile ? 5 : 8])
+        .on('zoom', (event) => {
+          g.attr('transform', event.transform);
+        });
 
-    // Create a container for nodes
-    const nodesGroup = g.append('g')
-      .attr('class', 'nodes');
+      svg.call(zoom as any);
 
-    // Create nodes with staggered animation
-    const node = nodesGroup
-      .selectAll<SVGCircleElement, ExtendedHierarchyCircleNode>('circle')
-      .data<ExtendedHierarchyCircleNode>(packedRoot.descendants() as ExtendedHierarchyCircleNode[])
-      .join('circle')
-      .attr('class', 'node')
-      .attr('r', d => d.r)
-      .attr('cx', d => d.x)
-      .attr('cy', d => d.y)
-      .attr('fill', d => getNodeColor(d.data))
-      .attr('stroke', '#fff')
-      .attr('stroke-width', d => d.depth === 1 ? 2 : 1)
-      .attr('opacity', 0) // Start with opacity 0 for animation
-      .style('cursor', 'pointer')
-      .on('mouseover', (event, d) => handleNodeHover(event, d))
-      .on('mouseout', () => handleNodeUnhover())
-      .on('click', (event, d) => handleNodeClick(event, d));
+      // Draw the circles
+      const node = g.selectAll('g')
+        .data(rootWithLayout.descendants() as d3.HierarchyCircularNode<FileNode>[])
+        .join('g')
+        .attr('transform', d => `translate(${d.x},${d.y})`);
 
-    // Create labels with size-based visibility
-    const label = nodesGroup
-      .selectAll<SVGTextElement, ExtendedHierarchyCircleNode>('text')
-      .data<ExtendedHierarchyCircleNode>(
-        (packedRoot.descendants() as ExtendedHierarchyCircleNode[]).filter(d => d.r > 20)
-      )
-      .join('text')
-      .attr('class', 'label')
-      .attr('x', d => d.x)
-      .attr('y', d => d.y)
-      .attr('text-anchor', 'middle')
-      .attr('dominant-baseline', 'middle')
-      .text(d => {
-        const name = d.data.name;
-        const maxLength = Math.floor(d.r / 4);
-        return name.length > maxLength ? name.substring(0, maxLength) + '...' : name;
-      })
-      .style('font-size', d => `${Math.min(d.r / 4, 14)}px`)
-      .style('font-weight', d => d.depth <= 1 ? 'bold' : 'normal')
-      .style('pointer-events', 'none')
-      .style('fill', d => {
-        const color = getNodeColor(d.data);
-        const rgb = d3.rgb(color);
-        const luminance = 0.2126 * rgb.r + 0.7152 * rgb.g + 0.0722 * rgb.b;
-        return luminance < 128 ? '#fff' : '#000';
-      })
-      .attr('opacity', 0);
+      // Create circles for each node
+      node.append('circle')
+        .attr('r', d => d.r)
+        .attr('fill', d => {
+          // Color based on file type or directory
+          const node = d.data;
+          if (node.type === 'directory') return '#e2e8f0';
+          
+          // For files, color based on language
+          if (node.language) {
+            const lang = node.language.toLowerCase();
+            if (lang.includes('javascript')) return '#ecc94b';
+            if (lang.includes('typescript')) return '#4fd1c5';
+            if (lang.includes('css')) return '#4299e1';
+            if (lang.includes('html')) return '#f56565';
+            if (lang.includes('json')) return '#48bb78';
+            if (lang.includes('markdown')) return '#a0aec0';
+            if (lang.includes('python')) return '#667eea';
+            if (lang.includes('java')) return '#ed64a6';
+          }
+          return '#cbd5e0';
+        })
+        .attr('opacity', 0.9)
+        .attr('stroke', '#fff')
+        .attr('stroke-width', 1)
+        .on('mouseover', function(event, d) {
+          // Skip mouseover on mobile devices - we'll use touch instead
+          if (isMobile) return;
 
-    // Add tooltip
-    const tooltip = d3.select('body').append('div')
-      .attr('class', 'visualization-tooltip')
-      .style('display', 'none');
+          // Highlight this node
+          d3.select(this).attr('stroke', '#2d3748').attr('stroke-width', 2);
+          
+          // Show tooltip
+          const tooltip = d3.select('#packed-circles-tooltip');
+          tooltip.style('display', 'block')
+            .html(`
+              <div class="p-2">
+                <div class="font-bold">${d.data.name}</div>
+                <div class="text-sm">${d.data.type}</div>
+                ${d.data.language ? `<div class="text-xs">${d.data.language}</div>` : ''}
+                ${d.value ? `<div class="text-xs">${formatBytes(d.value)}</div>` : ''}
+              </div>
+            `)
+            .style('left', (event.pageX + 10) + 'px')
+            .style('top', (event.pageY - 20) + 'px');
+        })
+        .on('mouseout', function() {
+          // Skip mouseout on mobile devices
+          if (isMobile) return;
 
-    // Animate nodes appearing with staggered delay
-    node.transition()
-      .duration(800)
-      .delay(d => d.depth * 300)
-      .attr('opacity', 0.9)
-      .attrTween('r', function(d) {
-        const i = d3.interpolate(0, d.r);
-        return (t: number) => i(t).toString();
-      });
+          // Reset highlight
+          d3.select(this).attr('stroke', '#fff').attr('stroke-width', 1);
+          
+          // Hide tooltip
+          d3.select('#packed-circles-tooltip').style('display', 'none');
+        })
+        .on('click', (event, d) => {
+          // Set selected node for details panel
+          setSelectedNode(d.data);
+          
+          // Prevent event from bubbling up to SVG (which would reset the view)
+          event.stopPropagation();
+        })
+        // Add touch support for mobile
+        .on('touchstart', function(event) {
+          // Prevent scrolling on touch
+          event.preventDefault();
+        })
+        .on('touchend', function(event, d) {
+          // Handle touch on mobile
+          event.preventDefault();
+          
+          // Highlight this node
+          d3.selectAll('circle').attr('stroke', '#fff').attr('stroke-width', 1);
+          d3.select(this).attr('stroke', '#2d3748').attr('stroke-width', 2);
+          
+          // Show tooltip at fixed position for mobile
+          const tooltip = d3.select('#packed-circles-tooltip');
+          tooltip.style('display', 'block')
+            .html(`
+              <div class="p-2">
+                <div class="font-bold">${d.data.name}</div>
+                <div class="text-sm">${d.data.type}</div>
+                ${d.data.language ? `<div class="text-xs">${d.data.language}</div>` : ''}
+                ${d.value ? `<div class="text-xs">${formatBytes(d.value)}</div>` : ''}
+              </div>
+            `)
+            .style('left', '50%')
+            .style('transform', 'translateX(-50%)')
+            .style('bottom', '20px')
+            .style('top', 'auto');
+            
+          // Set selected node for details panel
+          setSelectedNode(d.data);
+          
+          // Hide tooltip after 2 seconds on mobile
+          setTimeout(() => {
+            d3.select('#packed-circles-tooltip').style('display', 'none');
+          }, 2000);
+          
+          // Prevent event from bubbling up
+          event.stopPropagation();
+        });
 
-    // Animate labels appearing
-    label.transition()
-      .duration(800)
-      .delay(d => d.depth * 300 + 200)
-      .attr('opacity', 1);
+      // Add labels for larger circles
+      node.append('text')
+        .attr('dy', '0.3em')
+        .style('text-anchor', 'middle')
+        .style('pointer-events', 'none')
+        .style('font-size', d => {
+          // Adjust text size based on circle radius and device
+          const size = Math.min(d.r / 3, isMobile ? 9 : 12);
+          return size > (isMobile ? 6 : 8) ? `${size}px` : '0px';
+        })
+        .text(d => d.data.name.substring(0, d.r / 3));
 
-    // Function to handle node hover
-    function handleNodeHover(event: MouseEvent, d: ExtendedHierarchyCircleNode) {
-      setHoveredNode(d);
-      
-      // Highlight the node
-      node.attr('opacity', n => isRelated(d, n as ExtendedHierarchyCircleNode) ? 0.9 : 0.3);
-      node.filter(n => n === d).classed('highlighted', true);
-      
-      // Show tooltip
-      tooltip.style('display', 'block')
-        .html(`
-          <div>
-            <div style="font-weight: bold;">${d.data.name}</div>
-            <div style="font-size: 12px;">${d.data.type}</div>
-            ${d.data.language ? `<div style="font-size: 11px; color: #666;">${d.data.language}</div>` : ''}
-            ${d.value ? `<div style="font-size: 11px; color: #666;">${formatBytes(d.value)}</div>` : ''}
-          </div>
-        `)
-        .style('left', (event.pageX + 10) + 'px')
-        .style('top', (event.pageY - 20) + 'px');
-      
-      // Draw dependency links
-      drawDependencyLinks(d);
-    }
-
-    // Function to handle node unhover
-    function handleNodeUnhover() {
-      if (!selectedNode) {
-        // Reset highlighting only if no node is selected
-        node.attr('opacity', 0.9);
-        node.classed('highlighted', false);
-        
-        // Remove dependency links
-        linksGroup.selectAll('.dependency-link').remove();
-      }
-      
-      setHoveredNode(null);
-      
-      // Hide tooltip
-      tooltip.style('display', 'none');
-    }
-
-    // Function to handle node click
-    function handleNodeClick(event: MouseEvent, d: ExtendedHierarchyCircleNode) {
-      event.stopPropagation();
-      
-      if (selectedNode === d) {
-        // If clicking the same node, deselect it
+      // Add click handler to the SVG to reset selection
+      svg.on('click', () => {
         setSelectedNode(null);
-        node.attr('opacity', 0.9);
-        node.classed('highlighted', false);
-        linksGroup.selectAll('.dependency-link').remove();
-        return;
-      }
-      
-      setSelectedNode(d);
-      
-      // Highlight the node and its connections
-      node.attr('opacity', n => isRelated(d, n as ExtendedHierarchyCircleNode) ? 0.9 : 0.3);
-      node.classed('highlighted', n => n === d);
-      
-      // Draw dependency links
-      drawDependencyLinks(d);
-      
-      // Zoom to the node
-      zoomToNode(d);
-    }
-
-    // Function to zoom to a node
-    function zoomToNode(d: ExtendedHierarchyCircleNode) {
-      setZoomedNode(d);
-      
-      const scale = Math.min(8, 0.9 / (d.r / Math.min(width, height)));
-      const translateX = width / 2 - scale * d.x;
-      const translateY = height / 2 - scale * d.y;
-      
-      svg.transition()
-        .duration(750)
-        .call(
-          zoom.transform as any,
-          d3.zoomIdentity.translate(translateX, translateY).scale(scale)
-        );
-    }
-
-    // Function to draw dependency links
-    function drawDependencyLinks(d: ExtendedHierarchyCircleNode) {
-      // Remove existing links
-      linksGroup.selectAll('.dependency-link').remove();
-      
-      // Find all dependencies related to this node
-      const dependencies = findDependencies(d);
-
-      // Draw each dependency link
-      dependencies.forEach(dep => {
-        const source = findNodeByPath(packedRoot, dep.source);
-        const target = findNodeByPath(packedRoot, dep.target);
-
-        if (source && target && 'r' in source && 'r' in target) {
-          // Calculate link path
-          const path = calculateLinkPath(source as ExtendedHierarchyCircleNode, target as ExtendedHierarchyCircleNode, dep.type);
-
-          // Draw the link with animation
-          linksGroup.append('path')
-            .attr('class', 'dependency-link')
-            .classed('animated', true)
-            .attr('d', path)
-            .attr('stroke', dep.type === 'import' ? '#3182ce' : '#e53e3e')
-            .attr('stroke-width', 2)
-            .attr('fill', 'none')
-            .attr('opacity', 0)
-            .transition()
-            .duration(300)
-            .attr('opacity', 0.7);
-        }
-      });
-    }
-
-    // Helper function to find dependencies
-    function findDependencies(node: ExtendedHierarchyCircleNode) {
-      const deps: { source: string; target: string; type: string; }[] = [];
-
-      function extractDependencies(n: FileNode) {
-        if (n.imports) {
-          n.imports.forEach(imp => {
-            const importPath = typeof imp === 'string' ? imp : imp.source;
-            // Find the target node by path
-            const targetNode = findNodeByPath(root, importPath);
-            if (targetNode && targetNode.data) {
-              deps.push({
-                source: n.path,
-                target: targetNode.data.path,
-                type: 'import'
-              });
-            }
-          });
-        }
-
-        if (n.functions) {
-          n.functions.forEach(func => {
-            if (func.dependencies) {
-              func.dependencies.forEach(dep => {
-                deps.push({
-                  source: `${n.path}#${func.name}`,
-                  target: dep.target,
-                  type: dep.type
-                });
-              });
-            }
-          });
-        }
-
-        if (n.classes) {
-          n.classes.forEach(cls => {
-            cls.methods?.forEach(method => {
-              if (method.dependencies) {
-                method.dependencies.forEach(dep => {
-                  deps.push({
-                    source: `${n.path}#${cls.name}.${method.name}`,
-                    target: dep.target,
-                    type: dep.type
-                  });
-                });
-              }
-            });
-          });
-        }
-
-        if (n.children) {
-          n.children.forEach(extractDependencies);
-        }
-      }
-
-      extractDependencies(node.data);
-      return deps;
-    }
-
-    // Helper function to find a node by path
-    function findNodeByPath(root: ExtendedHierarchyCircleNode | d3.HierarchyNode<FileNode>, path: string) {
-      let result: ExtendedHierarchyCircleNode | d3.HierarchyNode<FileNode> | null = null;
-      
-      function traverse(node: ExtendedHierarchyCircleNode | d3.HierarchyNode<FileNode>) {
-        if (node.data.path === path) {
-          result = node;
-          return;
-        }
-        
-        node.children?.forEach(child => traverse(child as ExtendedHierarchyCircleNode | d3.HierarchyNode<FileNode>));
-      }
-      
-      traverse(root);
-      return result as ExtendedHierarchyCircleNode | null;
-    }
-
-    // Helper function to calculate link path
-    function calculateLinkPath(source: ExtendedHierarchyCircleNode, target: ExtendedHierarchyCircleNode, type: string) {
-      const dx = target.x - source.x;
-      const dy = target.y - source.y;
-      const dr = Math.sqrt(dx * dx + dy * dy);
-      const angle = Math.atan2(dy, dx);
-      
-      const sourceX = source.x + Math.cos(angle) * source.r;
-      const sourceY = source.y + Math.sin(angle) * source.r;
-      const targetX = target.x - Math.cos(angle) * target.r;
-      const targetY = target.y - Math.sin(angle) * target.r;
-      
-      if (type === 'import') {
-        return `M${sourceX},${sourceY}L${targetX},${targetY}`;
-      } else {
-        const midX = (sourceX + targetX) / 2;
-        const midY = (sourceY + targetY) / 2;
-        const offset = 30;
-        const controlX = midX + offset * Math.cos(angle + Math.PI / 2);
-        const controlY = midY + offset * Math.sin(angle + Math.PI / 2);
-        return `M${sourceX},${sourceY}Q${controlX},${controlY},${targetX},${targetY}`;
-      }
-    }
-
-    // Function to check if two nodes are related
-    function isRelated(a: ExtendedHierarchyCircleNode, b: ExtendedHierarchyCircleNode) {
-      // Same node
-      if (a === b) return true;
-      
-      // Ancestor-descendant relationship
-      if (isAncestorOf(a, b) || isAncestorOf(b, a)) return true;
-      
-      // Check direct dependencies
-      const isDirectDependency = dependencies.some(link => 
-        (link.source === a.data.path && link.target === b.data.path) ||
-        (link.source === b.data.path && link.target === a.data.path)
-      );
-      
-      return isDirectDependency;
-    }
-
-    // Helper function to check if a node is an ancestor of another
-    function isAncestorOf(p: ExtendedHierarchyCircleNode, c: ExtendedHierarchyCircleNode) {
-      if (p === c) return false;
-      if (p.depth >= c.depth) return false;
-      let current = c.parent;
-      while (current && current.depth > p.depth) {
-        current = current.parent;
-      }
-      return current === p;
-    }
-
-    // Helper function to format bytes
-    function formatBytes(bytes: number) {
-      if (bytes < 1024) return bytes + ' B';
-      const k = 1024;
-      const sizes = ['B', 'KB', 'MB', 'GB'];
-      const i = Math.floor(Math.log(bytes) / Math.log(k));
-      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    }
-
-    // Add arrow marker for links
-    svg.append('defs').append('marker')
-      .attr('id', 'arrow')
-      .attr('viewBox', '0 -5 10 10')
-      .attr('refX', 10)
-      .attr('refY', 0)
-      .attr('markerWidth', 6)
-      .attr('markerHeight', 6)
-      .attr('orient', 'auto')
-      .append('path')
-      .attr('d', 'M0,-5L10,0L0,5')
-      .attr('fill', '#999');
-
-    // Add click handler to background to reset selection
-    svg.append('rect')
-      .attr('width', width)
-      .attr('height', height)
-      .attr('fill', 'transparent')
-      .style('cursor', 'default')
-      .on('click', () => {
-        setSelectedNode(null);
-        node.attr('opacity', 0.9);
-        node.classed('highlighted', false);
-        linksGroup.selectAll('.dependency-link').remove();
-        
-        // Reset zoom
-        svg.transition()
-          .duration(750)
-          .call(
-            zoom.transform as any,
-            d3.zoomIdentity.translate(20, 20).scale(1)
-          );
       });
 
-    setLoading(false);
+      setLoading(false);
+    } catch (err) {
+      console.error('Error creating packed circles visualization:', err);
+      setError('Failed to create visualization');
+      setLoading(false);
+    }
+  }, [data, dimensions, isMobile]);
 
-    // Cleanup on unmount
-    return () => {
-      tooltip.remove();
-    };
-  }, [data, width, height, dependencies, getNodeColor]);
-
-  // Handle zoom in button click
-  const handleZoomIn = useCallback(() => {
-    if (!svgRef.current || !zoomRef.current) return;
-    
-    const svg = d3.select(svgRef.current);
-    const newZoom = Math.min(8, zoomLevel * 1.5);
-    
-    svg.transition()
-      .duration(300)
-      .call(
-        zoomRef.current.transform as any,
-        d3.zoomIdentity.translate(width / 2 - newZoom * width / 2, height / 2 - newZoom * height / 2).scale(newZoom)
-      );
-  }, [zoomLevel, width, height]);
-
-  // Handle zoom out button click
-  const handleZoomOut = useCallback(() => {
-    if (!svgRef.current || !zoomRef.current) return;
-    
-    const svg = d3.select(svgRef.current);
-    const newZoom = Math.max(0.1, zoomLevel / 1.5);
-    
-    svg.transition()
-      .duration(300)
-      .call(
-        zoomRef.current.transform as any,
-        d3.zoomIdentity.translate(width / 2 - newZoom * width / 2, height / 2 - newZoom * height / 2).scale(newZoom)
-      );
-  }, [zoomLevel, width, height]);
-
-  // Handle reset view button click
-  const handleResetView = useCallback(() => {
-    if (!svgRef.current || !zoomRef.current) return;
-    
-    const svg = d3.select(svgRef.current);
-    
-    svg.transition()
-      .duration(750)
-      .call(
-        zoomRef.current.transform as any,
-        d3.zoomIdentity.translate(20, 20).scale(1)
-      );
-    
-    setSelectedNode(null);
-    svg.selectAll('.node').attr('opacity', 0.9).classed('highlighted', false);
-    svg.selectAll('.dependency-link').remove();
-  }, []);
+  // Helper function to format bytes
+  function formatBytes(bytes: number) {
+    if (bytes < 1024) return bytes + ' B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
 
   return (
-    <div className="relative w-full h-full">
+    <div ref={containerRef} className="relative w-full h-full">
       {loading && (
         <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-10">
           <LoadingSpinner />
         </div>
       )}
-      <svg
-        ref={svgRef}
-        className="w-full h-full border border-gray-200 rounded-lg"
-        style={{ minHeight: '600px' }}
-      >
-        <style>
-          {`
-          @keyframes pulse {
-            0% {
-              stroke-opacity: 0.7;
-              stroke-width: 2;
-            }
-            50% {
-              stroke-opacity: 1;
-              stroke-width: 3;
-            }
-            100% {
-              stroke-opacity: 0.7;
-              stroke-width: 2;
-            }
-          }
-          `}
-        </style>
-      </svg>
       
-      {/* Zoom controls */}
-      <div className="zoom-controls">
-        <button className="zoom-button" onClick={handleZoomIn} title="Zoom In">
-          +
-        </button>
-        <button className="zoom-button" onClick={handleZoomOut} title="Zoom Out">
-          -
-        </button>
-        <button className="zoom-button" onClick={handleResetView} title="Reset View">
-          ↺
-        </button>
+      {error && (
+        <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-50 z-10">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+            <strong className="font-bold">Error:</strong>
+            <span className="block sm:inline"> {error}</span>
+          </div>
+        </div>
+      )}
+      
+      <div className="flex justify-center items-center">
+        <svg
+          ref={svgRef}
+          className="w-full border border-gray-200 rounded-lg"
+          style={{ maxWidth: '100%', height: 'auto' }}
+        />
       </div>
       
+      <div
+        id="packed-circles-tooltip"
+        className="absolute z-50 bg-white shadow-lg rounded-md pointer-events-none hidden"
+        style={{ display: 'none' }}
+      />
+      
       {selectedNode && (
-        <div className="absolute bottom-4 left-4 bg-white p-4 rounded-lg shadow-lg z-20">
-          <h3 className="font-bold text-lg">{selectedNode.data.name}</h3>
-          <p className="text-sm capitalize">{selectedNode.data.type}</p>
-          {selectedNode.data.language && (
-            <p className="text-xs text-gray-600">{selectedNode.data.language}</p>
+        <div className="absolute bottom-4 left-4 right-4 md:right-auto bg-white p-4 rounded-lg shadow-lg z-20 max-w-xs md:max-w-md">
+          <h3 className="font-bold text-lg">{selectedNode.name}</h3>
+          <p className="text-sm">{selectedNode.type}</p>
+          {selectedNode.language && <p className="text-xs">Language: {selectedNode.language}</p>}
+          {selectedNode.size && <p className="text-xs">Size: {formatBytes(selectedNode.size)}</p>}
+          {selectedNode.path && (
+            <p className="text-xs mt-1 break-all">
+              <span className="font-semibold">Path:</span> {selectedNode.path}
+            </p>
           )}
           <button
-            className="mt-2 px-2 py-1 bg-gray-200 text-gray-800 rounded text-xs"
-            onClick={handleResetView}
+            className="mt-3 w-full md:w-auto px-3 py-1.5 bg-gray-200 text-gray-800 rounded text-sm"
+            onClick={() => setSelectedNode(null)}
           >
-            Reset View
+            Close
           </button>
+        </div>
+      )}
+      
+      {isMobile && (
+        <div className="absolute bottom-0 left-0 right-0 bg-white bg-opacity-75 text-center py-2 text-xs">
+          <p>Pinch to zoom • Tap to select</p>
         </div>
       )}
     </div>

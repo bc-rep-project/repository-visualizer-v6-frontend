@@ -17,8 +17,37 @@ export const SimpleSunburst: React.FC<SimpleSunburstProps> = ({
   height = 800,
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
+  const [dimensions, setDimensions] = useState({ width, height });
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile devices and set responsive dimensions
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      
+      if (containerRef.current) {
+        const containerWidth = containerRef.current.clientWidth;
+        // Use square aspect ratio but smaller on mobile
+        const size = mobile ? Math.min(containerWidth, 500) : Math.min(containerWidth, 800);
+        
+        setDimensions({
+          width: size,
+          height: size
+        });
+      }
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+    };
+  }, []);
 
   // Create and update visualization
   useEffect(() => {
@@ -44,18 +73,18 @@ export const SimpleSunburst: React.FC<SimpleSunburstProps> = ({
       })
       .sort((a, b) => (b.value || 0) - (a.value || 0));
 
-    // Create SVG
+    // Create SVG with responsive dimensions
     const svg = d3.select(svgRef.current)
-      .attr('width', width)
-      .attr('height', height)
-      .attr('viewBox', [0, 0, width, height]);
+      .attr('width', dimensions.width)
+      .attr('height', dimensions.height)
+      .attr('viewBox', [0, 0, dimensions.width, dimensions.height]);
 
     // Add a group for the visualization
     const g = svg.append('g')
-      .attr('transform', `translate(${width / 2},${height / 2})`);
+      .attr('transform', `translate(${dimensions.width / 2},${dimensions.height / 2})`);
 
     // Create a partition layout
-    const radius = Math.min(width, height) / 2;
+    const radius = Math.min(dimensions.width, dimensions.height) / 2;
     const partition = d3.partition<FileNode>()
       .size([2 * Math.PI, radius]);
 
@@ -126,6 +155,21 @@ export const SimpleSunburst: React.FC<SimpleSunburstProps> = ({
       .on('click', (event: any, d: any) => {
         // Set selected path
         setSelectedPath(d.data.path);
+      })
+      // Add touch support for mobile
+      .on('touchstart', function(event: any) {
+        // Prevent scrolling on touch
+        event.preventDefault();
+      })
+      .on('touchend', function(event: any, d: any) {
+        // Handle touch on mobile
+        event.preventDefault();
+        
+        // Highlight path
+        path.attr('opacity', (n: any) => isAncestorOf(d, n) ? 1 : 0.3);
+        
+        // Set selected path
+        setSelectedPath(d.data.path);
       });
 
     // Helper function to check if a node is an ancestor of another
@@ -149,32 +193,40 @@ export const SimpleSunburst: React.FC<SimpleSunburstProps> = ({
     }
 
     setLoading(false);
-  }, [data, width, height]);
+  }, [data, dimensions]);
 
   return (
-    <div className="relative w-full h-full">
+    <div ref={containerRef} className="relative w-full h-full">
       {loading && (
         <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-10">
           <LoadingSpinner />
         </div>
       )}
-      <svg
-        ref={svgRef}
-        className="w-full h-full border border-gray-200 rounded-lg"
-        style={{ minHeight: '600px' }}
-      />
+      <div className="flex justify-center items-center">
+        <svg
+          ref={svgRef}
+          className="w-full h-full border border-gray-200 rounded-lg"
+          style={{ maxWidth: dimensions.width, maxHeight: dimensions.height }}
+        />
+      </div>
       <div
         id="sunburst-tooltip"
         className="absolute z-50 bg-white shadow-lg rounded-md p-2 pointer-events-none hidden"
         style={{ display: 'none' }}
       />
       {selectedPath && (
-        <div className="absolute bottom-4 left-4 bg-white p-4 rounded-lg shadow-lg z-20">
+        <div className="absolute bottom-4 left-4 right-4 md:right-auto bg-white p-4 rounded-lg shadow-lg z-20 max-w-xs md:max-w-md">
           <h3 className="font-bold text-lg">Selected Path</h3>
-          <p className="text-sm">{selectedPath}</p>
+          <p className="text-sm break-all">{selectedPath}</p>
           <button
-            className="mt-2 px-2 py-1 bg-gray-200 text-gray-800 rounded text-xs"
-            onClick={() => setSelectedPath(null)}
+            className="mt-3 w-full md:w-auto px-3 py-1.5 bg-gray-200 text-gray-800 rounded text-sm"
+            onClick={() => {
+              setSelectedPath(null);
+              // Reset highlighting
+              const svg = d3.select(svgRef.current);
+              const path = svg.selectAll('path');
+              path.attr('opacity', 0.9);
+            }}
           >
             Reset View
           </button>
