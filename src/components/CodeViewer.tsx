@@ -4,8 +4,9 @@ import React, { useState, useEffect } from 'react';
 // @ts-ignore
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 // @ts-ignore
-import { vscDarkPlus, vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { vscDarkPlus, vs, dracula, tomorrow, solarizedlight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { FaDownload, FaCopy, FaEye, FaEyeSlash, FaWrench, FaTimes } from 'react-icons/fa';
+import { useSettings } from '@/contexts/SettingsContext';
 
 interface CodeViewerProps {
   code: string;
@@ -39,7 +40,17 @@ const languageMap: Record<string, string> = {
   txt: 'text',
 };
 
+// Map settings theme names to actual syntax highlighting styles
+const codeThemeMap: Record<string, any> = {
+  'github': vs,
+  'vscode': vscDarkPlus,
+  'dracula': dracula,
+  'tomorrow': tomorrow,
+  'solarized': solarizedlight
+};
+
 export default function CodeViewer({ code, language, fileName }: CodeViewerProps) {
+  const { settings } = useSettings();
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [copied, setCopied] = useState(false);
   const [lineNumbers, setLineNumbers] = useState(true);
@@ -49,15 +60,27 @@ export default function CodeViewer({ code, language, fileName }: CodeViewerProps
   const [fontSize, setFontSize] = useState(14);
   
   useEffect(() => {
-    // Detect dark mode preference
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    setTheme(prefersDark ? 'dark' : 'light');
-    
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = (e: MediaQueryListEvent) => {
-      setTheme(e.matches ? 'dark' : 'light');
-    };
-    
+    // Use theme from settings or detect from system
+    if (settings.theme === 'dark') {
+      setTheme('dark');
+    } else if (settings.theme === 'light') {
+      setTheme('light');
+    } else {
+      // Use system preference if set to 'system'
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setTheme(prefersDark ? 'dark' : 'light');
+      
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const handleChange = (e: MediaQueryListEvent) => {
+        setTheme(e.matches ? 'dark' : 'light');
+      };
+      
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
+    }
+  }, [settings.theme]);
+  
+  useEffect(() => {
     // Detect mobile device
     const checkMobile = () => {
       const mobile = window.innerWidth < 768;
@@ -72,10 +95,8 @@ export default function CodeViewer({ code, language, fileName }: CodeViewerProps
     
     checkMobile();
     window.addEventListener('resize', checkMobile);
-    mediaQuery.addEventListener('change', handleChange);
     
     return () => {
-      mediaQuery.removeEventListener('change', handleChange);
       window.removeEventListener('resize', checkMobile);
     };
   }, [wrapLines]);
@@ -102,6 +123,16 @@ export default function CodeViewer({ code, language, fileName }: CodeViewerProps
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
+  };
+
+  // Get the correct syntax highlighting style based on settings
+  const getHighlightStyle = () => {
+    const style = codeThemeMap[settings.codeHighlightTheme] || vs;
+    // For dark theme, use a dark style if the chosen style is light
+    if (theme === 'dark' && settings.codeHighlightTheme === 'github') {
+      return vscDarkPlus;
+    }
+    return style;
   };
 
   return (
@@ -219,7 +250,7 @@ export default function CodeViewer({ code, language, fileName }: CodeViewerProps
       <div className={`overflow-auto ${isMobile ? 'max-h-[400px]' : 'max-h-[600px]'}`}>
         <SyntaxHighlighter
           language={getLanguage()}
-          style={theme === 'dark' ? vscDarkPlus : vs}
+          style={getHighlightStyle()}
           showLineNumbers={lineNumbers}
           wrapLines={wrapLines}
           customStyle={{

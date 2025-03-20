@@ -371,7 +371,7 @@ export default function RepositoryList() {
           </div>
         </div>
       </div>
-
+      
       {loading ? (
         <div className="flex justify-center items-center h-64">
           <LoadingSpinner />
@@ -385,20 +385,20 @@ export default function RepositoryList() {
           <p className="text-gray-500 dark:text-gray-400">
             No repositories found. Try adding one!
           </p>
-          <button
+        <button
             onClick={() => setIsAddingRepo(true)}
             className="mt-4 inline-flex items-center px-4 py-2 rounded-md text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 focus:outline-none"
-          >
+        >
             <FaPlus className="mr-2" /> Add Repository
-          </button>
+        </button>
         </div>
       ) : (
         <>
           {viewMode === 'grid' ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {repositories.map((repo) => (
-                <div
-                  key={repo._id}
+          <div
+            key={repo._id}
                   className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow"
                 >
                   <div className="p-4">
@@ -412,9 +412,9 @@ export default function RepositoryList() {
                         )}`}
                       >
                         {repo.status}
-                      </span>
-                    </div>
-                    
+              </span>
+            </div>
+
                     <p className="text-sm text-gray-500 dark:text-gray-400 truncate mb-2">
                       {repo.repo_url}
                     </p>
@@ -432,8 +432,8 @@ export default function RepositoryList() {
                         {repo.total_size ? ` · ${formatBytes(repo.total_size)}` : ''}
                       </span>
                     </div>
-                  </div>
-                  
+                </div>
+
                   <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-3 bg-gray-50 dark:bg-gray-800 flex space-x-2">
                     <Link 
                       href={`/repositories/${repo._id}`}
@@ -490,8 +490,8 @@ export default function RepositoryList() {
                     {repo.languages && Object.keys(repo.languages).length > 0 && (
                       <div className="mb-2 max-w-md">
                         {renderLanguageBar(repo.languages)}
-                      </div>
-                    )}
+                  </div>
+                )}
                     
                     <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                       <span>Created: {formatTimeAgo(repo.created_at)}</span>
@@ -501,52 +501,52 @@ export default function RepositoryList() {
                         {repo.total_size ? ` · ${formatBytes(repo.total_size)}` : ''}
                       </span>
                     </div>
-                  </div>
-                  
+            </div>
+
                   <div className="flex mt-3 sm:mt-0 space-x-2">
-                    <Link 
+                  <Link
                       href={`/repositories/${repo._id}`}
                       className="flex items-center px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-sm font-medium rounded-md hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
-                    >
+                  >
                       <FiEye className="mr-1" /> View
-                    </Link>
-                    <Link
+                  </Link>
+                  <Link
                       href={`/repositories/${repo._id}/analyze`}
                       className="flex items-center px-3 py-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-sm font-medium rounded-md hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
-                    >
+                  >
                       <BiAnalyse className="mr-1" /> Analyze
-                    </Link>
-                    <button
-                      onClick={() => handleDeleteRepository(repo._id)}
+                  </Link>
+                  <button
+                    onClick={() => handleDeleteRepository(repo._id)}
                       disabled={deleteInProgress === repo._id}
                       className="flex items-center px-3 py-1.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm font-medium rounded-md hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
-                    >
-                      {deleteInProgress === repo._id ? (
-                        <LoadingSpinner size="small" />
-                      ) : (
+                  >
+                    {deleteInProgress === repo._id ? (
+                      <LoadingSpinner size="small" />
+                    ) : (
                         <FaTrash className="h-4 w-4" />
-                      )}
-                    </button>
-                  </div>
+                    )}
+                  </button>
                 </div>
-              ))}
             </div>
-          )}
-          
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex justify-between items-center mt-6">
-              <div className="text-sm text-gray-500 dark:text-gray-400">
+          ))}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex justify-between items-center mt-6">
+          <div className="text-sm text-gray-500 dark:text-gray-400">
                 Showing {repositories.length} of {totalRepos} repositories
-              </div>
+          </div>
               <div className="flex space-x-1">
-                <button
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
                   className="px-3 py-1 rounded-md text-sm font-medium bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-200 disabled:opacity-50"
-                >
-                  Previous
-                </button>
+            >
+              Previous
+            </button>
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                   <button
                     key={page}
@@ -560,15 +560,15 @@ export default function RepositoryList() {
                     {page}
                   </button>
                 ))}
-                <button
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
                   className="px-3 py-1 rounded-md text-sm font-medium bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-200 disabled:opacity-50"
-                >
-                  Next
-                </button>
-              </div>
-            </div>
+            >
+              Next
+            </button>
+          </div>
+        </div>
           )}
         </>
       )}
@@ -619,7 +619,7 @@ export default function RepositoryList() {
                 >
                   Cancel
                 </button>
-                <button
+              <button
                   type="submit"
                   disabled={addingInProgress}
                   className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none disabled:opacity-50 flex items-center"
@@ -632,11 +632,11 @@ export default function RepositoryList() {
                   ) : (
                     'Add Repository'
                   )}
-                </button>
-              </div>
+              </button>
+            </div>
             </form>
           </div>
-        </div>
+      </div>
       )}
     </div>
   );

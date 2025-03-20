@@ -89,27 +89,27 @@ export const RepositoryPackedCircles: React.FC<RepositoryPackedCirclesProps> = (
       setLoading(false);
       return;
     }
-
+    
     try {
-      setLoading(true);
+    setLoading(true);
       setError(null);
 
-      // Clear previous visualization
-      d3.select(svgRef.current).selectAll('*').remove();
+    // Clear previous visualization
+    d3.select(svgRef.current).selectAll('*').remove();
 
       // Process the data to create a hierarchy
-      const root = d3.hierarchy(data)
-        .sum(d => {
+    const root = d3.hierarchy(data)
+      .sum(d => {
           // Use file size for leaf nodes, or 1 for directories
           if (d.type === 'file' && d.size) {
-            return d.size;
-          }
+          return d.size;
+        }
           return d.children && d.children.length > 0 ? 0 : 1;
-        })
-        .sort((a, b) => (b.value || 0) - (a.value || 0));
+      })
+      .sort((a, b) => (b.value || 0) - (a.value || 0));
 
       // Create a pack layout
-      const pack = d3.pack<FileNode>()
+    const pack = d3.pack<FileNode>()
         .size([dimensions.width, dimensions.height])
         .padding(3);
 
@@ -117,7 +117,7 @@ export const RepositoryPackedCircles: React.FC<RepositoryPackedCirclesProps> = (
       const rootWithLayout = pack(root as d3.HierarchyNode<FileNode>);
 
       // Create the SVG visualization
-      const svg = d3.select(svgRef.current)
+    const svg = d3.select(svgRef.current)
         .attr('width', dimensions.width)
         .attr('height', dimensions.height)
         .attr('viewBox', [0, 0, dimensions.width, dimensions.height])
@@ -129,8 +129,8 @@ export const RepositoryPackedCircles: React.FC<RepositoryPackedCirclesProps> = (
       // Add zoom behavior - adjust zoom levels for mobile
       const zoom = d3.zoom()
         .scaleExtent([0.5, isMobile ? 5 : 8])
-        .on('zoom', (event) => {
-          g.attr('transform', event.transform);
+      .on('zoom', (event) => {
+        g.attr('transform', event.transform);
         });
 
       svg.call(zoom as any);
@@ -143,7 +143,7 @@ export const RepositoryPackedCircles: React.FC<RepositoryPackedCirclesProps> = (
 
       // Create circles for each node
       node.append('circle')
-        .attr('r', d => d.r)
+      .attr('r', d => d.r)
         .attr('fill', d => {
           // Color based on file type or directory
           const node = d.data;
@@ -163,7 +163,7 @@ export const RepositoryPackedCircles: React.FC<RepositoryPackedCirclesProps> = (
           }
           return '#cbd5e0';
         })
-        .attr('opacity', 0.9)
+      .attr('opacity', 0.9)
         .attr('stroke', '#fff')
         .attr('stroke-width', 1)
         .on('mouseover', function(event, d) {
@@ -172,20 +172,20 @@ export const RepositoryPackedCircles: React.FC<RepositoryPackedCirclesProps> = (
 
           // Highlight this node
           d3.select(this).attr('stroke', '#2d3748').attr('stroke-width', 2);
-          
-          // Show tooltip
+      
+      // Show tooltip
           const tooltip = d3.select('#packed-circles-tooltip');
-          tooltip.style('display', 'block')
-            .html(`
+      tooltip.style('display', 'block')
+        .html(`
               <div class="p-2">
                 <div class="font-bold">${d.data.name}</div>
                 <div class="text-sm">${d.data.type}</div>
                 ${d.data.language ? `<div class="text-xs">${d.data.language}</div>` : ''}
                 ${d.value ? `<div class="text-xs">${formatBytes(d.value)}</div>` : ''}
-              </div>
-            `)
-            .style('left', (event.pageX + 10) + 'px')
-            .style('top', (event.pageY - 20) + 'px');
+          </div>
+        `)
+        .style('left', (event.pageX + 10) + 'px')
+        .style('top', (event.pageY - 20) + 'px');
         })
         .on('mouseout', function() {
           // Skip mouseout on mobile devices
@@ -193,8 +193,8 @@ export const RepositoryPackedCircles: React.FC<RepositoryPackedCirclesProps> = (
 
           // Reset highlight
           d3.select(this).attr('stroke', '#fff').attr('stroke-width', 1);
-          
-          // Hide tooltip
+      
+      // Hide tooltip
           d3.select('#packed-circles-tooltip').style('display', 'none');
         })
         .on('click', (event, d) => {
@@ -202,7 +202,7 @@ export const RepositoryPackedCircles: React.FC<RepositoryPackedCirclesProps> = (
           setSelectedNode(d.data);
           
           // Prevent event from bubbling up to SVG (which would reset the view)
-          event.stopPropagation();
+      event.stopPropagation();
         })
         // Add touch support for mobile
         .on('touchstart', function(event) {
@@ -270,14 +270,14 @@ export const RepositoryPackedCircles: React.FC<RepositoryPackedCirclesProps> = (
     }
   }, [data, dimensions, isMobile]);
 
-  // Helper function to format bytes
-  function formatBytes(bytes: number) {
-    if (bytes < 1024) return bytes + ' B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  }
+    // Helper function to format bytes
+    function formatBytes(bytes: number) {
+      if (bytes < 1024) return bytes + ' B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
 
   return (
     <div ref={containerRef} className="relative w-full h-full">
@@ -297,8 +297,8 @@ export const RepositoryPackedCircles: React.FC<RepositoryPackedCirclesProps> = (
       )}
       
       <div className="flex justify-center items-center">
-        <svg
-          ref={svgRef}
+      <svg
+        ref={svgRef}
           className="w-full border border-gray-200 rounded-lg"
           style={{ maxWidth: '100%', height: 'auto' }}
         />
