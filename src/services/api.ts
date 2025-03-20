@@ -156,6 +156,26 @@ export const repositoryApi = {
     resetSettings: async (): Promise<any> => {
         const response = await api.post('/api/settings/reset');
         return response.data;
+    },
+
+    // View API
+    getRepositoryView: async (repoId: string): Promise<any> => {
+        const response = await api.get(`/api/view/${repoId}`);
+        return response.data;
+    },
+
+    getFileContent: async (repoId: string, filePath: string): Promise<any> => {
+        const response = await api.get(`/api/view/${repoId}/file`, {
+            params: { path: filePath }
+        });
+        return response.data;
+    },
+
+    getRawFile: async (repoId: string, filePath: string): Promise<any> => {
+        const response = await api.get(`/api/view/${repoId}/raw/${filePath}`, {
+            responseType: 'blob'
+        });
+        return response.data;
     }
 };
 

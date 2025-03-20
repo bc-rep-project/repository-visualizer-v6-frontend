@@ -48,21 +48,21 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchSettings = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+    const fetchSettings = async () => {
+      try {
+        setLoading(true);
+        setError(null);
       const response = await api.get('/api/settings');
       setSettings({ ...defaultSettings, ...response.data });
-    } catch (err) {
-      console.error('Error fetching settings:', err);
-      setError('Failed to load settings');
+      } catch (err) {
+        console.error('Error fetching settings:', err);
+        setError('Failed to load settings');
       // Use default settings on error
-      setSettings(defaultSettings);
-    } finally {
-      setLoading(false);
-    }
-  };
+        setSettings(defaultSettings);
+      } finally {
+        setLoading(false);
+      }
+    };
 
   const updateSettings = async (newSettings: Partial<Settings>) => {
     try {
@@ -119,9 +119,9 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
       const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
       const handleChange = (e: MediaQueryListEvent) => {
         if (e.matches) {
-          document.documentElement.classList.add('dark');
+      document.documentElement.classList.add('dark');
         } else {
-          document.documentElement.classList.remove('dark');
+      document.documentElement.classList.remove('dark');
         }
       };
       

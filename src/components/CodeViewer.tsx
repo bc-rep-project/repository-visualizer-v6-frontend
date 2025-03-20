@@ -144,18 +144,18 @@ export default function CodeViewer({ code, language, fileName }: CodeViewerProps
         <div className="flex space-x-2">
           {!isMobile && (
             <>
-              <button
-                onClick={() => setLineNumbers(!lineNumbers)}
-                className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 text-sm"
-              >
+          <button
+            onClick={() => setLineNumbers(!lineNumbers)}
+            className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 text-sm"
+          >
                 {lineNumbers ? 'Hide Lines' : 'Show Lines'}
-              </button>
-              <button
-                onClick={() => setWrapLines(!wrapLines)}
-                className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 text-sm"
-              >
+          </button>
+          <button
+            onClick={() => setWrapLines(!wrapLines)}
+            className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 text-sm"
+          >
                 {wrapLines ? 'No Wrap' : 'Wrap'}
-              </button>
+          </button>
             </>
           )}
           <button
