@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { Repository } from '@/types/repository.types';
 import { Button } from '@/components/common/Button';
 import { useRepositories } from '@/hooks/useRepositories';
+import Link from 'next/link';
+import { FiEye } from 'react-icons/fi';
+import { BiAnalyse } from 'react-icons/bi';
 
 export const RepositoryList: React.FC = () => {
     const { repositories, loading, error, cloneRepository, deleteRepository } = useRepositories();
@@ -116,11 +119,25 @@ export const RepositoryList: React.FC = () => {
                             </div>
 
                             <div className="card-footer">
+                                <div className="flex flex-col sm:flex-row gap-2 w-full">
+                                    <Link 
+                                        href={`/repositories/${repo.repo_id}/enhanced`}
+                                        className="w-full sm:w-1/2 bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded text-center text-sm flex items-center justify-center"
+                                    >
+                                        <FiEye className="mr-1" /> Enhanced View
+                                    </Link>
+                                    <Link 
+                                        href={`/repositories/${repo.repo_id}/analyze`}
+                                        className="w-full sm:w-1/2 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded text-center text-sm flex items-center justify-center"
+                                    >
+                                        <BiAnalyse className="mr-1" /> Analyze
+                                    </Link>
+                                </div>
                                 <Button
                                     variant="destructive"
                                     size="sm"
                                     onClick={() => deleteRepository(repo.repo_id)}
-                                    className="w-full"
+                                    className="w-full mt-2"
                                 >
                                     Delete Repository
                                 </Button>

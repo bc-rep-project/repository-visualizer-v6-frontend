@@ -142,6 +142,12 @@ export const repositoryApi = {
         return response.data;
     },
 
+    // Enhanced repository view
+    getEnhancedRepositoryView: async (repoId: string): Promise<any> => {
+        const response = await api.get(`/api/repositories/${repoId}/enhanced-view`);
+        return response.data;
+    },
+
     // Settings API
     getSettings: async (): Promise<any> => {
         const response = await api.get('/api/settings');

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { FaFolder, FaCode, FaSearch, FaFilter, FaDownload, FaShare } from 'react-icons/fa';
+import { FaFolder, FaCode, FaSearch, FaFilter, FaDownload, FaShare, FaChartBar, FaCodeBranch, FaFileCode } from 'react-icons/fa';
 import { BiZoomIn, BiZoomOut } from 'react-icons/bi';
 import { MdOutlineFullscreen } from 'react-icons/md';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -16,6 +16,7 @@ import Navigation from '@/components/Navigation';
 import axios from 'axios';
 import { transformAnalysisData } from '@/services/analysisService';
 import { FileNode, AnalysisData } from '@/types/types';
+import { repositoryApi } from '@/services/api';
 
 interface Repository {
   _id: string;
@@ -35,6 +36,161 @@ interface FilterOptions {
   searchQuery: string;
 }
 
+// New component to display enhanced metrics
+interface CodeMetrics {
+  lines_of_code: number;
+  comment_lines: number;
+  blank_lines: number;
+  function_count: number;
+  class_count: number;
+  file_types: Record<string, number>;
+  complexity: {
+    average: number;
+    highest: number;
+    lowest: number;
+    by_file: Record<string, number>;
+  };
+  dependencies: {
+    internal: number;
+    external: number;
+    most_dependent: string | null;
+    most_dependencies: string | null;
+  };
+  language_distribution: Record<string, number>;
+  code_to_comment_ratio: number;
+  generated_at: string;
+}
+
+interface EnhancedRepositoryData {
+  repository: Repository;
+  tree_structure: FileNode;
+  metrics: CodeMetrics;
+  visualization_ready: boolean;
+  last_updated: string;
+}
+
+interface EnhancedMetricsProps {
+  metrics: CodeMetrics;
+}
+
+const EnhancedMetrics: React.FC<EnhancedMetricsProps> = ({ metrics }) => {
+  if (!metrics) return null;
+  
+  return (
+    <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+      <h2 className="text-xl font-bold mb-4 flex items-center">
+        <FaChartBar className="mr-2" /> Enhanced Code Metrics
+      </h2>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* Code Statistics */}
+        <div className="bg-blue-50 p-4 rounded-lg">
+          <h3 className="font-medium text-blue-700 mb-2">Code Statistics</h3>
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <span className="text-gray-600">Lines of Code:</span>
+              <span className="font-semibold">{metrics.lines_of_code.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Comment Lines:</span>
+              <span className="font-semibold">{metrics.comment_lines.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Blank Lines:</span>
+              <span className="font-semibold">{metrics.blank_lines.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Code/Comment Ratio:</span>
+              <span className="font-semibold">
+                {metrics.code_to_comment_ratio === Infinity 
+                  ? '∞' 
+                  : metrics.code_to_comment_ratio.toFixed(2)}
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        {/* Code Structure */}
+        <div className="bg-green-50 p-4 rounded-lg">
+          <h3 className="font-medium text-green-700 mb-2">Code Structure</h3>
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <span className="text-gray-600">Functions:</span>
+              <span className="font-semibold">{metrics.function_count.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Classes:</span>
+              <span className="font-semibold">{metrics.class_count.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">File Types:</span>
+              <span className="font-semibold">{Object.keys(metrics.file_types).length}</span>
+            </div>
+          </div>
+        </div>
+        
+        {/* Complexity */}
+        <div className="bg-purple-50 p-4 rounded-lg">
+          <h3 className="font-medium text-purple-700 mb-2">Code Complexity</h3>
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <span className="text-gray-600">Average:</span>
+              <span className="font-semibold">{metrics.complexity.average.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Highest:</span>
+              <span className="font-semibold">{metrics.complexity.highest}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Lowest:</span>
+              <span className="font-semibold">{metrics.complexity.lowest}</span>
+            </div>
+          </div>
+        </div>
+        
+        {/* Dependencies */}
+        <div className="bg-yellow-50 p-4 rounded-lg">
+          <h3 className="font-medium text-yellow-700 mb-2">Dependencies</h3>
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <span className="text-gray-600">Internal:</span>
+              <span className="font-semibold">{metrics.dependencies.internal}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">External:</span>
+              <span className="font-semibold">{metrics.dependencies.external}</span>
+            </div>
+            {metrics.dependencies.most_dependencies && (
+              <div className="flex justify-between">
+                <span className="text-gray-600">Most Dependencies:</span>
+                <span className="font-semibold text-xs truncate max-w-[200px]" title={metrics.dependencies.most_dependencies}>
+                  {metrics.dependencies.most_dependencies}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {/* Language Distribution */}
+        <div className="bg-red-50 p-4 rounded-lg col-span-1 md:col-span-2">
+          <h3 className="font-medium text-red-700 mb-2">Top Languages</h3>
+          <div className="space-y-2">
+            {Object.entries(metrics.language_distribution)
+              .sort(([, a], [, b]) => (b as number) - (a as number))
+              .slice(0, 5)
+              .map(([language, count]) => (
+                <div key={language} className="flex justify-between">
+                  <span className="text-gray-600">{language}:</span>
+                  <span className="font-semibold">{count as React.ReactNode}</span>
+                </div>
+              ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function RepositoryAnalyze() {
   const params = useParams();
   const router = useRouter();
@@ -53,6 +209,7 @@ export default function RepositoryAnalyze() {
     showClasses: true,
     searchQuery: '',
   });
+  const [metrics, setMetrics] = useState<any>(null);
 
   useEffect(() => {
     if (params.id) {
@@ -89,12 +246,20 @@ export default function RepositoryAnalyze() {
   const fetchGraphData = async () => {
     try {
       setLoading(true);
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-      const response = await axios.get(`${apiUrl}/api/repositories/${params.id}/analyze`);
-      setRawData(response.data);
+      
+      // Use the repositoryApi to fetch enhanced view data
+      const enhancedData = await repositoryApi.getEnhancedRepositoryView(params.id as string);
+      
+      // Set repository data if not already set
+      if (!repository && enhancedData.repository) {
+        setRepository(enhancedData.repository);
+      }
+      
+      // The enhanced data includes the tree structure and metrics
+      setRawData(enhancedData.tree_structure);
       
       // Process the data for visualization
-      const processed = transformAnalysisData(response.data, {
+      const processed = transformAnalysisData(enhancedData.tree_structure, {
         showFiles: filterOptions.showFiles,
         showDirectories: filterOptions.showDirectories,
         showFunctions: filterOptions.showFunctions,
@@ -102,6 +267,9 @@ export default function RepositoryAnalyze() {
         searchQuery: searchQuery
       });
       setProcessedData(processed);
+      
+      // Store the metrics for display
+      setMetrics(enhancedData.metrics);
       
       setLoading(false);
     } catch (err) {
@@ -208,6 +376,9 @@ export default function RepositoryAnalyze() {
             </div>
           </div>
         )}
+        
+        {/* Add Enhanced Metrics Component */}
+        {metrics && <EnhancedMetrics metrics={metrics} />}
         
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <div className="flex justify-between items-center mb-6">
