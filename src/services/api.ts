@@ -156,6 +156,41 @@ export const repositoryApi = {
     resetSettings: async (): Promise<any> => {
         const response = await api.post('/api/settings/reset');
         return response.data;
+    },
+
+    // Repository notification endpoints
+    getRepositoryNotifications: async (repoId: string, params?: {
+        status?: 'all' | 'read' | 'unread';
+        limit?: number;
+        offset?: number;
+    }): Promise<any> => {
+        const queryParams = new URLSearchParams();
+        if (params?.status) queryParams.append('status', params.status);
+        if (params?.limit) queryParams.append('limit', params.limit.toString());
+        if (params?.offset) queryParams.append('offset', params.offset.toString());
+        
+        const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
+        const response = await api.get(`/api/repositories/${repoId}/notifications${queryString}`);
+        return response.data;
+    },
+
+    addRepositoryNotification: async (repoId: string, data: {
+        message: string;
+        type: 'error' | 'warning' | 'info' | 'success';
+        details?: any;
+    }): Promise<any> => {
+        const response = await api.post(`/api/repositories/${repoId}/notifications`, data);
+        return response.data;
+    },
+
+    subscribeToRepository: async (repoId: string, subscriberId: string): Promise<any> => {
+        const response = await api.post(`/api/repositories/${repoId}/subscribe`, { subscriberId });
+        return response.data;
+    },
+
+    unsubscribeFromRepository: async (repoId: string, subscriberId: string): Promise<any> => {
+        const response = await api.post(`/api/repositories/${repoId}/unsubscribe`, { subscriberId });
+        return response.data;
     }
 };
 

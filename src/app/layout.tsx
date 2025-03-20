@@ -2,6 +2,7 @@ import './globals.css'
 import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import { SettingsProvider } from '@/contexts/SettingsContext'
+import { NotificationProvider } from '@/contexts/NotificationContext'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -41,7 +42,9 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.className} bg-white dark:bg-gray-900 min-h-screen`}>
         <SettingsProvider>
-          {children}
+          <NotificationProvider>
+            {children}
+          </NotificationProvider>
         </SettingsProvider>
       </body>
     </html>
