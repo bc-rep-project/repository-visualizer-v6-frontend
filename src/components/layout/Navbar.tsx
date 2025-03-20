@@ -158,12 +158,6 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                 </div>
               )}
             </div>
-
-            <Link href="/settings">
-              <button className="p-2 text-muted-foreground hover:text-foreground">
-                <SettingsIcon className="h-5 w-5" />
-              </button>
-            </Link>
           </div>
         </div>
       </div>

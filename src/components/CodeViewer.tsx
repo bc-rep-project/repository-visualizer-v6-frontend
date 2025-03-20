@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 // @ts-ignore
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 // @ts-ignore
-import { vscDarkPlus, vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { vscDarkPlus, vs, dracula, tomorrow, solarizedlight } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { FaDownload, FaCopy, FaEye, FaEyeSlash, FaWrench, FaTimes } from 'react-icons/fa';
 import { useSettings } from '@/contexts/SettingsContext';
-import { FaDownload, FaCopy } from 'react-icons/fa';
 
 interface CodeViewerProps {
   code: string;
@@ -40,16 +40,69 @@ const languageMap: Record<string, string> = {
   txt: 'text',
 };
 
+// Map settings theme names to actual syntax highlighting styles
+const codeThemeMap: Record<string, any> = {
+  'github': vs,
+  'vscode': vscDarkPlus,
+  'dracula': dracula,
+  'tomorrow': tomorrow,
+  'solarized': solarizedlight
+};
+
 export default function CodeViewer({ code, language, fileName }: CodeViewerProps) {
   const { settings } = useSettings();
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [copied, setCopied] = useState(false);
   const [lineNumbers, setLineNumbers] = useState(true);
   const [wrapLines, setWrapLines] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [fontSize, setFontSize] = useState(14);
+  
+  useEffect(() => {
+    // Use theme from settings or detect from system
+    if (settings.theme === 'dark') {
+      setTheme('dark');
+    } else if (settings.theme === 'light') {
+      setTheme('light');
+    } else {
+      // Use system preference if set to 'system'
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setTheme(prefersDark ? 'dark' : 'light');
+      
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const handleChange = (e: MediaQueryListEvent) => {
+        setTheme(e.matches ? 'dark' : 'light');
+      };
+      
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
+    }
+  }, [settings.theme]);
+  
+  useEffect(() => {
+    // Detect mobile device
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      // Auto-enable line wrapping on mobile
+      if (mobile && !wrapLines) {
+        setWrapLines(true);
+      }
+      // Use smaller font on mobile
+      setFontSize(mobile ? 12 : 14);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+    };
+  }, [wrapLines]);
 
-  // Determine language for syntax highlighting
   const getLanguage = () => {
     if (!language) {
-      // Try to determine from file extension
       const ext = fileName.split('.').pop()?.toLowerCase() || '';
       return languageMap[ext] || 'text';
     }
@@ -72,55 +125,154 @@ export default function CodeViewer({ code, language, fileName }: CodeViewerProps
     document.body.removeChild(element);
   };
 
+  // Get the correct syntax highlighting style based on settings
+  const getHighlightStyle = () => {
+    const style = codeThemeMap[settings.codeHighlightTheme] || vs;
+    // For dark theme, use a dark style if the chosen style is light
+    if (theme === 'dark' && settings.codeHighlightTheme === 'github') {
+      return vscDarkPlus;
+    }
+    return style;
+  };
+
   return (
     <div className="rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
       <div className="bg-gray-100 dark:bg-gray-800 px-4 py-2 flex justify-between items-center">
-        <div className="font-mono text-sm text-gray-700 dark:text-gray-300">{fileName}</div>
+        <div className="font-mono text-sm truncate text-gray-700 dark:text-gray-300 max-w-[50%]">
+          {fileName}
+        </div>
         <div className="flex space-x-2">
-          <button
-            onClick={() => setLineNumbers(!lineNumbers)}
-            className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 text-sm"
-          >
-            {lineNumbers ? 'Hide Line Numbers' : 'Show Line Numbers'}
-          </button>
-          <button
-            onClick={() => setWrapLines(!wrapLines)}
-            className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 text-sm"
-          >
-            {wrapLines ? 'Disable Line Wrap' : 'Enable Line Wrap'}
-          </button>
+          {!isMobile && (
+            <>
+              <button
+                onClick={() => setLineNumbers(!lineNumbers)}
+                className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 text-sm"
+              >
+                {lineNumbers ? 'Hide Lines' : 'Show Lines'}
+              </button>
+              <button
+                onClick={() => setWrapLines(!wrapLines)}
+                className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 text-sm"
+              >
+                {wrapLines ? 'No Wrap' : 'Wrap'}
+              </button>
+            </>
+          )}
           <button
             onClick={copyToClipboard}
-            className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+            className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 p-1 rounded-md"
             title="Copy to clipboard"
           >
             {copied ? 'Copied!' : <FaCopy />}
           </button>
           <button
             onClick={downloadCode}
-            className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+            className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 p-1 rounded-md"
             title="Download file"
           >
             <FaDownload />
           </button>
+          {isMobile && (
+            <button
+              onClick={() => setShowSettings(!showSettings)}
+              className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 p-1 rounded-md"
+              title="Settings"
+            >
+              <FaWrench />
+            </button>
+          )}
         </div>
       </div>
-      <div className="overflow-auto max-h-[600px]">
+      
+      {/* Mobile settings panel */}
+      {isMobile && showSettings && (
+        <div className="bg-gray-50 dark:bg-gray-700 p-3 border-b border-gray-200 dark:border-gray-600">
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="text-sm font-medium">Code Settings</h3>
+            <button 
+              onClick={() => setShowSettings(false)}
+              className="text-gray-500 p-1"
+            >
+              <FaTimes />
+            </button>
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm">Line Numbers</span>
+              <button
+                onClick={() => setLineNumbers(!lineNumbers)}
+                className={`flex items-center justify-center w-8 h-8 rounded-md ${
+                  lineNumbers 
+                    ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300' 
+                    : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
+                }`}
+              >
+                {lineNumbers ? <FaEye /> : <FaEyeSlash />}
+              </button>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm">Wrap Lines</span>
+              <button
+                onClick={() => setWrapLines(!wrapLines)}
+                className={`flex items-center justify-center w-8 h-8 rounded-md ${
+                  wrapLines 
+                    ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300' 
+                    : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
+                }`}
+              >
+                {wrapLines ? <FaEye /> : <FaEyeSlash />}
+              </button>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm">Font Size</span>
+              <div className="flex items-center">
+                <button
+                  onClick={() => setFontSize(Math.max(8, fontSize - 1))}
+                  className="w-8 h-8 flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-l-md"
+                >
+                  -
+                </button>
+                <span className="w-8 h-8 flex items-center justify-center bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                  {fontSize}
+                </span>
+                <button
+                  onClick={() => setFontSize(Math.min(18, fontSize + 1))}
+                  className="w-8 h-8 flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-r-md"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      <div className={`overflow-auto ${isMobile ? 'max-h-[400px]' : 'max-h-[600px]'}`}>
         <SyntaxHighlighter
           language={getLanguage()}
-          style={settings?.theme === 'dark' ? vscDarkPlus : vs}
+          style={getHighlightStyle()}
           showLineNumbers={lineNumbers}
           wrapLines={wrapLines}
           customStyle={{
             margin: 0,
             padding: '1rem',
-            fontSize: '0.875rem',
-            backgroundColor: settings?.theme === 'dark' ? '#1e1e1e' : '#ffffff',
+            fontSize: `${fontSize}px`,
+            backgroundColor: theme === 'dark' ? '#1e1e1e' : '#ffffff',
           }}
         >
           {code}
         </SyntaxHighlighter>
       </div>
+      
+      {/* Mobile footer with basic info */}
+      {isMobile && (
+        <div className="bg-gray-50 dark:bg-gray-800 p-2 text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex justify-between items-center">
+            <div>{getLanguage()}</div>
+            <div>{code.split('\n').length} lines</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

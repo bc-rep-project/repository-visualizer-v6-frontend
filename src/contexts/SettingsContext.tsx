@@ -1,117 +1,145 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import axios from 'axios';
+import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import api from '@/services/api';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
-export interface AppSettings {
+export interface Settings {
   theme: 'light' | 'dark' | 'system';
-  max_repo_size_mb: number;
-  default_visualization: 'graph' | 'treemap';
-  enable_animations: boolean;
-  auto_refresh: boolean;
-  refresh_interval_seconds: number;
-  notifications_enabled: boolean;
-  last_updated: string;
+  codeHighlightTheme: string;
+  defaultVisualization: 'graph' | 'tree' | 'sunburst' | 'packedCircles';
+  autoAnalyze: boolean;
+  notificationsEnabled: boolean;
+  language: string;
 }
 
 interface SettingsContextType {
-  settings: AppSettings | null;
+  settings: Settings;
   loading: boolean;
   error: string | null;
-  updateSettings: (newSettings: Partial<AppSettings>) => Promise<void>;
+  updateSettings: (newSettings: Partial<Settings>) => Promise<void>;
+  resetSettings: () => Promise<void>;
 }
 
-const defaultSettings: AppSettings = {
-  theme: 'light',
-  max_repo_size_mb: 500,
-  default_visualization: 'graph',
-  enable_animations: true,
-  auto_refresh: false,
-  refresh_interval_seconds: 30,
-  notifications_enabled: true,
-  last_updated: new Date().toISOString()
+const defaultSettings: Settings = {
+  theme: 'system',
+  codeHighlightTheme: 'github',
+  defaultVisualization: 'graph',
+  autoAnalyze: false,
+  notificationsEnabled: true,
+  language: 'en',
 };
 
-const SettingsContext = createContext<SettingsContextType>({
-  settings: defaultSettings,
-  loading: false,
-  error: null,
-  updateSettings: async () => {}
-});
+const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
-export const useSettings = () => useContext(SettingsContext);
+export const useSettings = (): SettingsContextType => {
+  const context = useContext(SettingsContext);
+  if (!context) {
+    throw new Error('useSettings must be used within a SettingsProvider');
+  }
+  return context;
+};
 
-export function SettingsProvider({ children }: { children: ReactNode }) {
-  const [settings, setSettings] = useState<AppSettings | null>(null);
-  const [loading, setLoading] = useState(true);
+interface SettingsProviderProps {
+  children: ReactNode;
+}
+
+export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) => {
+  const [settings, setSettings] = useState<Settings>(defaultSettings);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        setLoading(true);
-        const response = await axios.get(`${API_URL}/api/settings`);
-        setSettings(response.data);
-        setError(null);
-        
-        // Apply theme immediately
-        applyTheme(response.data.theme);
-      } catch (err) {
-        console.error('Error fetching settings:', err);
-        setError('Failed to load settings');
-        // Use default settings if API fails
-        setSettings(defaultSettings);
-        applyTheme(defaultSettings.theme);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchSettings();
-  }, []);
-
-  const updateSettings = async (newSettings: Partial<AppSettings>) => {
-    if (!settings) return;
-    
+  const fetchSettings = async () => {
     try {
-      const updatedSettings = { ...settings, ...newSettings };
-      setSettings(updatedSettings);
-      
-      // Apply theme immediately if it changed
-      if (newSettings.theme && newSettings.theme !== settings.theme) {
-        applyTheme(newSettings.theme);
-      }
-      
-      // Save to API
-      await axios.put(`${API_URL}/api/settings`, updatedSettings);
+      setLoading(true);
+      setError(null);
+      const response = await api.get('/api/settings');
+      setSettings({ ...defaultSettings, ...response.data });
     } catch (err) {
-      console.error('Error updating settings:', err);
-      throw new Error('Failed to update settings');
+      console.error('Error fetching settings:', err);
+      setError('Failed to load settings');
+      // Use default settings on error
+      setSettings(defaultSettings);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const applyTheme = (theme: string) => {
-    // Apply theme to document
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else if (theme === 'light') {
-      document.documentElement.classList.remove('dark');
-    } else if (theme === 'system') {
-      // Check system preference
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      if (prefersDark) {
+  const updateSettings = async (newSettings: Partial<Settings>) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Optimistically update local state
+      const updatedSettings = { ...settings, ...newSettings };
+      setSettings(updatedSettings);
+      
+      // Save changes to API
+      await api.put('/api/settings', newSettings);
+    } catch (err) {
+      console.error('Error updating settings:', err);
+      setError('Failed to update settings');
+      
+      // Restore previous settings on error
+      await fetchSettings();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetSettings = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await api.post('/api/settings/reset');
+      setSettings(response.data.settings);
+    } catch (err) {
+      console.error('Error resetting settings:', err);
+      setError('Failed to reset settings');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load settings on initial mount
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  // Apply theme preference
+  useEffect(() => {
+    if (settings.theme === 'system') {
+      // Use system preference
+      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+      
+      // Listen for system preference changes
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const handleChange = (e: MediaQueryListEvent) => {
+        if (e.matches) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      };
+      
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
+    } else {
+      // Use explicit theme preference
+      if (settings.theme === 'dark') {
         document.documentElement.classList.add('dark');
       } else {
         document.documentElement.classList.remove('dark');
       }
     }
-  };
+  }, [settings.theme]);
 
   return (
-    <SettingsContext.Provider value={{ settings, loading, error, updateSettings }}>
+    <SettingsContext.Provider value={{ settings, loading, error, updateSettings, resetSettings }}>
       {children}
     </SettingsContext.Provider>
   );
-} 
+}; 

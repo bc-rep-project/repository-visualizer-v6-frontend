@@ -112,16 +112,6 @@ export const repositoryApi = {
         return response.data;
     },
 
-    getSettings: async (): Promise<any> => {
-        const response = await api.get('/settings');
-        return response.data;
-    },
-
-    updateSettings: async (settings: any): Promise<any> => {
-        const response = await api.post('/settings', settings);
-        return response.data;
-    },
-
     getDashboardStats: async (): Promise<any> => {
         const response = await api.get('/dashboard/stats');
         return response.data;
@@ -149,6 +139,22 @@ export const repositoryApi = {
 
     createPullRequest: async (repoId: string, pr: any): Promise<any> => {
         const response = await api.post(`/repository/${repoId}/pulls`, pr);
+        return response.data;
+    },
+
+    // Settings API
+    getSettings: async (): Promise<any> => {
+        const response = await api.get('/api/settings');
+        return response.data;
+    },
+
+    updateSettings: async (settings: any): Promise<any> => {
+        const response = await api.put('/api/settings', settings);
+        return response.data;
+    },
+
+    resetSettings: async (): Promise<any> => {
+        const response = await api.post('/api/settings/reset');
         return response.data;
     }
 };

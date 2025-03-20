@@ -2,7 +2,6 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import * as d3 from 'd3';
-import { useSettings } from '@/contexts/SettingsContext';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
 // Define types for graph data
@@ -51,10 +50,41 @@ export const RepositoryGraph: React.FC<RepositoryGraphProps> = ({
   height = 800,
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
-  const { settings } = useSettings();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const defaultSettings = {
+    enable_animations: true,
+    default_visualization: 'graph'
+  };
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
   const [loading, setLoading] = useState(true);
   const [simulation, setSimulation] = useState<d3.Simulation<GraphNode, SimulationEdgeDatum> | null>(null);
+  const [dimensions, setDimensions] = useState({ width: width, height: height });
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile devices and adjust dimensions
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      
+      if (containerRef.current) {
+        const containerWidth = containerRef.current.clientWidth;
+        const containerHeight = mobile ? 500 : 800; // Use smaller height on mobile
+        
+        setDimensions({
+          width: containerWidth || width,
+          height: containerHeight
+        });
+      }
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+    };
+  }, [width]);
 
   // Color scale for file types
   const fileTypeColorScale = d3.scaleOrdinal<string>()
@@ -114,8 +144,8 @@ export const RepositoryGraph: React.FC<RepositoryGraphProps> = ({
   useEffect(() => {
     if (!svgRef.current || !data || !data.nodes || !data.edges) {
       setLoading(false);
-        return;
-      }
+      return;
+    }
       
     setLoading(true);
 
@@ -130,11 +160,11 @@ export const RepositoryGraph: React.FC<RepositoryGraphProps> = ({
       target: typeof edge.target === 'string' ? edge.target : edge.target.id
     }));
 
-    // Create SVG
+    // Create SVG with responsive dimensions
     const svg = d3.select(svgRef.current)
-      .attr('width', width)
-      .attr('height', height)
-      .attr('viewBox', [0, 0, width, height]);
+      .attr('width', dimensions.width)
+      .attr('height', dimensions.height)
+      .attr('viewBox', [0, 0, dimensions.width, dimensions.height]);
 
     // Add zoom behavior
     const g = svg.append('g');
@@ -149,10 +179,10 @@ export const RepositoryGraph: React.FC<RepositoryGraphProps> = ({
 
     // Add a background to capture mouse events
     g.append('rect')
-      .attr('width', width * 2)
-      .attr('height', height * 2)
-      .attr('x', -width / 2)
-      .attr('y', -height / 2)
+      .attr('width', dimensions.width * 2)
+      .attr('height', dimensions.height * 2)
+      .attr('x', -dimensions.width / 2)
+      .attr('y', -dimensions.height / 2)
       .attr('fill', 'transparent')
       .on('click', () => {
         // Deselect when clicking background
@@ -165,8 +195,8 @@ export const RepositoryGraph: React.FC<RepositoryGraphProps> = ({
       .force('link', d3.forceLink<GraphNode, SimulationEdgeDatum>(edges)
         .id(d => d.id)
         .distance(edge => {
-          if ((edge as Edge).type === 'contains') return 30;
-          return 100;
+          if ((edge as Edge).type === 'contains') return isMobile ? 20 : 30;
+          return isMobile ? 60 : 100;
         })
         .strength(edge => {
           if ((edge as Edge).type === 'contains') return 0.8;
@@ -174,14 +204,34 @@ export const RepositoryGraph: React.FC<RepositoryGraphProps> = ({
         }))
       .force('charge', d3.forceManyBody<GraphNode>()
         .strength(d => {
-          if (d.type === 'directory') return -300;
-          if (d.type === 'file') return -150;
-          return -50;
+          if (d.type === 'directory') return isMobile ? -150 : -300;
+          if (d.type === 'file') return isMobile ? -80 : -150;
+          return isMobile ? -30 : -50;
         }))
-      .force('center', d3.forceCenter(width / 2, height / 2))
+      .force('center', d3.forceCenter(dimensions.width / 2, dimensions.height / 2))
       .force('collide', d3.forceCollide<GraphNode>().radius(d => getNodeRadius(d) + 2))
-      .force('x', d3.forceX(width / 2).strength(0.05))
-      .force('y', d3.forceY(height / 2).strength(0.05));
+      .force('x', d3.forceX(dimensions.width / 2).strength(0.05))
+      .force('y', d3.forceY(dimensions.height / 2).strength(0.05));
+
+    // Modify the getNodeRadius function to make nodes smaller on mobile
+    const getAdjustedNodeRadius = (node: GraphNode) => {
+      const baseSize = node.size || 500;
+      const scaleFactor = isMobile ? 0.6 : 1; // Reduce size on mobile
+      
+      if (node.type === 'directory') {
+        return Math.sqrt(baseSize) * 0.8 * scaleFactor;
+      }
+      
+      if (node.type === 'file') {
+        return Math.sqrt(baseSize) * 0.6 * scaleFactor;
+      }
+      
+      if (node.type === 'function' || node.type === 'method' || node.type === 'class') {
+        return Math.sqrt(baseSize) * 0.4 * scaleFactor;
+      }
+      
+      return Math.sqrt(baseSize) * 0.5 * scaleFactor;
+    };
 
     // Create edges
     const edge = g.append('g')
@@ -205,7 +255,7 @@ export const RepositoryGraph: React.FC<RepositoryGraphProps> = ({
       .selectAll<SVGCircleElement, GraphNode>('circle')
       .data(nodes)
       .join('circle')
-      .attr('r', d => getNodeRadius(d))
+      .attr('r', d => getAdjustedNodeRadius(d))
       .attr('fill', d => getNodeColor(d))
       .attr('stroke', '#fff')
       .attr('stroke-width', 1.5)
@@ -256,6 +306,39 @@ export const RepositoryGraph: React.FC<RepositoryGraphProps> = ({
         
         // Hide tooltip
         tooltip.style('display', 'none');
+      })
+      // Add touch support for mobile
+      .on('touchstart', function(event, d) {
+        // Prevent scrolling on touch
+        event.preventDefault();
+      })
+      .on('touchend', function(event, d) {
+        // Handle touch on mobile
+        event.preventDefault();
+        event.stopPropagation();
+        
+        // Show node selection on mobile
+        setSelectedNode(d);
+        highlightConnections(d);
+        
+        // Show tooltip at fixed position for mobile
+        tooltip.style('display', 'block')
+          .html(`
+            <div class="p-2">
+              <div class="font-bold">${d.name}</div>
+              <div class="text-sm">${d.type}</div>
+              ${d.language ? `<div class="text-xs">${d.language}</div>` : ''}
+            </div>
+          `)
+          .style('left', '50%')
+          .style('transform', 'translateX(-50%)')
+          .style('bottom', '60px')
+          .style('top', 'auto');
+        
+        // Hide tooltip after 2 seconds on mobile
+        setTimeout(() => {
+          tooltip.style('display', 'none');
+        }, 2000);
       });
 
     // Add labels
@@ -418,7 +501,7 @@ export const RepositoryGraph: React.FC<RepositoryGraphProps> = ({
       sim.stop();
       tooltip.remove();
     };
-  }, [data, width, height, getNodeColor, getNodeRadius]);
+  }, [data, dimensions.width, dimensions.height, isMobile, getNodeColor, getNodeRadius]);
 
   // Handle selected node changes
   useEffect(() => {
@@ -432,8 +515,8 @@ export const RepositoryGraph: React.FC<RepositoryGraphProps> = ({
       if (node && node.x && node.y) {
         const transform = d3.zoomTransform(svg.node() as Element);
         const scale = transform.k;
-        const x = -node.x * scale + width / 2;
-        const y = -node.y * scale + height / 2;
+        const x = -node.x * scale + dimensions.width / 2;
+        const y = -node.y * scale + dimensions.height / 2;
         
         svg.transition().duration(750)
           .call(
@@ -442,10 +525,10 @@ export const RepositoryGraph: React.FC<RepositoryGraphProps> = ({
           );
       }
     }
-  }, [selectedNode, simulation, width, height]);
+  }, [selectedNode, simulation, dimensions.width, dimensions.height]);
 
   return (
-    <div className="relative w-full h-full">
+    <div ref={containerRef} className="relative w-full h-full">
       {loading && (
         <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-10">
           <LoadingSpinner />
@@ -454,17 +537,17 @@ export const RepositoryGraph: React.FC<RepositoryGraphProps> = ({
       <svg
         ref={svgRef}
         className="w-full h-full border border-gray-200 rounded-lg"
-        style={{ minHeight: '600px' }}
+        style={{ minHeight: isMobile ? '400px' : '600px' }}
       />
       {selectedNode && (
-        <div className="absolute bottom-4 left-4 bg-white p-4 rounded-lg shadow-lg z-20">
-          <h3 className="font-bold text-lg">{selectedNode.name}</h3>
+        <div className="absolute bottom-4 left-4 right-4 md:right-auto bg-white p-4 rounded-lg shadow-lg z-20 max-w-xs md:max-w-md">
+          <h3 className="font-bold text-lg truncate">{selectedNode.name}</h3>
           <p className="text-sm capitalize">{selectedNode.type}</p>
           {selectedNode.language && (
             <p className="text-xs text-gray-600">{selectedNode.language}</p>
           )}
           <button 
-            className="mt-2 px-2 py-1 bg-gray-200 text-gray-800 rounded text-xs"
+            className="mt-2 px-3 py-1.5 bg-gray-200 text-gray-800 rounded text-sm flex items-center justify-center w-full md:w-auto"
             onClick={() => {
               setSelectedNode(null);
               const svg = d3.select(svgRef.current);
@@ -475,6 +558,12 @@ export const RepositoryGraph: React.FC<RepositoryGraphProps> = ({
           >
             Clear Selection
           </button>
+        </div>
+      )}
+      
+      {isMobile && !selectedNode && (
+        <div className="absolute bottom-0 left-0 right-0 bg-white bg-opacity-75 text-center py-2 text-xs z-10">
+          <p>Drag to move • Pinch to zoom • Tap nodes to select</p>
         </div>
       )}
     </div>

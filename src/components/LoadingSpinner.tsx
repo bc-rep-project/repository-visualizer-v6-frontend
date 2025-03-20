@@ -4,12 +4,14 @@ interface LoadingSpinnerProps {
   size?: 'small' | 'medium' | 'large';
   fullPage?: boolean;
   message?: string;
+  className?: string;
 }
 
 export default function LoadingSpinner({ 
   size = 'medium', 
   fullPage = false,
-  message = 'Loading...'
+  message = 'Loading...',
+  className = ''
 }: LoadingSpinnerProps) {
   const sizeClasses = {
     small: 'h-4 w-4 border-2',
@@ -18,7 +20,7 @@ export default function LoadingSpinner({
   };
 
   const spinner = (
-    <div className={`animate-spin rounded-full ${sizeClasses[size]} border-t-blue-500 border-r-transparent border-b-blue-500 border-l-transparent dark:border-t-blue-400 dark:border-b-blue-400`}></div>
+    <div className={`animate-spin rounded-full ${sizeClasses[size]} border-t-blue-500 border-r-transparent border-b-blue-500 border-l-transparent dark:border-t-blue-400 dark:border-b-blue-400 ${className}`}></div>
   );
 
   if (fullPage) {

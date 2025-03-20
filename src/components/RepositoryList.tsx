@@ -7,7 +7,6 @@ import { BiAnalyse } from 'react-icons/bi';
 import { FiEye } from 'react-icons/fi';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useSettings } from '@/contexts/SettingsContext';
 import LoadingSpinner from './LoadingSpinner';
 import axios from 'axios';
 
@@ -54,7 +53,6 @@ export default function RepositoryList() {
   const [deleteInProgress, setDeleteInProgress] = useState<string | null>(null);
   
   const router = useRouter();
-  const { settings } = useSettings();
 
   // Size range options
   const sizeRanges = [
@@ -301,259 +299,235 @@ export default function RepositoryList() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold flex items-center dark:text-white">
-          <svg className="w-6 h-6 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
-          </svg>
-          Repository Manager
-        </h1>
-        <button
-          onClick={() => setIsAddingRepo(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded flex items-center"
-        >
-          <FaPlus className="mr-2" /> Add Repository
-        </button>
-      </div>
-
+    <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4 md:p-6">
       <div className="mb-6">
-        <div className="flex flex-col md:flex-row gap-4 mb-4">
-          <div className="flex-grow">
-            <form onSubmit={handleSearch} className="relative">
-              <input
-                type="text"
-                placeholder="Search repositories..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full p-3 pl-10 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-              />
-              <FaSearch className="absolute left-3 top-3.5 text-gray-400" />
-              <button type="submit" className="sr-only">Search</button>
-            </form>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+          Repositories
+        </h2>
+        
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mt-4 space-y-4 sm:space-y-0">
+          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="form-select rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 w-full sm:w-auto"
+            >
+              <option>All Status</option>
+              <option>completed</option>
+              <option>pending</option>
+              <option>failed</option>
+            </select>
+            
+            <select
+              value={languageFilter}
+              onChange={(e) => setLanguageFilter(e.target.value)}
+              className="form-select rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 w-full sm:w-auto"
+            >
+              {languages.map((lang) => (
+                <option key={lang}>{lang}</option>
+              ))}
+            </select>
+            
+            <select
+              value={sizeFilter}
+              onChange={(e) => setSizeFilter(e.target.value)}
+              className="form-select rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 w-full sm:w-auto"
+            >
+              {sizeRanges.map((range) => (
+                <option key={range}>{range}</option>
+              ))}
+            </select>
           </div>
-          <div className="flex gap-2">
+          
+          <div className="flex items-center space-x-2">
             <button
               onClick={() => setViewMode('grid')}
               className={`p-2 rounded-md ${
                 viewMode === 'grid'
-                  ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300'
-                  : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-200'
               }`}
-              aria-label="Grid View"
+              aria-label="Grid view"
             >
-              <BsGrid size={20} />
+              <BsGrid className="h-5 w-5" />
             </button>
             <button
               onClick={() => setViewMode('list')}
               className={`p-2 rounded-md ${
                 viewMode === 'list'
-                  ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300'
-                  : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-200'
               }`}
-              aria-label="List View"
+              aria-label="List view"
             >
-              <BsList size={20} />
+              <BsList className="h-5 w-5" />
+            </button>
+            <button
+              onClick={() => setIsAddingRepo(true)}
+              className="inline-flex items-center px-3 py-2 rounded-md text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 focus:outline-none"
+            >
+              <FaPlus className="mr-1" /> Add
             </button>
           </div>
         </div>
-
-        <div className="flex flex-wrap gap-2">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="p-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-          >
-            <option value="All Status">All Status</option>
-            <option value="completed">Completed</option>
-            <option value="pending">Pending</option>
-            <option value="failed">Failed</option>
-          </select>
-
-          <select
-            value={languageFilter}
-            onChange={(e) => setLanguageFilter(e.target.value)}
-            className="p-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-          >
-            {languages.map((language, index) => (
-              <option key={index} value={language}>
-                {language}
-              </option>
-            ))}
-          </select>
-
-          <select
-            value={sizeFilter}
-            onChange={(e) => setSizeFilter(e.target.value)}
-            className="p-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-          >
-            {sizeRanges.map((range, index) => (
-              <option key={index} value={range}>
-                {range}
-              </option>
-            ))}
-          </select>
-        </div>
       </div>
-      
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 dark:bg-red-900 dark:border-red-700 dark:text-red-300">
-          {error}
-        </div>
-      )}
       
       {loading ? (
         <div className="flex justify-center items-center h-64">
           <LoadingSpinner />
         </div>
-      ) : filteredRepositories.length === 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 text-center">
-          <p className="text-gray-600 dark:text-gray-300 mb-4">No repositories found.</p>
+      ) : error ? (
+        <div className="bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-400 px-4 py-3 rounded">
+          <p>{error}</p>
+        </div>
+      ) : repositories.length === 0 ? (
+        <div className="text-center py-8">
+          <p className="text-gray-500 dark:text-gray-400">
+            No repositories found. Try adding one!
+          </p>
         <button
             onClick={() => setIsAddingRepo(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded inline-flex items-center"
+            className="mt-4 inline-flex items-center px-4 py-2 rounded-md text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 focus:outline-none"
         >
-            <FaPlus className="mr-2" /> Add Your First Repository
+            <FaPlus className="mr-2" /> Add Repository
         </button>
         </div>
       ) : (
-        <div className={`grid ${viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 'grid-cols-1 gap-2'}`}>
-        {filteredRepositories.map((repo) => (
+        <>
+          {viewMode === 'grid' ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {repositories.map((repo) => (
           <div
             key={repo._id}
-              className={`bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden ${
-                viewMode === 'list' ? 'p-4' : ''
-              }`}
-            >
-              <div className={viewMode === 'list' ? 'flex items-center' : 'p-4'}>
-                <div className={`${viewMode === 'list' ? 'flex-grow' : ''}`}>
-                  <div className={`flex justify-between items-start ${viewMode === 'list' ? '' : 'mb-2'}`}>
-                    <div>
-                      <h2 className="text-lg font-semibold dark:text-white">
-                        {repo.repo_name || repo.repo_url.split('/').pop()}
-                      </h2>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {repo.repo_url}
-                      </p>
-                    </div>
-                    <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(repo.status)}`}>
-                      {repo.status.charAt(0).toUpperCase() + repo.status.slice(1)}
+                  className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+                >
+                  <div className="p-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="text-lg font-medium text-gray-900 dark:text-white truncate">
+                        {repo.repo_name || repo.repo_url.split('/').pop()?.replace('.git', '') || 'Unnamed Repository'}
+                      </h3>
+                      <span
+                        className={`text-xs font-medium px-2 py-1 rounded-full ${getStatusColor(
+                          repo.status
+                        )}`}
+                      >
+                        {repo.status}
               </span>
             </div>
 
-                  {viewMode === 'grid' && (
-                    <>
-                      <div className="mt-3 mb-2">
-                        {repo.languages && renderLanguageBar(repo.languages)}
+                    <p className="text-sm text-gray-500 dark:text-gray-400 truncate mb-2">
+                      {repo.repo_url}
+                    </p>
+                    
+                    {repo.languages && Object.keys(repo.languages).length > 0 && (
+                      <div className="mb-2">
+                        {renderLanguageBar(repo.languages)}
                       </div>
-
-                      <div className="grid grid-cols-2 gap-2 mb-4">
-                        <div>
-                          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Files</p>
-                          <p className="text-lg font-semibold dark:text-white">{repo.file_count || 0}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Directories</p>
-                          <p className="text-lg font-semibold dark:text-white">{repo.directory_count || 0}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Size</p>
-                          <p className="text-lg font-semibold dark:text-white">{formatBytes(repo.total_size || 0)}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Last Updated</p>
-                          <p className="text-lg font-semibold dark:text-white">{formatTimeAgo(repo.updated_at)}</p>
-                        </div>
-                      </div>
-                    </>
-                  )}
-
-                  {viewMode === 'list' && (
-                    <div className="flex items-center mt-2">
-                      <div className="w-1/3">
-                        <div className="mr-4">
-                          {repo.languages && renderLanguageBar(repo.languages)}
-                        </div>
-                      </div>
-                      <div className="flex space-x-6">
-                        <div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">Files</p>
-                          <p className="font-medium dark:text-white">{repo.file_count || 0}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">Directories</p>
-                          <p className="font-medium dark:text-white">{repo.directory_count || 0}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">Size</p>
-                          <p className="font-medium dark:text-white">{formatBytes(repo.total_size || 0)}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">Last Updated</p>
-                          <p className="font-medium dark:text-white">{formatTimeAgo(repo.updated_at)}</p>
-                        </div>
-                      </div>
+                    )}
+                    
+                    <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 mt-3">
+                      <span>Created: {formatTimeAgo(repo.created_at)}</span>
+                      <span>
+                        {repo.file_count ? `${repo.file_count} files` : ''}
+                        {repo.total_size ? ` · ${formatBytes(repo.total_size)}` : ''}
+                      </span>
                     </div>
-                  )}
                 </div>
 
-                {viewMode === 'list' && (
-                  <div className="flex ml-4 space-x-2">
+                  <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-3 bg-gray-50 dark:bg-gray-800 flex space-x-2">
+                    <Link 
+                      href={`/repositories/${repo._id}/enhanced`}
+                      className="flex-1 flex justify-center items-center px-3 py-1.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 text-sm font-medium rounded-md hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors"
+                    >
+                      <FiEye className="mr-1" /> Enhanced
+                    </Link>
                     <Link
                       href={`/repositories/${repo._id}/analyze`}
-                      className="px-3 py-1.5 bg-blue-600 text-white rounded-md flex items-center text-sm"
+                      className="flex-1 flex justify-center items-center px-3 py-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-sm font-medium rounded-md hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
                     >
                       <BiAnalyse className="mr-1" /> Analyze
                     </Link>
-                    <Link
-                      href={`/repositories/${repo._id}/enhanced`}
-                      className="px-3 py-1.5 bg-purple-600 text-white rounded-md flex items-center text-sm"
-                    >
-                      <FiEye className="mr-1" /> Enhanced View
-                    </Link>
                     <button
                       onClick={() => handleDeleteRepository(repo._id)}
-                      className="px-3 py-1.5 bg-red-600 text-white rounded-md flex items-center text-sm"
                       disabled={deleteInProgress === repo._id}
+                      className="flex items-center px-3 py-1.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm font-medium rounded-md hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
                     >
                       {deleteInProgress === repo._id ? (
                         <LoadingSpinner size="small" />
                       ) : (
-                        <FaTrash className="mr-1" />
+                        <FaTrash className="h-4 w-4" />
                       )}
-                      Delete
                     </button>
                   </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-200 dark:divide-gray-700">
+              {repositories.map((repo) => (
+                <div
+                  key={repo._id}
+                  className="py-4 flex flex-col sm:flex-row sm:items-center"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center mb-1">
+                      <h3 className="text-lg font-medium text-gray-900 dark:text-white truncate mr-2">
+                        {repo.repo_name || repo.repo_url.split('/').pop()?.replace('.git', '') || 'Unnamed Repository'}
+                      </h3>
+                      <span
+                        className={`text-xs font-medium px-2 py-1 rounded-full ${getStatusColor(
+                          repo.status
+                        )}`}
+                      >
+                        {repo.status}
+                      </span>
+                    </div>
+                    
+                    <p className="text-sm text-gray-500 dark:text-gray-400 truncate mb-2">
+                      {repo.repo_url}
+                    </p>
+                    
+                    {repo.languages && Object.keys(repo.languages).length > 0 && (
+                      <div className="mb-2 max-w-md">
+                        {renderLanguageBar(repo.languages)}
+                  </div>
                 )}
+                    
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      <span>Created: {formatTimeAgo(repo.created_at)}</span>
+                      <span className="mx-2">·</span>
+                      <span>
+                        {repo.file_count ? `${repo.file_count} files` : ''}
+                        {repo.total_size ? ` · ${formatBytes(repo.total_size)}` : ''}
+                      </span>
+                    </div>
             </div>
 
-              {viewMode === 'grid' && (
-                <div className="flex justify-between border-t border-gray-200 dark:border-gray-700">
+                  <div className="flex mt-3 sm:mt-0 space-x-2">
                   <Link
-                    href={`/repositories/${repo._id}/analyze`}
-                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium flex items-center gap-1 p-3 flex-1 justify-center"
+                      href={`/repositories/${repo._id}/enhanced`}
+                      className="flex items-center px-3 py-1.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 text-sm font-medium rounded-md hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors"
                   >
-                    <BiAnalyse /> Analyze
+                      <FiEye className="mr-1" /> Enhanced
                   </Link>
                   <Link
-                    href={`/repositories/${repo._id}/enhanced`}
-                    className="text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 font-medium flex items-center gap-1 p-3 flex-1 justify-center border-l border-r border-gray-200 dark:border-gray-700"
+                      href={`/repositories/${repo._id}/analyze`}
+                      className="flex items-center px-3 py-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-sm font-medium rounded-md hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
                   >
-                    <FiEye /> Enhanced
+                      <BiAnalyse className="mr-1" /> Analyze
                   </Link>
                   <button
                     onClick={() => handleDeleteRepository(repo._id)}
-                    className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-medium flex items-center gap-1 p-3 flex-1 justify-center"
+                      disabled={deleteInProgress === repo._id}
+                      className="flex items-center px-3 py-1.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm font-medium rounded-md hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
                   >
                     {deleteInProgress === repo._id ? (
                       <LoadingSpinner size="small" />
                     ) : (
-                      <FaTrash />
+                        <FaTrash className="h-4 w-4" />
                     )}
-                    Delete
                   </button>
                 </div>
-              )}
             </div>
           ))}
         </div>
@@ -563,86 +537,96 @@ export default function RepositoryList() {
       {totalPages > 1 && (
         <div className="flex justify-between items-center mt-6">
           <div className="text-sm text-gray-500 dark:text-gray-400">
-            Showing {filteredRepositories.length} of {totalRepos} repositories
+                Showing {repositories.length} of {totalRepos} repositories
           </div>
-          <div className="flex space-x-2">
+              <div className="flex space-x-1">
             <button
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1}
-              className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 disabled:opacity-50"
+                  className="px-3 py-1 rounded-md text-sm font-medium bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-200 disabled:opacity-50"
             >
               Previous
             </button>
-            <span className="px-3 py-1 text-gray-700 dark:text-gray-200">
-              Page {currentPage} of {totalPages}
-            </span>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => handlePageChange(page)}
+                    className={`px-3 py-1 rounded-md text-sm font-medium ${
+                      currentPage === page
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-200'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
             <button
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
-              className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 disabled:opacity-50"
+                  className="px-3 py-1 rounded-md text-sm font-medium bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-200 disabled:opacity-50"
             >
               Next
             </button>
           </div>
         </div>
+          )}
+        </>
       )}
 
-      {/* Add Repository Modal */}
+      {/* Add repository modal */}
       {isAddingRepo && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4 dark:text-white">Add Repository</h2>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                Add Repository
+              </h3>
+              <button
+                onClick={() => setIsAddingRepo(false)}
+                className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+              >
+                <span className="sr-only">Close</span>
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
             
             <form onSubmit={addRepository}>
               <div className="mb-4">
-                <label htmlFor="repo_url" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  GitHub Repository URL
+                <label htmlFor="repo-url" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Repository URL
                 </label>
                 <input
+                  id="repo-url"
                   type="text"
-                  id="repo_url"
-                  placeholder="https://github.com/username/repository"
+                  placeholder="https://github.com/username/repo.git"
                   value={newRepoUrl}
                   onChange={(e) => setNewRepoUrl(e.target.value)}
-                  className="w-full p-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:text-white"
                   required
                 />
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Example: https://github.com/facebook/react
-                </p>
+                {addError && (
+                  <p className="mt-2 text-sm text-red-600 dark:text-red-400">{addError}</p>
+                )}
               </div>
               
-              {addError && (
-                <div className="bg-red-100 border border-red-400 text-red-700 px-3 py-2 rounded mb-4 text-sm dark:bg-red-900 dark:border-red-700 dark:text-red-300">
-                  {addError}
-                </div>
-              )}
-              
-              <div className="flex justify-end gap-2">
+              <div className="flex justify-end space-x-3">
                 <button
                   type="button"
-                  onClick={() => {
-                    setIsAddingRepo(false);
-                    setNewRepoUrl('');
-                    setAddError(null);
-                  }}
-                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
+                  onClick={() => setIsAddingRepo(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none"
                 >
                   Cancel
                 </button>
               <button
                   type="submit"
                   disabled={addingInProgress}
-                  className={`px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md flex items-center ${
-                    addingInProgress ? 'opacity-75 cursor-not-allowed' : ''
-                  }`}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none disabled:opacity-50 flex items-center"
                 >
                   {addingInProgress ? (
                     <>
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
+                      <LoadingSpinner size="small" className="mr-2" />
                       Adding...
                     </>
                   ) : (
