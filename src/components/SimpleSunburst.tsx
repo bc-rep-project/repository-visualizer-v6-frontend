@@ -2,7 +2,6 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
-import { useSettings } from '@/contexts/SettingsContext';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { FileNode } from '@/types/types';
 
@@ -18,7 +17,6 @@ export const SimpleSunburst: React.FC<SimpleSunburstProps> = ({
   height = 800,
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
-  const { settings } = useSettings();
   const [loading, setLoading] = useState(true);
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
 

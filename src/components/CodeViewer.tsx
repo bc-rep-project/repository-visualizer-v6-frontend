@@ -1,11 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 // @ts-ignore
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 // @ts-ignore
 import { vscDarkPlus, vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { useSettings } from '@/contexts/SettingsContext';
 import { FaDownload, FaCopy } from 'react-icons/fa';
 
 interface CodeViewerProps {
@@ -41,15 +40,26 @@ const languageMap: Record<string, string> = {
 };
 
 export default function CodeViewer({ code, language, fileName }: CodeViewerProps) {
-  const { settings } = useSettings();
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [copied, setCopied] = useState(false);
   const [lineNumbers, setLineNumbers] = useState(true);
   const [wrapLines, setWrapLines] = useState(false);
+  
+  useEffect(() => {
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    setTheme(prefersDark ? 'dark' : 'light');
+    
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = (e: MediaQueryListEvent) => {
+      setTheme(e.matches ? 'dark' : 'light');
+    };
+    
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
 
-  // Determine language for syntax highlighting
   const getLanguage = () => {
     if (!language) {
-      // Try to determine from file extension
       const ext = fileName.split('.').pop()?.toLowerCase() || '';
       return languageMap[ext] || 'text';
     }
@@ -108,14 +118,14 @@ export default function CodeViewer({ code, language, fileName }: CodeViewerProps
       <div className="overflow-auto max-h-[600px]">
         <SyntaxHighlighter
           language={getLanguage()}
-          style={settings?.theme === 'dark' ? vscDarkPlus : vs}
+          style={theme === 'dark' ? vscDarkPlus : vs}
           showLineNumbers={lineNumbers}
           wrapLines={wrapLines}
           customStyle={{
             margin: 0,
             padding: '1rem',
             fontSize: '0.875rem',
-            backgroundColor: settings?.theme === 'dark' ? '#1e1e1e' : '#ffffff',
+            backgroundColor: theme === 'dark' ? '#1e1e1e' : '#ffffff',
           }}
         >
           {code}

@@ -112,16 +112,6 @@ export const repositoryApi = {
         return response.data;
     },
 
-    getSettings: async (): Promise<any> => {
-        const response = await api.get('/settings');
-        return response.data;
-    },
-
-    updateSettings: async (settings: any): Promise<any> => {
-        const response = await api.post('/settings', settings);
-        return response.data;
-    },
-
     getDashboardStats: async (): Promise<any> => {
         const response = await api.get('/dashboard/stats');
         return response.data;

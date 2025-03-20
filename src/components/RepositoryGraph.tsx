@@ -2,7 +2,6 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import * as d3 from 'd3';
-import { useSettings } from '@/contexts/SettingsContext';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
 // Define types for graph data
@@ -51,7 +50,10 @@ export const RepositoryGraph: React.FC<RepositoryGraphProps> = ({
   height = 800,
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
-  const { settings } = useSettings();
+  const defaultSettings = {
+    enable_animations: true,
+    default_visualization: 'graph'
+  };
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
   const [loading, setLoading] = useState(true);
   const [simulation, setSimulation] = useState<d3.Simulation<GraphNode, SimulationEdgeDatum> | null>(null);

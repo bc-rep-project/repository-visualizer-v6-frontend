@@ -1,7 +1,6 @@
 import './globals.css'
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
-import { SettingsProvider } from '@/contexts/SettingsContext'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -22,9 +21,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.className} bg-white dark:bg-gray-900`}>
-        <SettingsProvider>
-          {children}
-        </SettingsProvider>
+        {children}
       </body>
     </html>
   )
