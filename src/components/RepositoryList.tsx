@@ -436,10 +436,10 @@ export default function RepositoryList() {
 
                   <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-3 bg-gray-50 dark:bg-gray-800 flex space-x-2">
                     <Link 
-                      href={`/repositories/${repo._id}`}
-                      className="flex-1 flex justify-center items-center px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-sm font-medium rounded-md hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+                      href={`/repositories/${repo._id}/enhanced`}
+                      className="flex-1 flex justify-center items-center px-3 py-1.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 text-sm font-medium rounded-md hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors"
                     >
-                      <FiEye className="mr-1" /> View
+                      <FiEye className="mr-1" /> Enhanced
                     </Link>
                     <Link
                       href={`/repositories/${repo._id}/analyze`}
@@ -505,10 +505,10 @@ export default function RepositoryList() {
 
                   <div className="flex mt-3 sm:mt-0 space-x-2">
                   <Link
-                      href={`/repositories/${repo._id}`}
-                      className="flex items-center px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-sm font-medium rounded-md hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+                      href={`/repositories/${repo._id}/enhanced`}
+                      className="flex items-center px-3 py-1.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 text-sm font-medium rounded-md hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors"
                   >
-                      <FiEye className="mr-1" /> View
+                      <FiEye className="mr-1" /> Enhanced
                   </Link>
                   <Link
                       href={`/repositories/${repo._id}/analyze`}
