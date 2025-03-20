@@ -4,11 +4,13 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { FaGithub, FaHome, FaChartBar, FaBell, FaSearch, FaBars, FaTimes, FaCog } from 'react-icons/fa';
+import { useNotifications } from '@/contexts/NotificationContext';
 
 export default function Navigation() {
   const pathname = usePathname();
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { unreadCount } = useNotifications();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,7 +63,14 @@ export default function Navigation() {
                     : 'border-transparent text-gray-500 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
                 }`}
               >
-                <FaBell className="mr-1" /> Notifications
+                <div className="relative">
+                  <FaBell className="mr-1" /> Notifications
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-2 -right-2 flex items-center justify-center w-5 h-5 text-xs text-white bg-red-500 rounded-full">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
+                </div>
               </Link>
               <Link
                 href="/settings"
@@ -142,7 +151,14 @@ export default function Navigation() {
               }`}
               onClick={() => setMobileMenuOpen(false)}
             >
-              Notifications
+              <div className="flex items-center">
+                <span>Notifications</span>
+                {unreadCount > 0 && (
+                  <span className="ml-2 flex items-center justify-center w-5 h-5 text-xs text-white bg-red-500 rounded-full">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </div>
             </Link>
             <Link
               href="/settings"
