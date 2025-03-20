@@ -136,17 +136,19 @@ const DirectoryStructure: React.FC<DirectoryStructureProps> = ({ data, searchQue
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
       <h2 className="text-xl font-bold mb-4 dark:text-white">Directory Structure</h2>
       
-      <div className="mb-4">
-        <input
-          type="text"
-          placeholder="Search files and directories..."
-          className="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-          value={searchTerm}
-          onChange={handleSearch}
-        />
-      </div>
+      {searchQuery === undefined && (
+        <div className="mb-4">
+          <input
+            type="text"
+            placeholder="Search files and directories..."
+            className="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            value={internalSearchTerm}
+            onChange={handleSearch}
+          />
+        </div>
+      )}
       
-      <div className="overflow-auto max-h-64 border border-gray-200 dark:border-gray-700 rounded-md">
+      <div className="overflow-auto max-h-96 border border-gray-200 dark:border-gray-700 rounded-md">
         {filteredData ? (
           <TreeNode 
             node={filteredData} 

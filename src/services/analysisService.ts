@@ -219,5 +219,17 @@ export const analysisService = {
       throw new Error(`Failed to fetch repository analysis: ${response.statusText}`);
     }
     return response.json();
+  },
+
+  async getDependencyGraph(repositoryId: string): Promise<GraphData> {
+    const response = await fetch(`${API_BASE_URL}/repositories/${repositoryId}/dependency-graph`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch dependency graph: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
+  applyFilters(data: FileNode, filters: FilterOptions): AnalysisData {
+    return transformAnalysisData(data, filters);
   }
 }; 
