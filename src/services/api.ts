@@ -12,8 +12,6 @@ const api = axios.create({
     headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'Origin': typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000',
-        'X-Requested-With': 'XMLHttpRequest',
     },
     timeout: 60000, // Increase timeout to 60 seconds
     timeoutErrorMessage: 'Request timed out - the server is taking too long to respond',
