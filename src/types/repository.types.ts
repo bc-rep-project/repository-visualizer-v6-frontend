@@ -14,6 +14,12 @@ export interface Repository {
 
 export interface RepositoryResponse {
     repositories: Repository[];
+    pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        pages: number;
+    };
 }
 
 export interface CloneRepositoryRequest {
