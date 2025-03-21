@@ -251,14 +251,20 @@ export default function RepositoryDetail() {
                 </h1>
                 <div className="flex space-x-3">
                   <button
-                    onClick={() => router.push(`/repositories/${repository._id}/enhance`)}
+                    onClick={() => router.push(`/repositories/${repository._id}/analyze`)}
                     className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center"
                   >
                     <BiAnalyse className="mr-2" /> Analyze
                   </button>
                   <button
-                    onClick={() => router.push(`/repositories/${repository._id}/notifications`)}
+                    onClick={() => router.push(`/repositories/${repository._id}/enhanced`)}
                     className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 flex items-center"
+                  >
+                    <FaCode className="mr-2" /> Enhanced
+                  </button>
+                  <button
+                    onClick={() => router.push(`/repositories/${repository._id}/notifications`)}
+                    className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 flex items-center"
                   >
                     <FaBell className="mr-2" /> Notifications
                   </button>
@@ -270,7 +276,7 @@ export default function RepositoryDetail() {
                   </button>
                 </div>
               </div>
-              
+
               {/* Repository Structure */}
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm mb-6 p-6">
                 <h2 className="text-lg font-semibold mb-4 dark:text-white">Repository Structure</h2>
