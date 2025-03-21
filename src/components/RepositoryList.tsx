@@ -82,12 +82,26 @@ export default function RepositoryList() {
       
       // Check if the response has the expected structure
       if (response.data && response.data.repositories) {
-        setRepositories(response.data.repositories);
+        // Sort the repositories by created_at in descending order
+        // to ensure newest repositories are always at the top
+        const sortedRepos = [...response.data.repositories].sort((a, b) => {
+          const dateA = new Date(a.created_at).getTime();
+          const dateB = new Date(b.created_at).getTime();
+          return dateB - dateA; // Descending order (newest first)
+        });
+        
+        setRepositories(sortedRepos);
         setTotalPages(response.data.pagination.pages);
         setTotalRepos(response.data.pagination.total);
       } else {
         // Handle legacy API response format (just an array)
-        setRepositories(Array.isArray(response.data) ? response.data : []);
+        const repoArray = Array.isArray(response.data) ? response.data : [];
+        const sortedRepos = [...repoArray].sort((a, b) => {
+          const dateA = new Date(a.created_at).getTime();
+          const dateB = new Date(b.created_at).getTime();
+          return dateB - dateA; // Descending order (newest first)
+        });
+        setRepositories(sortedRepos);
       }
     } catch (err) {
       console.error('Failed to fetch repositories:', err);
@@ -164,13 +178,10 @@ export default function RepositoryList() {
       // Reset form and close modal
       setNewRepoUrl('');
       
-      // Instead of closing the modal immediately, show success message
-      setAddError(null);
-      
-      // Refresh repository list - don't close modal yet to show success
+      // After successfully adding a repository, refresh the list to show it at the top
       await fetchRepositories();
       
-      // Now we can close the modal after successful fetch
+      // Close the modal after successful fetch
       setIsAddingRepo(false);
     } catch (err: any) {
       console.error('Error adding repository:', err);
@@ -309,6 +320,8 @@ export default function RepositoryList() {
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
+    // Always reset to the first page when refreshing to see newest repositories
+    setCurrentPage(1); 
     await fetchRepositories();
   };
 
