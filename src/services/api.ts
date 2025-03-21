@@ -82,7 +82,7 @@ api.interceptors.response.use(
 
 export const repositoryApi = {
     listRepositories: async (): Promise<Repository[]> => {
-        const response = await api.get<RepositoryResponse>('/api/repositories');
+        const response = await api.get<RepositoryResponse>('/api/repositories?sort=created_at&dir=desc');
         return response.data.repositories;
     },
 
