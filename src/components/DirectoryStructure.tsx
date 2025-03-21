@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { FaFolder, FaFolderOpen, FaFile, FaChevronRight, FaChevronDown } from 'react-icons/fa';
 import { FileNode } from '@/types/types';
+import CodeViewer from '@/components/CodeViewer';
 
 interface DirectoryStructureProps {
   data: FileNode;
@@ -14,6 +15,7 @@ interface TreeNodeProps {
   level: number;
   expanded: Record<string, boolean>;
   toggleExpand: (path: string) => void;
+  onFileClick: (node: FileNode) => void;
 }
 
 const formatSize = (bytes: number): string => {
@@ -24,7 +26,7 @@ const formatSize = (bytes: number): string => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
-const TreeNode: React.FC<TreeNodeProps> = ({ node, level, expanded, toggleExpand }) => {
+const TreeNode: React.FC<TreeNodeProps> = ({ node, level, expanded, toggleExpand, onFileClick }) => {
   const isDirectory = node.type === 'directory';
   const isExpanded = expanded[node.path];
   const hasChildren = node.children && node.children.length > 0;
@@ -35,11 +37,19 @@ const TreeNode: React.FC<TreeNodeProps> = ({ node, level, expanded, toggleExpand
   // Calculate padding based on level
   const paddingLeft = `${level * 16}px`;
   
+  const handleClick = () => {
+    if (isDirectory && hasChildren) {
+      toggleExpand(node.path);
+    } else if (!isDirectory) {
+      onFileClick(node);
+    }
+  };
+  
   return (
     <div>
       <div 
         className="flex items-center py-1 px-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
-        onClick={() => isDirectory && hasChildren && toggleExpand(node.path)}
+        onClick={handleClick}
       >
         <div style={{ paddingLeft }} className="flex items-center flex-grow">
           {isDirectory && hasChildren ? (
@@ -73,6 +83,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({ node, level, expanded, toggleExpand
               level={level + 1}
               expanded={expanded}
               toggleExpand={toggleExpand}
+              onFileClick={onFileClick}
             />
           ))}
         </div>
@@ -86,6 +97,8 @@ const DirectoryStructure: React.FC<DirectoryStructureProps> = ({ data, searchQue
     [data.path]: true // Root is expanded by default
   });
   const [internalSearchTerm, setInternalSearchTerm] = useState('');
+  const [selectedFile, setSelectedFile] = useState<FileNode | null>(null);
+  const [fileContent, setFileContent] = useState<string | null>(null);
   
   // Use external searchQuery if provided, otherwise use internal state
   const searchTerm = searchQuery !== undefined ? searchQuery : internalSearchTerm;
@@ -130,6 +143,41 @@ const DirectoryStructure: React.FC<DirectoryStructureProps> = ({ data, searchQue
     return matchesSearch ? node : null;
   };
   
+  const handleFileClick = async (node: FileNode) => {
+    setSelectedFile(node);
+    
+    // In a real implementation, you would fetch the file content from the server
+    // For now, we'll use mock content
+    
+    // For JavaScript/TypeScript files
+    if (node.path.endsWith('.js') || node.path.endsWith('.jsx') || node.path.endsWith('.ts') || node.path.endsWith('.tsx')) {
+      setFileContent(`// ${node.path}
+import React from 'react';
+
+export const ${node.path.split('/').pop()?.split('.')[0]} = () => {
+  return (
+    <div>
+      <h1>Example Component</h1>
+      <p>This is a mock content for demonstration purposes.</p>
+    </div>
+  );
+};`);
+    } 
+    // For Python files
+    else if (node.path.endsWith('.py')) {
+      setFileContent(`# ${node.path}
+def main():
+    print("Hello, Python!")
+    
+if __name__ == "__main__":
+    main()`);
+    }
+    // For other files
+    else {
+      setFileContent(`// ${node.path}\nMock content for ${node.path.split('/').pop()}`);
+    }
+  };
+  
   const filteredData = filterTree(data, searchTerm);
   
   return (
@@ -146,17 +194,30 @@ const DirectoryStructure: React.FC<DirectoryStructureProps> = ({ data, searchQue
         />
       </div>
       
-      <div className="overflow-auto max-h-64 border border-gray-200 dark:border-gray-700 rounded-md">
-        {filteredData ? (
-          <TreeNode 
-            node={filteredData} 
-            level={0} 
-            expanded={expanded} 
-            toggleExpand={toggleExpand} 
-          />
-        ) : (
-          <div className="p-4 text-center text-gray-500 dark:text-gray-400">
-            No matching files or directories
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="overflow-auto max-h-[500px] border border-gray-200 dark:border-gray-700 rounded-md">
+          {filteredData ? (
+            <TreeNode 
+              node={filteredData} 
+              level={0} 
+              expanded={expanded} 
+              toggleExpand={toggleExpand}
+              onFileClick={handleFileClick}
+            />
+          ) : (
+            <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+              No matching files or directories
+            </div>
+          )}
+        </div>
+        
+        {selectedFile && fileContent && (
+          <div className="border border-gray-200 dark:border-gray-700 rounded-md">
+            <CodeViewer 
+              code={fileContent} 
+              language={selectedFile.path.split('.').pop() || 'txt'} 
+              fileName={selectedFile.path.split('/').pop() || 'file'}
+            />
           </div>
         )}
       </div>
