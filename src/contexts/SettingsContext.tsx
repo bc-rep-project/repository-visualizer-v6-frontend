@@ -2,12 +2,21 @@
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import api from '@/services/api';
+import { repositoryApi } from '@/services/api';
+
+export interface AutoSaveSettings {
+  repositories: boolean;
+  analysis: boolean;
+  enhancedAnalysis: boolean;
+  interval: number;
+}
 
 export interface Settings {
   theme: 'light' | 'dark' | 'system';
   codeHighlightTheme: string;
   defaultVisualization: 'graph' | 'tree' | 'sunburst' | 'packedCircles';
   autoAnalyze: boolean;
+  autoSave: AutoSaveSettings;
   notificationsEnabled: boolean;
   language: string;
 }
@@ -17,6 +26,7 @@ interface SettingsContextType {
   loading: boolean;
   error: string | null;
   updateSettings: (newSettings: Partial<Settings>) => Promise<void>;
+  updateAutoSave: (feature: keyof AutoSaveSettings, value: boolean | number) => Promise<void>;
   resetSettings: () => Promise<void>;
 }
 
@@ -25,6 +35,12 @@ const defaultSettings: Settings = {
   codeHighlightTheme: 'github',
   defaultVisualization: 'graph',
   autoAnalyze: false,
+  autoSave: {
+    repositories: true,
+    analysis: false,
+    enhancedAnalysis: false,
+    interval: 30
+  },
   notificationsEnabled: true,
   language: 'en',
 };
@@ -85,6 +101,37 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
       setLoading(false);
     }
   };
+  
+  const updateAutoSave = async (feature: keyof AutoSaveSettings, value: boolean | number) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Create updated auto-save settings
+      const updatedAutoSave = { 
+        ...settings.autoSave, 
+        [feature]: value 
+      };
+      
+      // Optimistically update local state
+      const updatedSettings = { 
+        ...settings, 
+        autoSave: updatedAutoSave 
+      };
+      setSettings(updatedSettings);
+      
+      // Save changes to API
+      await repositoryApi.updateAutoSaveSettings({ [feature]: value });
+    } catch (err) {
+      console.error('Error updating auto-save settings:', err);
+      setError('Failed to update auto-save settings');
+      
+      // Restore previous settings on error
+      await fetchSettings();
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const resetSettings = async () => {
     try {
@@ -105,40 +152,41 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
     fetchSettings();
   }, []);
 
-  // Apply theme preference
+  // Synchronize theme with system preference
   useEffect(() => {
     if (settings.theme === 'system') {
-      // Use system preference
-      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
-      
-      // Listen for system preference changes
       const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      
+      // Set initial theme based on system preference
+      document.documentElement.classList.toggle('dark', mediaQuery.matches);
+      
+      // Update theme when system preference changes
       const handleChange = (e: MediaQueryListEvent) => {
-        if (e.matches) {
-          document.documentElement.classList.add('dark');
-        } else {
-          document.documentElement.classList.remove('dark');
-        }
+        document.documentElement.classList.toggle('dark', e.matches);
       };
       
       mediaQuery.addEventListener('change', handleChange);
-      return () => mediaQuery.removeEventListener('change', handleChange);
+      
+      return () => {
+        mediaQuery.removeEventListener('change', handleChange);
+      };
     } else {
-      // Use explicit theme preference
-      if (settings.theme === 'dark') {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
+      // Set theme based on user preference
+      document.documentElement.classList.toggle('dark', settings.theme === 'dark');
     }
   }, [settings.theme]);
 
   return (
-    <SettingsContext.Provider value={{ settings, loading, error, updateSettings, resetSettings }}>
+    <SettingsContext.Provider 
+      value={{ 
+        settings, 
+        loading, 
+        error, 
+        updateSettings, 
+        updateAutoSave,
+        resetSettings 
+      }}
+    >
       {children}
     </SettingsContext.Provider>
   );

@@ -192,6 +192,47 @@ export const repositoryApi = {
     resetSettings: async (): Promise<any> => {
         const response = await api.post('/api/settings/reset');
         return response.data;
+    },
+    
+    // Auto-save feature API
+    getAutoSaveStatus: async (): Promise<any> => {
+        const response = await api.get('/api/repositories/auto-save/status');
+        return response.data;
+    },
+    
+    updateAutoSaveSettings: async (settings: any): Promise<any> => {
+        const response = await api.patch('/api/settings/auto-save', settings);
+        return response.data;
+    },
+    
+    startAutoSave: async (): Promise<any> => {
+        const response = await api.post('/api/repositories/auto-save/start');
+        return response.data;
+    },
+    
+    stopAutoSave: async (): Promise<any> => {
+        const response = await api.post('/api/repositories/auto-save/stop');
+        return response.data;
+    },
+    
+    runAutoSaveManually: async (): Promise<any> => {
+        const response = await api.post('/api/repositories/auto-save/run');
+        return response.data;
+    },
+    
+    saveRepository: async (repoId: string, data: any): Promise<Repository> => {
+        const response = await api.post(`/api/repositories/${repoId}/save`, data);
+        return response.data;
+    },
+    
+    saveRepositoryAnalysis: async (repoId: string, analysisData: any): Promise<any> => {
+        const response = await api.post(`/api/repositories/${repoId}/analysis/save`, analysisData);
+        return response.data;
+    },
+    
+    getCachedAnalysis: async (repoId: string): Promise<any> => {
+        const response = await api.get(`/api/repositories/${repoId}/analyze/cached`);
+        return response.data;
     }
 };
 
