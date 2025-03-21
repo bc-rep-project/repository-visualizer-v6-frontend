@@ -263,12 +263,6 @@ export default function RepositoryDetail() {
                     <FaCode className="mr-2" /> Enhanced
                   </button>
                   <button
-                    onClick={() => router.push(`/repositories/${repository._id}/notifications`)}
-                    className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 flex items-center"
-                  >
-                    <FaBell className="mr-2" /> Notifications
-                  </button>
-                  <button
                     onClick={deleteRepository}
                     className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 flex items-center"
                   >

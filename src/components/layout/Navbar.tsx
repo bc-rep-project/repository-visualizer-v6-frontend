@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { repositoryApi } from '@/services/api';
@@ -6,13 +6,6 @@ import { Button } from '@/components/common/Button';
 
 interface NavbarProps {
   onMenuClick: () => void;
-}
-
-interface Notification {
-  type: string;
-  repository: string;
-  message: string;
-  timestamp: string;
 }
 
 const navItems = [
@@ -26,24 +19,6 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [showSearch, setShowSearch] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [showNotifications, setShowNotifications] = useState(false);
-
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      try {
-        const data = await repositoryApi.getNotifications();
-        setNotifications(data.notifications);
-      } catch (error) {
-        console.error('Failed to fetch notifications:', error);
-      }
-    };
-
-    fetchNotifications();
-    // Refresh notifications every 5 minutes
-    const interval = setInterval(fetchNotifications, 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
@@ -125,39 +100,6 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                 </div>
               )}
             </div>
-
-            <div className="relative">
-              <button 
-                className="p-2 text-muted-foreground hover:text-foreground"
-                onClick={() => setShowNotifications(!showNotifications)}
-              >
-                <BellIcon className="h-5 w-5" />
-                {notifications.length > 0 && (
-                  <span className="absolute -top-1 -right-1 h-4 w-4 bg-primary text-primary-foreground rounded-full text-xs flex items-center justify-center">
-                    {notifications.length}
-                  </span>
-                )}
-              </button>
-
-              {showNotifications && notifications.length > 0 && (
-                <div className="absolute top-full right-0 mt-2 w-80 bg-background border rounded-md shadow-lg">
-                  {notifications.map((notification, index) => (
-                    <div
-                      key={index}
-                      className="p-3 hover:bg-accent cursor-pointer border-b last:border-b-0"
-                    >
-                      <div className="font-medium">{notification.repository}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {notification.message}
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {new Date(notification.timestamp).toLocaleString()}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
           </div>
         </div>
       </div>
@@ -198,25 +140,6 @@ function SearchIcon(props: React.SVGProps<SVGSVGElement>) {
         strokeLinejoin="round"
         strokeWidth={2}
         d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-      />
-    </svg>
-  );
-}
-
-function BellIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
       />
     </svg>
   );
