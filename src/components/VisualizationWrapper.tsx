@@ -1,11 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { RepositoryGraph } from '@/components/RepositoryGraph';
 import { RepositoryTree } from '@/components/RepositoryTree';
 import { SimpleSunburst } from '@/components/SimpleSunburst';
 import { RepositoryPackedCircles } from '@/components/RepositoryPackedCircles';
-import { FileNode, GraphData } from '@/types/types';
+import { FileNode, GraphData, AnalysisData } from '@/types/types';
+import LoadingSpinner from './LoadingSpinner';
 
 interface VisualizationWrapperProps {
   data: FileNode;
@@ -23,6 +24,26 @@ const VisualizationWrapper: React.FC<VisualizationWrapperProps> = ({
   width = 900,
   height = 700,
 }) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [adaptedData, setAdaptedData] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  // Whenever the data or visualization type changes, adapt the data
+  useEffect(() => {
+    setIsLoading(true);
+    try {
+      // Process the data for the specific visualization
+      const processedData = adaptData(data);
+      setAdaptedData(processedData);
+      setError(null);
+    } catch (err) {
+      console.error('Error adapting data for visualization:', err);
+      setError('Failed to process data for visualization');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [data, visualizationType]);
+
   // Create a deep copy of the data to avoid modifying the original
   const adaptData = (node: any): any => {
     const adaptedNode = { ...node };
@@ -82,12 +103,40 @@ const VisualizationWrapper: React.FC<VisualizationWrapperProps> = ({
     return adaptedNode;
   };
   
-  // Adapt the data
-  const adaptedData = adaptData(data);
+  // Display loading spinner when data is being processed
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center" style={{ height }}>
+        <LoadingSpinner message="Preparing visualization..." color="blue" />
+      </div>
+    );
+  }
+  
+  // Display error message if something went wrong
+  if (error) {
+    return (
+      <div className="flex justify-center items-center text-red-500" style={{ height }}>
+        <div className="text-center">
+          <p className="text-xl font-bold mb-2">Visualization Error</p>
+          <p>{error}</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // If data hasn't been processed yet, show a loading state
+  if (!adaptedData && data) {
+    return (
+      <div className="flex justify-center items-center" style={{ height }}>
+        <LoadingSpinner message="Processing data..." color="blue" />
+      </div>
+    );
+  }
   
   // Render the appropriate visualization based on the selected type
   switch (visualizationType) {
     case 'graph':
+      // For graph visualization, we use the pre-processed graph data
       return <RepositoryGraph data={graphData} width={width} height={height} />;
     case 'tree':
       return <RepositoryTree data={adaptedData} width={width} height={height} />;
@@ -96,6 +145,7 @@ const VisualizationWrapper: React.FC<VisualizationWrapperProps> = ({
     case 'packed':
       return <RepositoryPackedCircles data={adaptedData} width={width} height={height} />;
     default:
+      // Default to packed circles if visualization type is not recognized
       return <RepositoryPackedCircles data={adaptedData} width={width} height={height} />;
   }
 };
