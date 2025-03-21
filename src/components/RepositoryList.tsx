@@ -9,28 +9,24 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import LoadingSpinner from './LoadingSpinner';
 import axios from 'axios';
+import { repositoryApi } from '../services/api';
+import { Repository as ApiRepository, RepositoryResponse } from '../types/repository.types';
 
-interface Repository {
-  _id: string;
-  repo_url: string;
-  repo_name: string;
-  status: string;
-  created_at: string;
-  updated_at: string;
-  file_count?: number;
-  directory_count?: number;
-  total_size?: number;
-  languages?: Record<string, number>;
+// Use the Repository type from the API but keep any custom fields needed locally
+interface Repository extends ApiRepository {
+  repo_name?: string; // Optional for backward compatibility
 }
 
-interface RepositoryResponse {
-  repositories: Repository[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    pages: number;
-  };
+interface RepositoryListProps {
+  // You can add props here if needed
+}
+
+// The pagination interface matches what the API returns
+interface Pagination {
+  page: number;
+  limit: number;
+  total: number;
+  pages: number;
 }
 
 export default function RepositoryList() {
@@ -76,33 +72,20 @@ export default function RepositoryList() {
       setLoading(true);
       setError(null);
       
-      const response = await axios.get<RepositoryResponse>(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/repositories?page=${currentPage}&limit=10`
-      );
+      // Use the repositoryApi service with our filter parameters
+      const response = await repositoryApi.listRepositories({
+        page: currentPage,
+        limit: 10,
+        status: statusFilter,
+        language: languageFilter,
+        size: sizeFilter,
+        search: searchQuery
+      });
       
-      // Check if the response has the expected structure
-      if (response.data && response.data.repositories) {
-        // Sort the repositories by created_at in descending order
-        // to ensure newest repositories are always at the top
-        const sortedRepos = [...response.data.repositories].sort((a, b) => {
-          const dateA = new Date(a.created_at).getTime();
-          const dateB = new Date(b.created_at).getTime();
-          return dateB - dateA; // Descending order (newest first)
-        });
-        
-        setRepositories(sortedRepos);
-        setTotalPages(response.data.pagination.pages);
-        setTotalRepos(response.data.pagination.total);
-      } else {
-        // Handle legacy API response format (just an array)
-        const repoArray = Array.isArray(response.data) ? response.data : [];
-        const sortedRepos = [...repoArray].sort((a, b) => {
-          const dateA = new Date(a.created_at).getTime();
-          const dateB = new Date(b.created_at).getTime();
-          return dateB - dateA; // Descending order (newest first)
-        });
-        setRepositories(sortedRepos);
-      }
+      // Set repositories and pagination data from the response
+      setRepositories(response.repositories);
+      setTotalPages(response.pagination.pages);
+      setTotalRepos(response.pagination.total);
     } catch (err) {
       console.error('Failed to fetch repositories:', err);
       setError('Failed to fetch repositories');
@@ -146,6 +129,7 @@ export default function RepositoryList() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    setCurrentPage(1); // Reset to first page when searching
     fetchRepositories();
   };
 
@@ -309,7 +293,7 @@ export default function RepositoryList() {
   };
 
   const filteredRepositories = repositories.filter(repo => 
-    repo.repo_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (repo.repo_name?.toLowerCase() || repo.repo_url.toLowerCase()).includes(searchQuery.toLowerCase()) ||
     repo.repo_url.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -375,6 +359,22 @@ export default function RepositoryList() {
                 <option key={range}>{range}</option>
               ))}
             </select>
+            
+            <form onSubmit={handleSearch} className="flex w-full sm:w-auto mt-2 sm:mt-0">
+              <input
+                type="text"
+                placeholder="Search repositories..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="rounded-l-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 w-full sm:w-48"
+              />
+              <button
+                type="submit"
+                className="px-3 py-2 bg-blue-600 text-white rounded-r-md hover:bg-blue-700"
+              >
+                <FaSearch />
+              </button>
+            </form>
           </div>
           
           <div className="flex items-center space-x-2">

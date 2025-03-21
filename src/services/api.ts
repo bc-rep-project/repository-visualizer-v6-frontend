@@ -81,9 +81,46 @@ api.interceptors.response.use(
 );
 
 export const repositoryApi = {
-    listRepositories: async (): Promise<Repository[]> => {
-        const response = await api.get<RepositoryResponse>('/api/repositories?sort=created_at&dir=desc');
-        return response.data.repositories;
+    listRepositories: async (filters?: { 
+        status?: string; 
+        language?: string;
+        size?: string;
+        search?: string;
+        page?: number;
+        limit?: number;
+    }): Promise<RepositoryResponse> => {
+        // Build query parameters
+        const queryParams = new URLSearchParams({
+            sort: 'created_at',
+            dir: 'desc'
+        });
+        
+        // Add filters if provided
+        if (filters) {
+            if (filters.page) queryParams.append('page', filters.page.toString());
+            if (filters.limit) queryParams.append('limit', filters.limit.toString());
+            if (filters.status && filters.status !== 'All Status') queryParams.append('status', filters.status);
+            if (filters.language && filters.language !== 'All Languages') {
+                // Always pass the language without dot prefix to the backend
+                // The backend will handle adding the dot as needed
+                const lang = filters.language.startsWith('.') 
+                    ? filters.language.substring(1) 
+                    : filters.language;
+                queryParams.append('language', lang);
+                
+                // Debug
+                console.log(`Filtering by language: ${lang}`);
+            }
+            if (filters.size && filters.size !== 'Size Range') queryParams.append('size', filters.size);
+            if (filters.search) queryParams.append('search', filters.search);
+        }
+        
+        // Log the full URL for debugging
+        const url = `/api/repositories?${queryParams.toString()}`;
+        console.log(`Fetching repositories with URL: ${url}`);
+        
+        const response = await api.get<RepositoryResponse>(url);
+        return response.data;
     },
 
     getRepository: async (repoId: string): Promise<Repository> => {
@@ -154,6 +191,47 @@ export const repositoryApi = {
 
     resetSettings: async (): Promise<any> => {
         const response = await api.post('/api/settings/reset');
+        return response.data;
+    },
+    
+    // Auto-save feature API
+    getAutoSaveStatus: async (): Promise<any> => {
+        const response = await api.get('/api/repositories/auto-save/status');
+        return response.data;
+    },
+    
+    updateAutoSaveSettings: async (settings: any): Promise<any> => {
+        const response = await api.patch('/api/settings/auto-save', settings);
+        return response.data;
+    },
+    
+    startAutoSave: async (): Promise<any> => {
+        const response = await api.post('/api/repositories/auto-save/start');
+        return response.data;
+    },
+    
+    stopAutoSave: async (): Promise<any> => {
+        const response = await api.post('/api/repositories/auto-save/stop');
+        return response.data;
+    },
+    
+    runAutoSaveManually: async (): Promise<any> => {
+        const response = await api.post('/api/repositories/auto-save/run');
+        return response.data;
+    },
+    
+    saveRepository: async (repoId: string, data: any): Promise<Repository> => {
+        const response = await api.post(`/api/repositories/${repoId}/save`, data);
+        return response.data;
+    },
+    
+    saveRepositoryAnalysis: async (repoId: string, analysisData: any): Promise<any> => {
+        const response = await api.post(`/api/repositories/${repoId}/analysis/save`, analysisData);
+        return response.data;
+    },
+    
+    getCachedAnalysis: async (repoId: string): Promise<any> => {
+        const response = await api.get(`/api/repositories/${repoId}/analyze/cached`);
         return response.data;
     }
 };
