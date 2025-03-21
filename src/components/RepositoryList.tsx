@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { FaPlus, FaSearch, FaTrash } from 'react-icons/fa';
+import { FaPlus, FaSearch, FaTrash, FaSync } from 'react-icons/fa';
 import { BsGrid, BsList } from 'react-icons/bs';
 import { BiAnalyse } from 'react-icons/bi';
 import { FiEye } from 'react-icons/fi';
@@ -51,6 +51,7 @@ export default function RepositoryList() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalRepos, setTotalRepos] = useState(0);
   const [deleteInProgress, setDeleteInProgress] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   const router = useRouter();
 
@@ -94,6 +95,7 @@ export default function RepositoryList() {
       setRepositories([]);
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -150,27 +152,34 @@ export default function RepositoryList() {
       setAddingInProgress(true);
       setAddError(null);
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/repositories`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ repo_url: newRepoUrl }),
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to add repository');
-      }
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/repositories`, 
+        { repo_url: newRepoUrl },
+        { 
+          headers: { 'Content-Type': 'application/json' },
+          timeout: 60000 // 60 seconds timeout for cloning large repos
+        }
+      );
       
       // Reset form and close modal
       setNewRepoUrl('');
-      setIsAddingRepo(false);
       
-      // Refresh repository list
-      fetchRepositories();
+      // Instead of closing the modal immediately, show success message
+      setAddError(null);
+      
+      // Refresh repository list - don't close modal yet to show success
+      await fetchRepositories();
+      
+      // Now we can close the modal after successful fetch
+      setIsAddingRepo(false);
     } catch (err: any) {
-      setAddError(err.message || 'Error adding repository');
+      console.error('Error adding repository:', err);
+      // Get better error message from response if available
+      if (err.response && err.response.data && err.response.data.error) {
+        setAddError(err.response.data.error);
+      } else {
+        setAddError(err.message || 'Error adding repository. Please try again.');
+      }
     } finally {
       setAddingInProgress(false);
     }
@@ -298,12 +307,28 @@ export default function RepositoryList() {
     setCurrentPage(page);
   };
 
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await fetchRepositories();
+  };
+
   return (
     <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4 md:p-6">
       <div className="mb-6">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-          Repositories
-        </h2>
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+            Repositories
+          </h2>
+          <button
+            onClick={handleRefresh}
+            disabled={isRefreshing || loading}
+            className="flex items-center text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 disabled:opacity-50"
+            title="Refresh repository list"
+          >
+            <FaSync className={`mr-1 ${isRefreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+        </div>
         
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mt-4 space-y-4 sm:space-y-0">
           <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
@@ -582,8 +607,15 @@ export default function RepositoryList() {
                 Add Repository
               </h3>
               <button
-                onClick={() => setIsAddingRepo(false)}
-                className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+                onClick={() => {
+                  // Don't allow closing while adding
+                  if (!addingInProgress) {
+                    setIsAddingRepo(false);
+                    setAddError(null);
+                  }
+                }}
+                className={`text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 ${addingInProgress ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={addingInProgress}
               >
                 <span className="sr-only">Close</span>
                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -600,43 +632,59 @@ export default function RepositoryList() {
                 <input
                   id="repo-url"
                   type="text"
-                  placeholder="https://github.com/username/repo.git"
+                  placeholder="https://github.com/username/repo"
                   value={newRepoUrl}
                   onChange={(e) => setNewRepoUrl(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:text-white"
                   required
+                  disabled={addingInProgress}
                 />
                 {addError && (
                   <p className="mt-2 text-sm text-red-600 dark:text-red-400">{addError}</p>
                 )}
+                <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                  Enter the URL of a GitHub repository. Public repositories only.
+                </p>
               </div>
               
               <div className="flex justify-end space-x-3">
                 <button
                   type="button"
                   onClick={() => setIsAddingRepo(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none disabled:opacity-50"
+                  disabled={addingInProgress}
                 >
                   Cancel
                 </button>
-              <button
+                <button
                   type="submit"
                   disabled={addingInProgress}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none disabled:opacity-50 flex items-center"
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none disabled:opacity-50 flex items-center min-w-[120px] justify-center"
                 >
                   {addingInProgress ? (
                     <>
-                      <LoadingSpinner size="small" className="mr-2" />
-                      Adding...
+                      <LoadingSpinner size="small" className="mr-2" color="yellow" />
+                      <span>Cloning...</span>
                     </>
                   ) : (
                     'Add Repository'
                   )}
-              </button>
-            </div>
+                </button>
+              </div>
             </form>
+            
+            {addingInProgress && (
+              <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md">
+                <p className="text-sm text-blue-700 dark:text-blue-300 mb-2">
+                  <span className="font-medium">Repository is being cloned.</span> This may take a few minutes for large repositories.
+                </p>
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                  <div className="bg-blue-600 h-2.5 rounded-full animate-pulse w-full"></div>
+                </div>
+              </div>
+            )}
           </div>
-      </div>
+        </div>
       )}
     </div>
   );
