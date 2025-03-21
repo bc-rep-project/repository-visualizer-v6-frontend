@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { FaFolder, FaCode, FaSearch, FaFilter, FaDownload, FaShare } from 'react-icons/fa';
+import { FaFolder, FaCode, FaSearch, FaFilter, FaDownload, FaShare, FaFile } from 'react-icons/fa';
 import { BiZoomIn, BiZoomOut } from 'react-icons/bi';
 import { MdOutlineFullscreen } from 'react-icons/md';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -54,6 +54,7 @@ export default function RepositoryAnalyze() {
     showClasses: true,
     searchQuery: '',
   });
+  const [filtersChanged, setFiltersChanged] = useState<boolean>(false);
 
   useEffect(() => {
     if (params.id) {
@@ -65,6 +66,7 @@ export default function RepositoryAnalyze() {
   // Reprocess data when filters change
   useEffect(() => {
     if (rawData) {
+      setFiltersChanged(true);
       const processed = transformAnalysisData(rawData, {
         showFiles: filterOptions.showFiles,
         showDirectories: filterOptions.showDirectories,
@@ -73,6 +75,7 @@ export default function RepositoryAnalyze() {
         searchQuery: filterOptions.searchQuery
       });
       setProcessedData(processed);
+      setFiltersChanged(false);
     }
   }, [filterOptions, rawData]);
 
@@ -113,11 +116,12 @@ export default function RepositoryAnalyze() {
   };
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
+    const newSearchQuery = e.target.value;
+    setSearchQuery(newSearchQuery);
     // Update the filter options with the new search query
     setFilterOptions(prev => ({
       ...prev,
-      searchQuery: e.target.value
+      searchQuery: newSearchQuery
     }));
   };
 
@@ -126,6 +130,15 @@ export default function RepositoryAnalyze() {
       ...prev,
       [filter]: !prev[filter]
     }));
+  };
+
+  const handleVisualizationTypeChange = (type: 'packed' | 'graph' | 'sunburst' | 'tree') => {
+    setVisualizationType(type);
+    // Re-apply the current filters to ensure the visualization is consistent
+    if (rawData) {
+      const processed = transformAnalysisData(rawData, filterOptions);
+      setProcessedData(processed);
+    }
   };
 
   const handleDownloadGraph = () => {
@@ -160,10 +173,18 @@ export default function RepositoryAnalyze() {
   const renderVisualization = () => {
     if (!processedData) return null;
     
+    if (filtersChanged) {
+      return (
+        <div className="flex justify-center items-center" style={{ height: '600px' }}>
+          <LoadingSpinner message="Updating visualization..." />
+        </div>
+      );
+    }
+    
     return (
       <VisualizationWrapper
         data={rawData}
-        graphData={processedData}
+        graphData={processedData.graph}
         visualizationType={visualizationType}
         width={1200}
         height={600}
@@ -215,28 +236,28 @@ export default function RepositoryAnalyze() {
             <div className="flex flex-col md:flex-row justify-between md:items-center mb-6 space-y-4 md:space-y-0">
               <div className="flex flex-wrap gap-2">
                 <button
-                  onClick={() => setVisualizationType('packed')}
+                  onClick={() => handleVisualizationTypeChange('packed')}
                   className={`px-3 py-2 rounded ${visualizationType === 'packed' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
                   title="Packed Circles View"
                 >
                   <MdOutlineFullscreen className="inline mr-1" /> Packed
                 </button>
                 <button
-                  onClick={() => setVisualizationType('graph')}
+                  onClick={() => handleVisualizationTypeChange('graph')}
                   className={`px-3 py-2 rounded ${visualizationType === 'graph' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
                   title="Force Graph View"
                 >
                   <BiZoomIn className="inline mr-1" /> Graph
                 </button>
                 <button
-                  onClick={() => setVisualizationType('sunburst')}
+                  onClick={() => handleVisualizationTypeChange('sunburst')}
                   className={`px-3 py-2 rounded ${visualizationType === 'sunburst' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
                   title="Sunburst View"
                 >
                   <BiZoomOut className="inline mr-1" /> Sunburst
                 </button>
                 <button
-                  onClick={() => setVisualizationType('tree')}
+                  onClick={() => handleVisualizationTypeChange('tree')}
                   className={`px-3 py-2 rounded ${visualizationType === 'tree' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
                   title="Tree View"
                 >
@@ -277,27 +298,31 @@ export default function RepositoryAnalyze() {
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => toggleFilter('showFiles')}
-                  className={`px-3 py-2 rounded ${filterOptions.showFiles ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
+                  className={`px-3 py-2 rounded flex items-center ${filterOptions.showFiles ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
+                  aria-pressed={filterOptions.showFiles}
                 >
-                  Files
+                  <FaFile className="mr-1" /> Files
                 </button>
                 <button
                   onClick={() => toggleFilter('showDirectories')}
-                  className={`px-3 py-2 rounded ${filterOptions.showDirectories ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
+                  className={`px-3 py-2 rounded flex items-center ${filterOptions.showDirectories ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
+                  aria-pressed={filterOptions.showDirectories}
                 >
-                  Directories
+                  <FaFolder className="mr-1" /> Directories
                 </button>
                 <button
                   onClick={() => toggleFilter('showFunctions')}
-                  className={`px-3 py-2 rounded ${filterOptions.showFunctions ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
+                  className={`px-3 py-2 rounded flex items-center ${filterOptions.showFunctions ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
+                  aria-pressed={filterOptions.showFunctions}
                 >
-                  Functions
+                  <FaCode className="mr-1" /> Functions
                 </button>
                 <button
                   onClick={() => toggleFilter('showClasses')}
-                  className={`px-3 py-2 rounded ${filterOptions.showClasses ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
+                  className={`px-3 py-2 rounded flex items-center ${filterOptions.showClasses ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
+                  aria-pressed={filterOptions.showClasses}
                 >
-                  Classes
+                  <FaCode className="mr-1" /> Classes
                 </button>
               </div>
             </div>

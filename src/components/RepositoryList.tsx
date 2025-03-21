@@ -319,7 +319,7 @@ export default function RepositoryList() {
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">
             Repositories
           </h2>
-          <button
+        <button
             onClick={handleRefresh}
             disabled={isRefreshing || loading}
             className="flex items-center text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 disabled:opacity-50"
@@ -327,9 +327,9 @@ export default function RepositoryList() {
           >
             <FaSync className={`mr-1 ${isRefreshing ? 'animate-spin' : ''}`} />
             Refresh
-          </button>
-        </div>
-        
+        </button>
+      </div>
+
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mt-4 space-y-4 sm:space-y-0">
           <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
             <select
@@ -656,7 +656,7 @@ export default function RepositoryList() {
                 >
                   Cancel
                 </button>
-                <button
+              <button
                   type="submit"
                   disabled={addingInProgress}
                   className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none disabled:opacity-50 flex items-center min-w-[120px] justify-center"
@@ -669,8 +669,8 @@ export default function RepositoryList() {
                   ) : (
                     'Add Repository'
                   )}
-                </button>
-              </div>
+              </button>
+            </div>
             </form>
             
             {addingInProgress && (
@@ -684,7 +684,7 @@ export default function RepositoryList() {
               </div>
             )}
           </div>
-        </div>
+      </div>
       )}
     </div>
   );

@@ -40,8 +40,12 @@ export function transformAnalysisData(data: FileNode, filters: FilterOptions): A
   const edges: Edge[] = [];
   const nodeMap = new Map<string, Node>();
 
+  // First, apply filters to the tree
+  const filteredTree = filterTree(data, filters);
+
   function processNode(node: FileNode, parentId?: string) {
-    // Skip nodes based on filters
+    // Skip nodes based on filters - this is redundant now that we filter the tree first,
+    // but we keep it as a safety check
     if (
       (node.type === 'file' && !filters.showFiles) ||
       (node.type === 'directory' && !filters.showDirectories) ||
@@ -135,11 +139,14 @@ export function transformAnalysisData(data: FileNode, filters: FilterOptions): A
     // Process imports
     if (node.imports) {
       for (const imp of node.imports) {
-        edges.push({
-          source: nodeId,
-          target: typeof imp === 'string' ? imp : imp.source,
-          type: 'imports'
-        });
+        const targetId = typeof imp === 'string' ? imp : imp.source;
+        if (nodeMap.has(targetId)) {
+          edges.push({
+            source: nodeId,
+            target: targetId,
+            type: 'imports'
+          });
+        }
       }
     }
 
@@ -152,28 +159,31 @@ export function transformAnalysisData(data: FileNode, filters: FilterOptions): A
   }
 
   // Start processing from root
-  processNode(data);
+  processNode(filteredTree);
+
+  // Filter edges to only include valid node references
+  const validEdges = edges.filter(edge => 
+    nodeMap.has(edge.source) && nodeMap.has(edge.target)
+  );
 
   // Create graph data
   const graph: GraphData = {
     nodes,
-    edges: edges.filter(edge => 
-      nodeMap.has(edge.source) && nodeMap.has(edge.target)
-    )
+    edges: validEdges
   };
   
   return {
     graph,
-    tree: data
+    tree: filteredTree
   };
 }
 
 /**
  * Recursively filters the tree based on filters
  */
-const filterTree = (tree: FileNode, filters: any): FileNode => {
+const filterTree = (tree: FileNode, filters: FilterOptions): FileNode => {
   // Clone the tree to avoid modifying the original
-  const result = { ...tree };
+  const result: FileNode = { ...tree };
   
   if (tree.children) {
     result.children = tree.children
@@ -181,11 +191,9 @@ const filterTree = (tree: FileNode, filters: any): FileNode => {
         // Apply type filters
         if (child.type === 'file' && !filters.showFiles) return false;
         if (child.type === 'directory' && !filters.showDirectories) return false;
-        if (child.type === 'function' && !filters.showFunctions) return false;
-        if (child.type === 'class' && !filters.showClasses) return false;
         
-        // Apply search filter
-        if (filters.searchQuery) {
+        // Apply search filter if specified
+        if (filters.searchQuery && filters.searchQuery.trim() !== '') {
           const lowerQuery = filters.searchQuery.toLowerCase();
           return child.name.toLowerCase().includes(lowerQuery) || 
                  child.path.toLowerCase().includes(lowerQuery);
@@ -194,6 +202,16 @@ const filterTree = (tree: FileNode, filters: any): FileNode => {
         return true;
       })
       .map(child => filterTree(child, filters));
+  }
+  
+  // Handle functions filter
+  if (result.functions && !filters.showFunctions) {
+    delete result.functions;
+  }
+  
+  // Handle classes filter
+  if (result.classes && !filters.showClasses) {
+    delete result.classes;
   }
   
   return result;
