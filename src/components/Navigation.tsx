@@ -3,14 +3,12 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FaGithub, FaHome, FaChartBar, FaBell, FaSearch, FaBars, FaTimes, FaCog } from 'react-icons/fa';
-import { useNotifications } from '@/contexts/NotificationContext';
+import { FaGithub, FaHome, FaChartBar, FaSearch, FaBars, FaTimes, FaCog } from 'react-icons/fa';
 
 export default function Navigation() {
   const pathname = usePathname();
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { unreadCount } = useNotifications();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,23 +52,6 @@ export default function Navigation() {
                 }`}
               >
                 <FaChartBar className="mr-1" /> Dashboard
-              </Link>
-              <Link
-                href="/notifications"
-                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                  pathname === '/notifications'
-                    ? 'border-blue-500 text-gray-900 dark:text-white'
-                    : 'border-transparent text-gray-500 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
-                }`}
-              >
-                <div className="relative">
-                  <FaBell className="mr-1" /> Notifications
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-2 -right-2 flex items-center justify-center w-5 h-5 text-xs text-white bg-red-500 rounded-full">
-                      {unreadCount > 99 ? '99+' : unreadCount}
-                    </span>
-                  )}
-                </div>
               </Link>
               <Link
                 href="/settings"
@@ -141,24 +122,6 @@ export default function Navigation() {
               onClick={() => setMobileMenuOpen(false)}
             >
               Dashboard
-            </Link>
-            <Link
-              href="/notifications"
-              className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-                pathname === '/notifications'
-                  ? 'border-blue-500 text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
-              }`}
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              <div className="flex items-center">
-                <span>Notifications</span>
-                {unreadCount > 0 && (
-                  <span className="ml-2 flex items-center justify-center w-5 h-5 text-xs text-white bg-red-500 rounded-full">
-                    {unreadCount > 99 ? '99+' : unreadCount}
-                  </span>
-                )}
-              </div>
             </Link>
             <Link
               href="/settings"
