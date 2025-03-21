@@ -137,6 +137,12 @@ export const repositoryApi = {
         return response.data;
     },
 
+    // File content API
+    getFileContent: async (repoId: string, filePath: string): Promise<any> => {
+        const response = await api.get(`/api/repositories/${repoId}/files?path=${encodeURIComponent(filePath)}`);
+        return response.data;
+    },
+
     // Settings API
     getSettings: async (): Promise<any> => {
         const response = await api.get('/api/settings');

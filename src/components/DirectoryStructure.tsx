@@ -4,10 +4,13 @@ import React, { useState } from 'react';
 import { FaFolder, FaFolderOpen, FaFile, FaChevronRight, FaChevronDown } from 'react-icons/fa';
 import { FileNode } from '@/types/types';
 import CodeViewer from '@/components/CodeViewer';
+import { repositoryApi } from '@/services/api';
+import { useParams } from 'next/navigation';
 
 interface DirectoryStructureProps {
   data: FileNode;
   searchQuery?: string;
+  repoId?: string;
 }
 
 interface TreeNodeProps {
@@ -92,16 +95,22 @@ const TreeNode: React.FC<TreeNodeProps> = ({ node, level, expanded, toggleExpand
   );
 };
 
-const DirectoryStructure: React.FC<DirectoryStructureProps> = ({ data, searchQuery }) => {
+const DirectoryStructure: React.FC<DirectoryStructureProps> = ({ data, searchQuery, repoId }) => {
+  const params = useParams();
   const [expanded, setExpanded] = useState<Record<string, boolean>>({
     [data.path]: true // Root is expanded by default
   });
   const [internalSearchTerm, setInternalSearchTerm] = useState('');
   const [selectedFile, setSelectedFile] = useState<FileNode | null>(null);
   const [fileContent, setFileContent] = useState<string | null>(null);
+  const [fileLanguage, setFileLanguage] = useState<string>('text');
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
   
   // Use external searchQuery if provided, otherwise use internal state
   const searchTerm = searchQuery !== undefined ? searchQuery : internalSearchTerm;
+  // Use repoId from props or from route params
+  const repositoryId = repoId || (params?.id as string);
   
   const toggleExpand = (path: string) => {
     setExpanded(prev => ({
@@ -145,36 +154,28 @@ const DirectoryStructure: React.FC<DirectoryStructureProps> = ({ data, searchQue
   
   const handleFileClick = async (node: FileNode) => {
     setSelectedFile(node);
+    setIsLoading(true);
+    setError(null);
     
-    // In a real implementation, you would fetch the file content from the server
-    // For now, we'll use mock content
-    
-    // For JavaScript/TypeScript files
-    if (node.path.endsWith('.js') || node.path.endsWith('.jsx') || node.path.endsWith('.ts') || node.path.endsWith('.tsx')) {
-      setFileContent(`// ${node.path}
-import React from 'react';
-
-export const ${node.path.split('/').pop()?.split('.')[0]} = () => {
-  return (
-    <div>
-      <h1>Example Component</h1>
-      <p>This is a mock content for demonstration purposes.</p>
-    </div>
-  );
-};`);
-    } 
-    // For Python files
-    else if (node.path.endsWith('.py')) {
-      setFileContent(`# ${node.path}
-def main():
-    print("Hello, Python!")
-    
-if __name__ == "__main__":
-    main()`);
-    }
-    // For other files
-    else {
-      setFileContent(`// ${node.path}\nMock content for ${node.path.split('/').pop()}`);
+    try {
+      // Extract file extension for syntax highlighting
+      const fileExt = node.path.split('.').pop()?.toLowerCase() || 'txt';
+      setFileLanguage(fileExt);
+      
+      // Fetch actual file content from the API
+      const response = await repositoryApi.getFileContent(repositoryId, node.path);
+      
+      if (response.file && response.file.content) {
+        setFileContent(response.file.content);
+      } else {
+        setFileContent('// No content available for this file');
+      }
+    } catch (err) {
+      console.error('Error fetching file content:', err);
+      setError('Failed to load file content. This might be a binary file or the file is too large.');
+      setFileContent('// Error loading file content');
+    } finally {
+      setIsLoading(false);
     }
   };
   
@@ -211,15 +212,27 @@ if __name__ == "__main__":
           )}
         </div>
         
-        {selectedFile && fileContent && (
-          <div className="border border-gray-200 dark:border-gray-700 rounded-md">
+        <div className="border border-gray-200 dark:border-gray-700 rounded-md">
+          {isLoading ? (
+            <div className="flex justify-center items-center h-[300px]">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+            </div>
+          ) : error ? (
+            <div className="p-4 text-red-500">
+              {error}
+            </div>
+          ) : selectedFile && fileContent ? (
             <CodeViewer 
               code={fileContent} 
-              language={selectedFile.path.split('.').pop() || 'txt'} 
+              language={fileLanguage} 
               fileName={selectedFile.path.split('/').pop() || 'file'}
             />
-          </div>
-        )}
+          ) : (
+            <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+              Select a file to view its content
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

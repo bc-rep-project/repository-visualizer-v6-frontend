@@ -356,7 +356,7 @@ export default function RepositoryAnalyze() {
               
               {activeTab === 'directory' && rawData && (
                 <div className="max-w-full">
-                  <DirectoryStructure data={rawData} searchQuery={searchQuery} />
+                  <DirectoryStructure data={rawData} searchQuery={searchQuery} repoId={params.id as string} />
                 </div>
               )}
             </div>
