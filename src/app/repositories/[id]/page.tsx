@@ -7,6 +7,8 @@ import { BiAnalyse } from 'react-icons/bi';
 import { MdDelete } from 'react-icons/md';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import CodeViewer from '@/components/CodeViewer';
+import { SettingsProvider } from '@/contexts/SettingsContext';
+import Navigation from '@/components/Navigation';
 
 interface Repository {
   _id: string;
@@ -147,6 +149,9 @@ export default function RepositoryDetail() {
   const handleFileClick = async (file: FileNode) => {
     if (file.type === 'file') {
       setSelectedFile(file.path);
+      // Extract file extension for syntax highlighting
+      const fileExtension = file.path.split('.').pop()?.toLowerCase() || '';
+      
       // Mock file content for demo
       if (file.path === '/src/components/Button.js') {
         setFileContent(`export const Button = ({ children, ...props }) => {
@@ -240,278 +245,283 @@ export default function RepositoryDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="container mx-auto px-4 py-8">
-        {repository ? (
-          <>
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
-                <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2 md:mb-0">
-                  {getRepoName(repository.repo_url)}
-                </h1>
-                <div className="flex space-x-3">
-                  <button
-                    onClick={() => router.push(`/repositories/${repository._id}/analyze`)}
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center"
-                  >
-                    <BiAnalyse className="mr-2" /> Analyze
-                  </button>
-                  <button
-                    onClick={() => router.push(`/repositories/${repository._id}/enhanced`)}
-                    className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 flex items-center"
-                  >
-                    <FaCode className="mr-2" /> Enhanced
-                  </button>
-                  <button
-                    onClick={deleteRepository}
-                    className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 flex items-center"
-                  >
-                    <MdDelete className="mr-2" /> Delete
-                  </button>
+    <SettingsProvider>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <Navigation />
+        <div className="container mx-auto px-4 py-8">
+          {repository ? (
+            <>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
+                  <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2 md:mb-0">
+                    {getRepoName(repository.repo_url)}
+                  </h1>
+                  <div className="flex space-x-3">
+                    <button
+                      onClick={() => router.push(`/repositories/${repository._id}/analyze`)}
+                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center"
+                    >
+                      <BiAnalyse className="mr-2" /> Analyze
+                    </button>
+                    <button
+                      onClick={() => router.push(`/repositories/${repository._id}/enhanced`)}
+                      className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 flex items-center"
+                    >
+                      <FaCode className="mr-2" /> Enhanced
+                    </button>
+                    <button
+                      onClick={deleteRepository}
+                      className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 flex items-center"
+                    >
+                      <MdDelete className="mr-2" /> Delete
+                    </button>
+                  </div>
                 </div>
-              </div>
 
-              {/* Repository Structure */}
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm mb-6 p-6">
-                <h2 className="text-lg font-semibold mb-4 dark:text-white">Repository Structure</h2>
-                <div className="bg-gray-100 dark:bg-gray-900 rounded-lg p-6 h-80 flex items-center justify-center">
-                  <p className="text-gray-500 dark:text-gray-400">Interactive Repository Graph Visualization</p>
+                {/* Repository Structure */}
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm mb-6 p-6">
+                  <h2 className="text-lg font-semibold mb-4 dark:text-white">Repository Structure</h2>
+                  <div className="bg-gray-100 dark:bg-gray-900 rounded-lg p-6 h-80 flex items-center justify-center">
+                    <p className="text-gray-500 dark:text-gray-400">Interactive Repository Graph Visualization</p>
+                  </div>
                 </div>
-              </div>
 
-              {/* Stats Panels */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                {/* File Types */}
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-                  <h3 className="text-lg font-semibold mb-4 dark:text-white">File Types</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <div className="flex justify-between mb-1">
-                        <span className="text-sm font-medium dark:text-white">.js</span>
-                        <span className="text-sm font-medium dark:text-white">45%</span>
+                {/* Stats Panels */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                  {/* File Types */}
+                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                    <h3 className="text-lg font-semibold mb-4 dark:text-white">File Types</h3>
+                    <div className="space-y-4">
+                      <div>
+                        <div className="flex justify-between mb-1">
+                          <span className="text-sm font-medium dark:text-white">.js</span>
+                          <span className="text-sm font-medium dark:text-white">45%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                          <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: '45%' }}></div>
+                        </div>
                       </div>
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
-                        <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: '45%' }}></div>
+                      {/* Add more file types here */}
+                    </div>
+                  </div>
+
+                  {/* Directory Structure */}
+                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                    <h3 className="text-lg font-semibold mb-4 dark:text-white">Directory Structure</h3>
+                    <ul className="space-y-2">
+                      <li className="flex items-center dark:text-white">
+                        <FaFolder className="text-yellow-500 mr-2" /> src (156 files)
+                      </li>
+                      <li className="flex items-center dark:text-white">
+                        <FaFolder className="text-yellow-500 mr-2" /> tests (45 files)
+                      </li>
+                      {/* Add more directories here */}
+                    </ul>
+                  </div>
+
+                  {/* Code Metrics */}
+                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                    <h3 className="text-lg font-semibold mb-4 dark:text-white">Code Metrics</h3>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="dark:text-white">Lines of Code</span>
+                        <span className="font-semibold dark:text-white">24,567</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="dark:text-white">Functions</span>
+                        <span className="font-semibold dark:text-white">342</span>
+                      </div>
+                      {/* Add more metrics here */}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Functions & Classes + Tabs */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                  {/* Functions & Classes */}
+                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                    <h3 className="text-lg font-semibold mb-4 dark:text-white">Functions & Classes</h3>
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="font-medium mb-2 flex items-center dark:text-white">
+                          <FaCode className="mr-2" /> class UserController
+                        </h4>
+                        <ul className="ml-6 space-y-1">
+                          <li className="text-sm text-gray-600 dark:text-gray-400 flex items-center">
+                            <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span> handleSubmit()
+                          </li>
+                          {/* Add more methods here */}
+                        </ul>
+                      </div>
+                      {/* Add more classes here */}
+                    </div>
+                  </div>
+
+                  {/* Tabs Content */}
+                  <div className="md:col-span-3">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
+                      {/* Tabs */}
+                      <div className="flex border-b dark:border-gray-700">
+                        <button
+                          className={`px-4 py-2 font-medium ${activeTab === 'overview' ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}
+                          onClick={() => setActiveTab('overview')}
+                        >
+                          Overview
+                        </button>
+                        <button
+                          className={`px-4 py-2 font-medium ${activeTab === 'file-explorer' ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}
+                          onClick={() => setActiveTab('file-explorer')}
+                        >
+                          File Explorer
+                        </button>
+                        <button
+                          className={`px-4 py-2 font-medium ${activeTab === 'commits' ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}
+                          onClick={() => setActiveTab('commits')}
+                        >
+                          Commits
+                        </button>
+                        <button
+                          className={`px-4 py-2 font-medium ${activeTab === 'issues' ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}
+                          onClick={() => setActiveTab('issues')}
+                        >
+                          Issues
+                        </button>
+                        <button
+                          className={`px-4 py-2 font-medium ${activeTab === 'pull-requests' ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}
+                          onClick={() => setActiveTab('pull-requests')}
+                        >
+                          Pull Requests
+                        </button>
+                      </div>
+
+                      {/* Tab Content */}
+                      <div className="p-6">
+                        {activeTab === 'overview' && (
+                          <div>
+                            <h3 className="text-lg font-semibold mb-4 dark:text-white">Repository Overview</h3>
+                            <p className="text-gray-600 dark:text-gray-400 mb-4">
+                              This repository contains {repository.file_count} files across {repository.directory_count} directories,
+                              with a total size of {formatSize(repository.total_size)}.
+                            </p>
+                            {/* Add more overview content here */}
+                          </div>
+                        )}
+
+                        {activeTab === 'file-explorer' && (
+                          <div>
+                            {selectedFile ? (
+                              <div>
+                                <div className="flex items-center mb-4 text-sm text-gray-500 dark:text-gray-400">
+                                  {breadcrumbs.map((crumb, index) => (
+                                    <React.Fragment key={index}>
+                                      {index > 0 && <span className="mx-1">/</span>}
+                                      <span>{crumb}</span>
+                                    </React.Fragment>
+                                  ))}
+                                </div>
+                                <CodeViewer 
+                                  code={fileContent || ''} 
+                                  language={selectedFile.split('.').pop() || 'txt'} 
+                                  fileName={selectedFile.split('/').pop() || 'file'}
+                                />
+                              </div>
+                            ) : (
+                              <div>
+                                <h3 className="text-lg font-semibold mb-4 dark:text-white">File Explorer</h3>
+                                {fileStructure && renderFileTree(fileStructure)}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {activeTab === 'commits' && (
+                          <div>
+                            <h3 className="text-lg font-semibold mb-4 dark:text-white">Commits</h3>
+                            <div className="space-y-4">
+                              {commits.map((commit, index) => (
+                                <div key={index} className="border-b pb-4 dark:border-gray-700 last:border-0">
+                                  <div className="flex justify-between mb-1">
+                                    <span className="font-medium dark:text-white">{commit.message}</span>
+                                    <span className="text-sm text-gray-500 dark:text-gray-400">{commit.date}</span>
+                                  </div>
+                                  <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                                    <span className="mr-2">{commit.hash}</span>
+                                    <span>by {commit.author}</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {activeTab === 'issues' && (
+                          <div>
+                            <h3 className="text-lg font-semibold mb-4 dark:text-white">Issues</h3>
+                            <div className="space-y-4">
+                              {issues.map((issue, index) => (
+                                <div key={index} className="border-b pb-4 dark:border-gray-700 last:border-0">
+                                  <div className="flex justify-between mb-1">
+                                    <span className="font-medium dark:text-white">{issue.title}</span>
+                                    <span className={`px-2 py-1 rounded-full text-xs ${
+                                      issue.state === 'open' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                                    }`}>
+                                      {issue.state}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                                    <span>#{issue.id}</span>
+                                    <span className="mx-2">•</span>
+                                    <span>Opened on {new Date(issue.created_at).toLocaleDateString()}</span>
+                                    <span className="mx-2">•</span>
+                                    <span>by {issue.user}</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {activeTab === 'pull-requests' && (
+                          <div>
+                            <h3 className="text-lg font-semibold mb-4 dark:text-white">Pull Requests</h3>
+                            <div className="space-y-4">
+                              {pullRequests.map((pr, index) => (
+                                <div key={index} className="border-b pb-4 dark:border-gray-700 last:border-0">
+                                  <div className="flex justify-between mb-1">
+                                    <span className="font-medium dark:text-white">{pr.title}</span>
+                                    <span className={`px-2 py-1 rounded-full text-xs ${
+                                      pr.state === 'open' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 
+                                      pr.state === 'merged' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300' :
+                                      'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                                    }`}>
+                                      {pr.state}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                                    <span>#{pr.id}</span>
+                                    <span className="mx-2">•</span>
+                                    <span>Opened on {new Date(pr.created_at).toLocaleDateString()}</span>
+                                    <span className="mx-2">•</span>
+                                    <span>by {pr.user}</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
-                    {/* Add more file types here */}
-                  </div>
-                </div>
-
-                {/* Directory Structure */}
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-                  <h3 className="text-lg font-semibold mb-4 dark:text-white">Directory Structure</h3>
-                  <ul className="space-y-2">
-                    <li className="flex items-center dark:text-white">
-                      <FaFolder className="text-yellow-500 mr-2" /> src (156 files)
-                    </li>
-                    <li className="flex items-center dark:text-white">
-                      <FaFolder className="text-yellow-500 mr-2" /> tests (45 files)
-                    </li>
-                    {/* Add more directories here */}
-                  </ul>
-                </div>
-
-                {/* Code Metrics */}
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-                  <h3 className="text-lg font-semibold mb-4 dark:text-white">Code Metrics</h3>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="dark:text-white">Lines of Code</span>
-                      <span className="font-semibold dark:text-white">24,567</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="dark:text-white">Functions</span>
-                      <span className="font-semibold dark:text-white">342</span>
-                    </div>
-                    {/* Add more metrics here */}
                   </div>
                 </div>
               </div>
-
-              {/* Functions & Classes + Tabs */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                {/* Functions & Classes */}
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-                  <h3 className="text-lg font-semibold mb-4 dark:text-white">Functions & Classes</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <h4 className="font-medium mb-2 flex items-center dark:text-white">
-                        <FaCode className="mr-2" /> class UserController
-                      </h4>
-                      <ul className="ml-6 space-y-1">
-                        <li className="text-sm text-gray-600 dark:text-gray-400 flex items-center">
-                          <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span> handleSubmit()
-                        </li>
-                        {/* Add more methods here */}
-                      </ul>
-                    </div>
-                    {/* Add more classes here */}
-                  </div>
-                </div>
-
-                {/* Tabs Content */}
-                <div className="md:col-span-3">
-                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
-                    {/* Tabs */}
-                    <div className="flex border-b dark:border-gray-700">
-                      <button
-                        className={`px-4 py-2 font-medium ${activeTab === 'overview' ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}
-                        onClick={() => setActiveTab('overview')}
-                      >
-                        Overview
-                      </button>
-                      <button
-                        className={`px-4 py-2 font-medium ${activeTab === 'file-explorer' ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}
-                        onClick={() => setActiveTab('file-explorer')}
-                      >
-                        File Explorer
-                      </button>
-                      <button
-                        className={`px-4 py-2 font-medium ${activeTab === 'commits' ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}
-                        onClick={() => setActiveTab('commits')}
-                      >
-                        Commits
-                      </button>
-                      <button
-                        className={`px-4 py-2 font-medium ${activeTab === 'issues' ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}
-                        onClick={() => setActiveTab('issues')}
-                      >
-                        Issues
-                      </button>
-                      <button
-                        className={`px-4 py-2 font-medium ${activeTab === 'pull-requests' ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}
-                        onClick={() => setActiveTab('pull-requests')}
-                      >
-                        Pull Requests
-                      </button>
-                    </div>
-
-                    {/* Tab Content */}
-                    <div className="p-6">
-                      {activeTab === 'overview' && (
-                        <div>
-                          <h3 className="text-lg font-semibold mb-4 dark:text-white">Repository Overview</h3>
-                          <p className="text-gray-600 dark:text-gray-400 mb-4">
-                            This repository contains {repository.file_count} files across {repository.directory_count} directories,
-                            with a total size of {formatSize(repository.total_size)}.
-                          </p>
-                          {/* Add more overview content here */}
-                        </div>
-                      )}
-
-                      {activeTab === 'file-explorer' && (
-                        <div>
-                          {selectedFile ? (
-                            <div>
-                              <div className="flex items-center mb-4 text-sm text-gray-500 dark:text-gray-400">
-                                {breadcrumbs.map((crumb, index) => (
-                                  <React.Fragment key={index}>
-                                    {index > 0 && <span className="mx-1">/</span>}
-                                    <span>{crumb}</span>
-                                  </React.Fragment>
-                                ))}
-                              </div>
-                              <div className="bg-gray-100 dark:bg-gray-900 rounded-lg p-4 font-mono text-sm">
-                                <pre className="whitespace-pre-wrap dark:text-white">{fileContent}</pre>
-                              </div>
-                            </div>
-                          ) : (
-                            <div>
-                              <h3 className="text-lg font-semibold mb-4 dark:text-white">File Explorer</h3>
-                              {fileStructure && renderFileTree(fileStructure)}
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {activeTab === 'commits' && (
-                        <div>
-                          <h3 className="text-lg font-semibold mb-4 dark:text-white">Commits</h3>
-                          <div className="space-y-4">
-                            {commits.map((commit, index) => (
-                              <div key={index} className="border-b pb-4 dark:border-gray-700 last:border-0">
-                                <div className="flex justify-between mb-1">
-                                  <span className="font-medium dark:text-white">{commit.message}</span>
-                                  <span className="text-sm text-gray-500 dark:text-gray-400">{commit.date}</span>
-                                </div>
-                                <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                                  <span className="mr-2">{commit.hash}</span>
-                                  <span>by {commit.author}</span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {activeTab === 'issues' && (
-                        <div>
-                          <h3 className="text-lg font-semibold mb-4 dark:text-white">Issues</h3>
-                          <div className="space-y-4">
-                            {issues.map((issue, index) => (
-                              <div key={index} className="border-b pb-4 dark:border-gray-700 last:border-0">
-                                <div className="flex justify-between mb-1">
-                                  <span className="font-medium dark:text-white">{issue.title}</span>
-                                  <span className={`px-2 py-1 rounded-full text-xs ${
-                                    issue.state === 'open' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                                  }`}>
-                                    {issue.state}
-                                  </span>
-                                </div>
-                                <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                                  <span>#{issue.id}</span>
-                                  <span className="mx-2">•</span>
-                                  <span>Opened on {new Date(issue.created_at).toLocaleDateString()}</span>
-                                  <span className="mx-2">•</span>
-                                  <span>by {issue.user}</span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {activeTab === 'pull-requests' && (
-                        <div>
-                          <h3 className="text-lg font-semibold mb-4 dark:text-white">Pull Requests</h3>
-                          <div className="space-y-4">
-                            {pullRequests.map((pr, index) => (
-                              <div key={index} className="border-b pb-4 dark:border-gray-700 last:border-0">
-                                <div className="flex justify-between mb-1">
-                                  <span className="font-medium dark:text-white">{pr.title}</span>
-                                  <span className={`px-2 py-1 rounded-full text-xs ${
-                                    pr.state === 'open' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 
-                                    pr.state === 'merged' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300' :
-                                    'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                                  }`}>
-                                    {pr.state}
-                                  </span>
-                                </div>
-                                <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                                  <span>#{pr.id}</span>
-                                  <span className="mx-2">•</span>
-                                  <span>Opened on {new Date(pr.created_at).toLocaleDateString()}</span>
-                                  <span className="mx-2">•</span>
-                                  <span>by {pr.user}</span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
+            </>
+          ) : (
+            <div className="flex justify-center items-center h-64">
+              <LoadingSpinner />
             </div>
-          </>
-        ) : (
-          <div className="flex justify-center items-center h-64">
-            <LoadingSpinner />
-          </div>
-        )}
+          )}
+        </div>
       </div>
-    </div>
+    </SettingsProvider>
   );
 } 
