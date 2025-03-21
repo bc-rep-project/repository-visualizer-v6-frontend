@@ -560,11 +560,11 @@ export default function RepositoryList() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex justify-between items-center mt-6">
-          <div className="text-sm text-gray-500 dark:text-gray-400">
+        <div className="flex flex-col sm:flex-row justify-between items-center mt-6 gap-3">
+          <div className="text-sm text-gray-500 dark:text-gray-400 w-full sm:w-auto text-center sm:text-left">
                 Showing {repositories.length} of {totalRepos} repositories
           </div>
-              <div className="flex space-x-1">
+              <div className="flex flex-wrap justify-center sm:justify-end gap-1 w-full sm:w-auto">
             <button
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1}
@@ -594,7 +594,7 @@ export default function RepositoryList() {
             </button>
           </div>
         </div>
-          )}
+      )}
         </>
       )}
 
