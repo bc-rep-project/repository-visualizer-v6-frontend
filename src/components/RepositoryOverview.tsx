@@ -49,27 +49,33 @@ const RepositoryOverview: React.FC<RepositoryOverviewProps> = ({ data }) => {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 sm:p-6">
       <h2 className="text-xl font-bold mb-4 dark:text-white">Repository Overview</h2>
-      <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-        This repository contains <span className="font-semibold">{stats.fileCount} files</span> across{' '}
-        <span className="font-semibold">{stats.directoryCount} directories</span>, with a total size of{' '}
-        <span className="font-semibold">{formatSize(stats.totalSize)}</span>.
-      </p>
+      <div className="text-gray-700 dark:text-gray-300 leading-relaxed break-words">
+        <p className="mb-2">
+          This repository contains <span className="font-semibold">{stats.fileCount} files</span>.
+        </p>
+        <p className="mb-2">
+          It has <span className="font-semibold">{stats.directoryCount} directories</span>.
+        </p>
+        <p className="mb-2">
+          Total size: <span className="font-semibold">{formatSize(stats.totalSize)}</span>.
+        </p>
+      </div>
       
-      <div className="mt-6 grid grid-cols-3 gap-4">
-        <div className="bg-blue-50 dark:bg-blue-900 p-4 rounded-lg">
+      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
           <div className="text-2xl font-bold text-blue-600 dark:text-blue-300">{stats.fileCount}</div>
           <div className="text-sm text-blue-600 dark:text-blue-300">Files</div>
         </div>
         
-        <div className="bg-green-50 dark:bg-green-900 p-4 rounded-lg">
+        <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
           <div className="text-2xl font-bold text-green-600 dark:text-green-300">{stats.directoryCount}</div>
           <div className="text-sm text-green-600 dark:text-green-300">Directories</div>
         </div>
         
-        <div className="bg-purple-50 dark:bg-purple-900 p-4 rounded-lg">
-          <div className="text-2xl font-bold text-purple-600 dark:text-purple-300">{formatSize(stats.totalSize)}</div>
+        <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
+          <div className="text-2xl font-bold text-purple-600 dark:text-purple-300 truncate">{formatSize(stats.totalSize)}</div>
           <div className="text-sm text-purple-600 dark:text-purple-300">Total Size</div>
         </div>
       </div>
