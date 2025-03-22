@@ -89,7 +89,8 @@ export const repositoryApi = {
         page?: number;
         limit?: number;
     }): Promise<RepositoryResponse> => {
-        // Build query parameters
+        // Build query parameters - always sort by created_at in descending order
+        // to ensure newly cloned repositories are at the top
         const queryParams = new URLSearchParams({
             sort: 'created_at',
             dir: 'desc'
