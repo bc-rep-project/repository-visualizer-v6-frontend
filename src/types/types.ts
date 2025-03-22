@@ -11,6 +11,8 @@ export interface FileNode {
     name: string;
     type: string;
     dependencies?: string[] | { target: string; type: string; }[];
+    start_line?: number;
+    end_line?: number;
   }[];
   classes?: {
     name: string;
@@ -19,7 +21,11 @@ export interface FileNode {
       name: string;
       type: string;
       dependencies?: string[] | { target: string; type: string; }[];
+      start_line?: number;
+      end_line?: number;
     }[];
+    start_line?: number;
+    end_line?: number;
   }[];
   imports?: string[] | { source: string }[];
   lines?: number;

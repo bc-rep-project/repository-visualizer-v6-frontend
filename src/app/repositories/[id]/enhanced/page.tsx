@@ -375,7 +375,8 @@ export default function RepositoryAnalyze() {
               
               {activeTab === 'functions' && rawData && (
                 <div className="max-w-full">
-                  <FunctionsClassesList data={rawData} searchQuery={searchQuery} />
+                  {/* FunctionsClassesList now allows clicking on any function or class to view its code */}
+                  <FunctionsClassesList data={rawData} searchQuery={searchQuery} repoId={params.id as string} />
                 </div>
               )}
               

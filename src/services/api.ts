@@ -243,6 +243,41 @@ export const repositoryApi = {
     getCachedAnalysis: async (repoId: string): Promise<any> => {
         const response = await api.get(`/api/repositories/${repoId}/analyze/cached`);
         return response.data;
+    },
+
+    // Repository files
+    getRepositoryFile: async (repoId: string, filePath: string) => {
+        try {
+            console.log(`[API] Getting file content for repository: ${repoId}, filePath: ${filePath}`);
+            const response = await api.get(`/repositories/${repoId}/files`, {
+                params: { file_path: filePath }
+            });
+            return response.data;
+        } catch (error) {
+            console.error(`[API] Error getting file content:`, error);
+            throw new Error('An error occurred while getting the file content');
+        }
+    },
+
+    getFunctionOrClassContent: async (repoId: string, filePath: string) => {
+        try {
+            console.log(`[API] Getting function/class content from file: ${filePath} in repository: ${repoId}`);
+            return await repositoryApi.getRepositoryFile(repoId, filePath);
+        } catch (error) {
+            console.error(`[API] Error getting function/class content:`, error);
+            throw new Error('An error occurred while getting the function or class content');
+        }
+    },
+    
+    getFunctionOrClassCode: async (repoId: string, params: { path: string; name: string; type?: string }) => {
+        try {
+            console.log(`[API] Getting specific code for ${params.type || 'function'} '${params.name}' from ${params.path}`);
+            const response = await api.get(`/api/repositories/${repoId}/function-content`, { params });
+            return response.data;
+        } catch (error) {
+            console.error(`[API] Error getting function/class code:`, error);
+            throw new Error(`An error occurred while getting the ${params.type || 'function'} code`);
+        }
     }
 };
 
