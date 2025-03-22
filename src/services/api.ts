@@ -220,6 +220,16 @@ export const repositoryApi = {
         return response.data;
     },
     
+    getAutoSaveBackups: async (page: number = 1, limit: number = 10): Promise<any> => {
+        const response = await api.get(`/api/repositories/auto-save/backups?page=${page}&limit=${limit}`);
+        return response.data;
+    },
+    
+    getAutoSaveBackupDetails: async (backupId: string): Promise<any> => {
+        const response = await api.get(`/api/repositories/auto-save/backups/${backupId}`);
+        return response.data;
+    },
+    
     saveRepository: async (repoId: string, data: any): Promise<Repository> => {
         const response = await api.post(`/api/repositories/${repoId}/save`, data);
         return response.data;

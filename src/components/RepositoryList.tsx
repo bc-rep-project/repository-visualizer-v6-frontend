@@ -23,10 +23,10 @@ interface RepositoryListProps {
 
 // The pagination interface matches what the API returns
 interface Pagination {
-  page: number;
-  limit: number;
-  total: number;
-  pages: number;
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
 }
 
 export default function RepositoryList() {
