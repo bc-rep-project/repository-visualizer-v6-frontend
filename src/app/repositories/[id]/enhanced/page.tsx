@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { FaFolder, FaCode, FaSearch, FaFilter, FaDownload, FaShare, FaFile } from 'react-icons/fa';
+import { FaFolder, FaCode, FaSearch, FaFilter, FaDownload, FaShare, FaFile, FaCubes } from 'react-icons/fa';
 import { BiZoomIn, BiZoomOut } from 'react-icons/bi';
 import { MdOutlineFullscreen } from 'react-icons/md';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -98,16 +98,26 @@ export default function RepositoryAnalyze() {
   // Reprocess data when filters change
   useEffect(() => {
     if (rawData) {
+      console.log('Filters changed, reprocessing data with options:', filterOptions);
       setFiltersChanged(true);
-      const processed = transformAnalysisData(rawData, {
-        showFiles: filterOptions.showFiles,
-        showDirectories: filterOptions.showDirectories,
-        showFunctions: filterOptions.showFunctions,
-        showClasses: filterOptions.showClasses,
-        searchQuery: filterOptions.searchQuery
-      });
-      setProcessedData(processed);
-      setFiltersChanged(false);
+      
+      // Use a small timeout to ensure the loading UI is visible
+      // This makes the user experience better by showing feedback
+      setTimeout(() => {
+        const processed = transformAnalysisData(rawData, {
+          showFiles: filterOptions.showFiles,
+          showDirectories: filterOptions.showDirectories,
+          showFunctions: filterOptions.showFunctions,
+          showClasses: filterOptions.showClasses,
+          searchQuery: filterOptions.searchQuery
+        });
+        setProcessedData(processed);
+        
+        // Small delay before hiding the loading state for better UX
+        setTimeout(() => {
+          setFiltersChanged(false);
+        }, 300);
+      }, 300);
     }
   }, [filterOptions, rawData]);
 
@@ -158,10 +168,15 @@ export default function RepositoryAnalyze() {
   };
 
   const toggleFilter = (filter: keyof Omit<FilterOptions, 'searchQuery'>) => {
-    setFilterOptions(prev => ({
-      ...prev,
-      [filter]: !prev[filter]
-    }));
+    console.log(`Toggle filter called for: ${filter}, current value: ${filterOptions[filter]}`);
+    setFilterOptions(prev => {
+      const newOptions = {
+        ...prev,
+        [filter]: !prev[filter]
+      };
+      console.log(`Filter updated: ${filter} => ${newOptions[filter]}`);
+      return newOptions;
+    });
   };
 
   const handleVisualizationTypeChange = (type: 'packed' | 'graph' | 'sunburst' | 'tree') => {
@@ -207,10 +222,20 @@ export default function RepositoryAnalyze() {
     
     if (filtersChanged) {
       return (
-        <div className="flex justify-center items-center" style={{ 
+        <div className="flex flex-col justify-center items-center" style={{ 
           minHeight: isMobile ? '450px' : '600px' 
         }}>
-          <LoadingSpinner message="Updating visualization..." />
+          <LoadingSpinner size="large" />
+          <p className="mt-4 text-blue-600 dark:text-blue-400 font-medium">
+            Applying filters...
+          </p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 max-w-md text-center">
+            Updating visualization to show
+            {filterOptions.showFiles ? ' files,' : ''} 
+            {filterOptions.showDirectories ? ' directories,' : ''} 
+            {filterOptions.showFunctions ? ' functions,' : ''} 
+            {filterOptions.showClasses ? ' classes' : ''}
+          </p>
         </div>
       );
     }
@@ -226,10 +251,93 @@ export default function RepositoryAnalyze() {
     );
   };
 
+  const pulseStyle = filtersChanged ? {
+    animation: 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+  } : {};
+
+  useEffect(() => {
+    // Add keyframes for pulse animation if not already present
+    if (!document.querySelector('#pulse-keyframes')) {
+      const style = document.createElement('style');
+      style.id = 'pulse-keyframes';
+      style.innerHTML = `
+        @keyframes pulse {
+          0%, 100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.5;
+          }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+    
+    return () => {
+      // Clean up on unmount
+      const style = document.querySelector('#pulse-keyframes');
+      if (style) style.remove();
+    };
+  }, []);
+
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <LoadingSpinner />
+      <div className="p-4 sm:p-8 space-y-6">
+        {/* Repository header skeleton */}
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-4"></div>
+          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-6"></div>
+        </div>
+        
+        {/* Filter controls skeleton */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6 animate-pulse">
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex space-x-2">
+              <div className="h-8 w-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
+              <div className="h-8 w-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
+              <div className="h-8 w-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
+            </div>
+            <div className="flex space-x-2">
+              <div className="h-8 w-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
+              <div className="h-8 w-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
+            </div>
+          </div>
+          
+          <div className="flex justify-between items-center mt-4">
+            <div className="w-full sm:w-64 h-10 bg-gray-200 dark:bg-gray-700 rounded"></div>
+            <div className="flex space-x-2 mt-2 sm:mt-0">
+              <div className="h-8 w-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
+              <div className="h-8 w-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
+              <div className="h-8 w-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
+              <div className="h-8 w-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Visualization container skeleton */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md animate-pulse">
+          <div className="flex justify-center items-center" 
+            style={{ height: isMobile ? '450px' : '600px' }}
+          >
+            <LoadingSpinner message="Loading repository visualization..." />
+          </div>
+        </div>
+        
+        {/* Tabs skeleton */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6 animate-pulse">
+          <div className="flex space-x-4 border-b border-gray-200 dark:border-gray-700 mb-6">
+            <div className="h-8 w-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
+            <div className="h-8 w-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
+            <div className="h-8 w-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
+            <div className="h-8 w-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
+          </div>
+          
+          <div className="space-y-4">
+            <div className="h-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
+            <div className="h-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
+            <div className="h-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -339,30 +447,42 @@ export default function RepositoryAnalyze() {
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => toggleFilter('showFiles')}
+                  className={`px-2 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm rounded-md flex items-center transition-all duration-200 ease-in-out ${filterOptions.showFiles ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
+                  aria-pressed={filterOptions.showFiles}
                 >
-                  {filterOptions.showFiles ? 'Hide Files' : 'Show Files'}
+                  <FaFile className="mr-0.5 sm:mr-1 flex-shrink-0" /> Files
                 </button>
                 <button
                   onClick={() => toggleFilter('showDirectories')}
+                  className={`px-2 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm rounded-md flex items-center transition-all duration-200 ease-in-out ${filterOptions.showDirectories ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
+                  aria-pressed={filterOptions.showDirectories}
                 >
-                  {filterOptions.showDirectories ? 'Hide Directories' : 'Show Directories'}
+                  <FaFolder className="mr-0.5 sm:mr-1 flex-shrink-0" /> Dirs
                 </button>
                 <button
                   onClick={() => toggleFilter('showFunctions')}
+                  className={`px-2 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm rounded-md flex items-center transition-all duration-200 ease-in-out ${filterOptions.showFunctions ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
+                  aria-pressed={filterOptions.showFunctions}
                 >
-                  {filterOptions.showFunctions ? 'Hide Functions' : 'Show Functions'}
+                  <FaCode className="mr-0.5 sm:mr-1 flex-shrink-0" /> Funcs
                 </button>
                 <button
                   onClick={() => toggleFilter('showClasses')}
+                  className={`px-2 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm rounded-md flex items-center transition-all duration-200 ease-in-out ${filterOptions.showClasses ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
+                  aria-pressed={filterOptions.showClasses}
                 >
-                  {filterOptions.showClasses ? 'Hide Classes' : 'Show Classes'}
+                  <FaCubes className="mr-0.5 sm:mr-1 flex-shrink-0" /> Classes
                 </button>
               </div>
             </div>
           </div>
           
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md mb-4 overflow-hidden">
-            <div className="visualization-container w-full" style={{ minHeight: isMobile ? '450px' : '600px', maxHeight: isMobile ? '550px' : '700px' }}>
+            <div className="visualization-container w-full" style={{ 
+              minHeight: isMobile ? '450px' : '600px', 
+              maxHeight: isMobile ? '550px' : '700px',
+              ...pulseStyle 
+            }}>
               {renderVisualization()}
             </div>
           </div>
