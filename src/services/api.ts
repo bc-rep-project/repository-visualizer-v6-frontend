@@ -23,7 +23,10 @@ api.interceptors.request.use(
     config => {
         console.log(`API Request: ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`, {
             headers: config.headers,
-            data: config.data
+            data: config.data,
+            params: config.params,
+            url: config.url,
+            fullUrl: `${config.baseURL}${config.url}`
         });
         return config;
     },
@@ -37,7 +40,13 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     response => {
         console.log(`API Response: ${response.status} ${response.config.url}`, {
-            data: response.data
+            data: response.data,
+            headers: response.headers,
+            config: {
+                url: response.config.url,
+                method: response.config.method,
+                params: response.config.params
+            }
         });
         return response;
     },
@@ -249,8 +258,8 @@ export const repositoryApi = {
     getRepositoryFile: async (repoId: string, filePath: string) => {
         try {
             console.log(`[API] Getting file content for repository: ${repoId}, filePath: ${filePath}`);
-            const response = await api.get(`/repositories/${repoId}/files`, {
-                params: { file_path: filePath }
+            const response = await api.get(`/api/repositories/${repoId}/files`, {
+                params: { path: filePath }
             });
             return response.data;
         } catch (error) {
@@ -272,8 +281,76 @@ export const repositoryApi = {
     getFunctionOrClassCode: async (repoId: string, params: { path: string; name: string; type?: string }) => {
         try {
             console.log(`[API] Getting specific code for ${params.type || 'function'} '${params.name}' from ${params.path}`);
-            const response = await api.get(`/api/repositories/${repoId}/function-content`, { params });
-            return response.data;
+            
+            // Try to get the function content from the API
+            try {
+                const response = await api.get(`/api/repositories/${repoId}/function-content`, { params });
+                console.log(`[API] Successfully retrieved function/class code for ${params.name}`);
+                return response.data;
+            } catch (functionError) {
+                console.error(`[API] Error getting function/class specific code:`, functionError);
+                console.log(`[API] Falling back to file content and parsing locally...`);
+                
+                // Fall back to getting the entire file and parsing locally
+                const fileResponse = await repositoryApi.getRepositoryFile(repoId, params.path);
+                
+                if (!fileResponse || !fileResponse.file || !fileResponse.file.content) {
+                    throw new Error('Could not retrieve file content');
+                }
+                
+                // Parse the file content to extract the function
+                const content = fileResponse.file.content;
+                const fileLanguage = fileResponse.file.language || '';
+                
+                // Extract function from file content
+                let extractedContent = '';
+                let lineStart = 0;
+                let lineEnd = 0;
+                
+                // Simple regex-based extraction (similar to backend implementation)
+                const name = params.name;
+                const type = params.type || 'function';
+                let pattern: RegExp | null = null;
+                
+                if (fileLanguage.includes('typescript') || fileLanguage.includes('javascript')) {
+                    if (type === 'function' || type === 'method') {
+                        pattern = new RegExp(`(function\\s+${name}\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*?\\}|const\\s+${name}\\s*=\\s*(?:async\\s+)?function\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*?\\}|const\\s+${name}\\s*=\\s*(?:async\\s+)?\\([^)]*\\)\\s*=>\\s*\\{[\\s\\S]*?\\}|${name}\\s*\\([^)]*\\)\\s*\\{[\\s\\S]*?\\})`, 'gm');
+                    } else if (type === 'class') {
+                        pattern = new RegExp(`(class\\s+${name}\\s*(?:extends\\s+\\w+)?\\s*\\{[\\s\\S]*?\\})`, 'gm');
+                    }
+                } else if (fileLanguage.includes('python')) {
+                    if (type === 'function' || type === 'method') {
+                        pattern = new RegExp(`(def\\s+${name}\\s*\\([^)]*\\):[\\s\\S]*?)(?=\\s*def\\s+|\\s*class\\s+|$)`, 'gm');
+                    } else if (type === 'class') {
+                        pattern = new RegExp(`(class\\s+${name}[^:]*:[\\s\\S]*?)(?=\\s*class\\s+|$)`, 'gm');
+                    }
+                }
+                
+                if (pattern) {
+                    const matches = content.match(pattern);
+                    if (matches && matches.length > 0) {
+                        extractedContent = matches[0];
+                        
+                        // Calculate line numbers
+                        const contentBefore = content.substring(0, content.indexOf(extractedContent));
+                        lineStart = contentBefore.split('\n').length;
+                        lineEnd = lineStart + extractedContent.split('\n').length - 1;
+                        
+                        return {
+                            content: extractedContent,
+                            line_start: lineStart,
+                            line_end: lineEnd,
+                            language: fileLanguage,
+                            name: name,
+                            type: type,
+                            file_path: params.path,
+                            note: 'Extracted locally due to API function extraction failure'
+                        };
+                    }
+                }
+                
+                throw new Error(`Could not extract ${type} ${name} from file content`);
+            }
         } catch (error) {
             console.error(`[API] Error getting function/class code:`, error);
             throw new Error(`An error occurred while getting the ${params.type || 'function'} code`);
