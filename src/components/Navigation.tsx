@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FaGithub, FaHome, FaChartBar, FaSearch, FaBars, FaTimes, FaCog } from 'react-icons/fa';
+import { FaChartBar, FaSearch, FaBars, FaTimes, FaCog } from 'react-icons/fa';
 
 export default function Navigation() {
   const pathname = usePathname();
@@ -28,21 +28,12 @@ export default function Navigation() {
           <div className="flex items-center">
             <div className="flex-shrink-0 flex items-center">
               <Link href="/" className="flex items-center">
-                <FaGithub className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                <span className="ml-2 text-xl font-bold text-gray-900 dark:text-white">Repo Viz</span>
+                <span className="text-xl font-bold text-gray-900 dark:text-white">Repo Viz</span>
               </Link>
             </div>
-            <div className="hidden md:ml-6 md:flex md:space-x-8">
-              <Link
-                href="/"
-                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                  pathname === '/'
-                    ? 'border-blue-500 text-gray-900 dark:text-white'
-                    : 'border-transparent text-gray-500 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
-                }`}
-              >
-                <FaHome className="mr-1" /> Home
-              </Link>
+          </div>
+          <div className="flex items-center space-x-4">
+            <div className="hidden md:flex md:space-x-8">
               <Link
                 href="/dashboard"
                 className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
@@ -64,9 +55,7 @@ export default function Navigation() {
                 <FaCog className="mr-1" /> Settings
               </Link>
             </div>
-          </div>
-          <div className="flex items-center">
-            {/* Search form for medium screens and up */}
+            
             <form onSubmit={handleSearch} className="relative hidden md:block">
               <input
                 type="text"
@@ -78,8 +67,7 @@ export default function Navigation() {
               <FaSearch className="absolute left-3 top-3 text-gray-400" />
             </form>
             
-            {/* Mobile menu button */}
-            <div className="md:hidden flex items-center ml-4">
+            <div className="md:hidden flex items-center">
               <button
                 onClick={toggleMobileMenu}
                 className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none"
@@ -97,7 +85,6 @@ export default function Navigation() {
         </div>
       </div>
 
-      {/* Mobile menu */}
       {mobileMenuOpen && (
         <div className="md:hidden">
           <div className="pt-2 pb-3 space-y-1">
@@ -136,7 +123,6 @@ export default function Navigation() {
             </Link>
           </div>
           
-          {/* Mobile search */}
           <div className="pt-4 pb-3 border-t border-gray-200 dark:border-gray-700">
             <form onSubmit={handleSearch} className="px-4">
               <div className="relative">
