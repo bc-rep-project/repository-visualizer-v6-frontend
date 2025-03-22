@@ -89,8 +89,7 @@ export const repositoryApi = {
         page?: number;
         limit?: number;
     }): Promise<RepositoryResponse> => {
-        // Build query parameters - always sort by created_at in descending order
-        // to ensure newly cloned repositories are at the top
+        // Build query parameters
         const queryParams = new URLSearchParams({
             sort: 'created_at',
             dir: 'desc'
@@ -218,6 +217,16 @@ export const repositoryApi = {
     
     runAutoSaveManually: async (): Promise<any> => {
         const response = await api.post('/api/repositories/auto-save/run');
+        return response.data;
+    },
+    
+    getAutoSaveBackups: async (page: number = 1, limit: number = 10): Promise<any> => {
+        const response = await api.get(`/api/repositories/auto-save/backups?page=${page}&limit=${limit}`);
+        return response.data;
+    },
+    
+    getAutoSaveBackupDetails: async (backupId: string): Promise<any> => {
+        const response = await api.get(`/api/repositories/auto-save/backups/${backupId}`);
         return response.data;
     },
     

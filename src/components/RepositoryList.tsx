@@ -162,9 +162,6 @@ export default function RepositoryList() {
       // Reset form and close modal
       setNewRepoUrl('');
       
-      // Reset to page 1 to ensure the newly added repository is visible
-      setCurrentPage(1);
-      
       // After successfully adding a repository, refresh the list to show it at the top
       await fetchRepositories();
       

@@ -11,12 +11,19 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [autoSaveStats, setAutoSaveStats] = useState<any>(null);
+  const [backupsData, setBackupsData] = useState<{
+    total: number;
+    firstBackup: string | null;
+    lastBackup: string | null;
+  } | null>(null);
   const [autoSaveServiceStatus, setAutoSaveServiceStatus] = useState<{
     running: boolean;
+    interval: number;
+    enabled: boolean;
+    last_run: string;
+    next_run: string;
     repositories_saved?: number;
     analyses_saved?: number;
-    last_run_time?: string;
-    next_run_time?: string;
   } | null>(null);
   const [serviceOperation, setServiceOperation] = useState<'idle' | 'starting' | 'stopping' | 'running'>('idle');
 
@@ -29,11 +36,25 @@ export default function SettingsPage() {
         setAutoSaveStats(stats.statistics || {});
         setAutoSaveServiceStatus({
           running: stats.running || false,
-          repositories_saved: stats.repositories_saved,
-          analyses_saved: stats.analyses_saved,
-          last_run_time: stats.last_run_time,
-          next_run_time: stats.next_run_time
+          interval: stats.interval || 3600,
+          enabled: stats.enabled || false,
+          last_run: stats.last_run || '',
+          next_run: stats.next_run || '',
+          repositories_saved: stats.repositories_saved || 0,
+          analyses_saved: stats.analyses_saved || 0,
         });
+        
+        // Get backup statistics
+        try {
+          const backups = await repositoryApi.getAutoSaveBackups(1, 1);
+          setBackupsData({
+            total: backups.total || 0,
+            firstBackup: backups.statistics?.first_backup || null,
+            lastBackup: backups.statistics?.last_backup || null,
+          });
+        } catch (err) {
+          console.error('Error fetching backups data:', err);
+        }
       } catch (err) {
         console.error('Error fetching auto-save data:', err);
       }
@@ -165,13 +186,29 @@ export default function SettingsPage() {
     }
   };
 
-  // Auto-save service operations
+  // Handle start auto-save service
   const handleStartAutoSave = async () => {
     try {
       setServiceOperation('starting');
-      const result = await repositoryApi.startAutoSave();
-      setAutoSaveServiceStatus(result.status);
-      showSaveMessage('success', 'Auto-save service started successfully');
+      const response = await repositoryApi.startAutoSave();
+      
+      if (response.status === 'started') {
+        // Update service status
+        const stats = await repositoryApi.getAutoSaveStatus();
+        setAutoSaveServiceStatus({
+          running: true,
+          interval: stats.interval || 3600,
+          enabled: true,
+          last_run: stats.last_run || '',
+          next_run: stats.next_run || '',
+          repositories_saved: stats.repositories_saved || 0,
+          analyses_saved: stats.analyses_saved || 0
+        });
+        
+        showSaveMessage('success', 'Auto-save service started successfully');
+      } else {
+        showSaveMessage('error', response.message || 'Failed to start auto-save service');
+      }
     } catch (err) {
       console.error('Error starting auto-save service:', err);
       showSaveMessage('error', 'Failed to start auto-save service');
@@ -180,12 +217,28 @@ export default function SettingsPage() {
     }
   };
   
+  // Handle stop auto-save service
   const handleStopAutoSave = async () => {
     try {
       setServiceOperation('stopping');
-      const result = await repositoryApi.stopAutoSave();
-      setAutoSaveServiceStatus(result.status);
-      showSaveMessage('success', 'Auto-save service stopped successfully');
+      const response = await repositoryApi.stopAutoSave();
+      
+      if (response.status === 'stopped') {
+        // Update service status
+        setAutoSaveServiceStatus({
+          running: false,
+          interval: autoSaveServiceStatus?.interval || 3600,
+          enabled: false,
+          last_run: autoSaveServiceStatus?.last_run || '',
+          next_run: autoSaveServiceStatus?.next_run || '',
+          repositories_saved: autoSaveServiceStatus?.repositories_saved || 0,
+          analyses_saved: autoSaveServiceStatus?.analyses_saved || 0
+        });
+        
+        showSaveMessage('success', 'Auto-save service stopped successfully');
+      } else {
+        showSaveMessage('error', response.message || 'Failed to stop auto-save service');
+      }
     } catch (err) {
       console.error('Error stopping auto-save service:', err);
       showSaveMessage('error', 'Failed to stop auto-save service');
@@ -194,20 +247,44 @@ export default function SettingsPage() {
     }
   };
   
+  // Handle run auto-save manually
   const handleRunAutoSave = async () => {
     try {
       setServiceOperation('running');
-      const result = await repositoryApi.runAutoSaveManually();
-      setAutoSaveServiceStatus(result.status);
-      setAutoSaveStats({
-        repositories_saved: result.repositories_saved,
-        analyses_saved: result.analyses_saved,
-        ...autoSaveStats
-      });
-      showSaveMessage('success', `Auto-save completed: ${result.repositories_saved} repositories and ${result.analyses_saved} analyses saved`);
+      const response = await repositoryApi.runAutoSaveManually();
+      
+      if (response.status === 'completed') {
+        // Update service status
+        const stats = await repositoryApi.getAutoSaveStatus();
+        setAutoSaveServiceStatus({
+          running: autoSaveServiceStatus?.running || false,
+          interval: autoSaveServiceStatus?.interval || 3600,
+          enabled: autoSaveServiceStatus?.enabled || false,
+          last_run: stats.last_run || '',
+          next_run: stats.next_run || '',
+          repositories_saved: (autoSaveServiceStatus?.repositories_saved || 0) + (response.saved || 0),
+          analyses_saved: autoSaveServiceStatus?.analyses_saved || 0
+        });
+        
+        // Update backups data after auto-save
+        try {
+          const backups = await repositoryApi.getAutoSaveBackups(1, 1);
+          setBackupsData({
+            total: backups.total || 0,
+            firstBackup: backups.statistics?.first_backup || null,
+            lastBackup: backups.statistics?.last_backup || null,
+          });
+        } catch (err) {
+          console.error('Error updating backups data:', err);
+        }
+        
+        showSaveMessage('success', `Auto-save completed: ${response.saved} repositories saved`);
+      } else {
+        showSaveMessage('error', response.message || 'Failed to run auto-save');
+      }
     } catch (err) {
-      console.error('Error running auto-save manually:', err);
-      showSaveMessage('error', 'Failed to run auto-save manually');
+      console.error('Error running auto-save:', err);
+      showSaveMessage('error', 'Failed to run auto-save');
     } finally {
       setServiceOperation('idle');
     }
@@ -386,260 +463,159 @@ export default function SettingsPage() {
           </div>
         </div>
         
-        {/* Auto-Save Management */}
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-          <h2 className="text-xl font-semibold mb-4">Auto-Save Management</h2>
+        {/* Auto-Save Settings */}
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 mb-6">
+          <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white flex items-center">
+            <FaSave className="mr-2" /> Auto-Save Settings
+          </h2>
           
-          {/* Current Status */}
-          <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-900 border rounded-md">
-            <h3 className="font-medium mb-2">Service Status</h3>
-            {autoSaveServiceStatus === null ? (
-              <div className="flex items-center">
-                <LoadingSpinner size="small" message="" />
-                <span className="ml-2">Loading status...</span>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <div className="flex items-center">
-                  <div className={`w-3 h-3 rounded-full mr-2 ${autoSaveServiceStatus.running ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                  <span>{autoSaveServiceStatus.running ? 'Running' : 'Stopped'}</span>
+          <div className="mb-6">
+            <p className="text-gray-600 dark:text-gray-300 mb-4">
+              Configure automatic saving of repositories to MongoDB for backup and faster access.
+            </p>
+            
+            {/* Auto-Save Service Controls */}
+            <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-md">
+              <h3 className="text-lg font-medium mb-3 text-gray-900 dark:text-white">Service Status</h3>
+              
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <div className="flex items-center mb-1">
+                    <span className="font-medium text-gray-700 dark:text-gray-300 mr-2">Status:</span>
+                    <span className={`px-2 py-1 rounded-full text-white text-xs font-medium ${autoSaveServiceStatus?.running ? 'bg-green-500' : 'bg-gray-500'}`}>
+                      {autoSaveServiceStatus?.running ? 'Running' : 'Stopped'}
+                    </span>
+                  </div>
+                  
+                  {autoSaveServiceStatus?.last_run && (
+                    <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                      Last run: {new Date(autoSaveServiceStatus.last_run).toLocaleString()}
+                    </div>
+                  )}
+                  
+                  {autoSaveServiceStatus?.next_run && autoSaveServiceStatus?.running && (
+                    <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                      Next run: {new Date(autoSaveServiceStatus.next_run).toLocaleString()}
+                    </div>
+                  )}
+                  
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    Interval: {autoSaveServiceStatus?.interval ? Math.floor(autoSaveServiceStatus.interval / 60) : 60} minutes
+                  </div>
                 </div>
                 
-                {autoSaveServiceStatus.last_run_time && (
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                    Last run: {new Date(autoSaveServiceStatus.last_run_time).toLocaleString()}
-                  </div>
-                )}
-                
-                {autoSaveServiceStatus.next_run_time && autoSaveServiceStatus.running && (
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                    Next run: {new Date(autoSaveServiceStatus.next_run_time).toLocaleString()}
-                  </div>
-                )}
-                
-                {(autoSaveServiceStatus.repositories_saved !== undefined || autoSaveServiceStatus.analyses_saved !== undefined) && (
-                  <div className="text-sm mt-2">
-                    {autoSaveServiceStatus.repositories_saved !== undefined && (
-                      <div>Repositories auto-saved: {autoSaveServiceStatus.repositories_saved}</div>
+                <div className="flex space-x-2">
+                  {!autoSaveServiceStatus?.running ? (
+                    <button
+                      className="py-2 px-4 bg-green-600 hover:bg-green-700 text-white font-medium rounded-md flex items-center"
+                      onClick={handleStartAutoSave}
+                      disabled={serviceOperation !== 'idle'}
+                    >
+                      {serviceOperation === 'starting' ? (
+                        <LoadingSpinner size="small" color="green" message="" className="mr-2" />
+                      ) : (
+                        <FaPlayCircle className="mr-2" />
+                      )}
+                      Start Service
+                    </button>
+                  ) : (
+                    <button
+                      className="py-2 px-4 bg-red-600 hover:bg-red-700 text-white font-medium rounded-md flex items-center"
+                      onClick={handleStopAutoSave}
+                      disabled={serviceOperation !== 'idle'}
+                    >
+                      {serviceOperation === 'stopping' ? (
+                        <LoadingSpinner size="small" color="red" message="" className="mr-2" />
+                      ) : (
+                        <FaStopCircle className="mr-2" />
+                      )}
+                      Stop Service
+                    </button>
+                  )}
+                  
+                  <button
+                    className="py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md flex items-center"
+                    onClick={handleRunAutoSave}
+                    disabled={serviceOperation !== 'idle'}
+                  >
+                    {serviceOperation === 'running' ? (
+                      <LoadingSpinner size="small" color="blue" message="" className="mr-2" />
+                    ) : (
+                      <FaSync className="mr-2" />
                     )}
-                    {autoSaveServiceStatus.analyses_saved !== undefined && (
-                      <div>Analyses auto-saved: {autoSaveServiceStatus.analyses_saved}</div>
-                    )}
+                    Run Now
+                  </button>
+                </div>
+              </div>
+              
+              {/* Auto-Save Statistics */}
+              {(autoSaveStats || (autoSaveServiceStatus?.repositories_saved && autoSaveServiceStatus.repositories_saved > 0) || (backupsData && backupsData.total > 0)) && (
+                <div className="mt-4 border-t border-gray-200 dark:border-gray-600 pt-4">
+                  <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-2">Statistics</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-gray-100 dark:bg-gray-600 rounded-md p-3">
+                      <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                        {backupsData?.total || 0}
+                      </div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">Repositories Backed Up</div>
+                    </div>
+                    <div className="bg-gray-100 dark:bg-gray-600 rounded-md p-3">
+                      <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                        {autoSaveServiceStatus?.repositories_saved || autoSaveStats?.repositories_saved || 0}
+                      </div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">Auto-Save Operations</div>
+                    </div>
                   </div>
-                )}
-              </div>
-            )}
-          </div>
-          
-          {/* Service Controls */}
-          <div className="grid grid-cols-3 gap-4 mb-6">
-            <button
-              onClick={handleStartAutoSave}
-              disabled={serviceOperation !== 'idle' || (autoSaveServiceStatus?.running === true)}
-              className={`flex items-center justify-center p-3 rounded-md ${
-                autoSaveServiceStatus?.running === true
-                  ? 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500 cursor-not-allowed'
-                  : 'bg-green-500 hover:bg-green-600 text-white'
-              }`}
-            >
-              {serviceOperation === 'starting' ? (
-                <LoadingSpinner size="small" color="green" message="" />
-              ) : (
-                <>
-                  <FaPlayCircle className="mr-2" />
-                  Start Service
-                </>
+                  
+                  {backupsData?.lastBackup && (
+                    <div className="mt-3 text-sm text-gray-600 dark:text-gray-400">
+                      Last backup: {new Date(backupsData.lastBackup).toLocaleString()}
+                    </div>
+                  )}
+                  
+                  {backupsData?.firstBackup && (
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      First backup: {new Date(backupsData.firstBackup).toLocaleString()}
+                    </div>
+                  )}
+                </div>
               )}
-            </button>
-            
-            <button
-              onClick={handleStopAutoSave}
-              disabled={serviceOperation !== 'idle' || !(autoSaveServiceStatus?.running === true)}
-              className={`flex items-center justify-center p-3 rounded-md ${
-                !(autoSaveServiceStatus?.running === true)
-                  ? 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500 cursor-not-allowed'
-                  : 'bg-red-500 hover:bg-red-600 text-white'
-              }`}
-            >
-              {serviceOperation === 'stopping' ? (
-                <LoadingSpinner size="small" color="red" message="" />
-              ) : (
-                <>
-                  <FaStopCircle className="mr-2" />
-                  Stop Service
-                </>
-              )}
-            </button>
-            
-            <button
-              onClick={handleRunAutoSave}
-              disabled={serviceOperation !== 'idle'}
-              className={`flex items-center justify-center p-3 rounded-md ${
-                serviceOperation !== 'idle'
-                  ? 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500 cursor-not-allowed'
-                  : 'bg-blue-500 hover:bg-blue-600 text-white'
-              }`}
-            >
-              {serviceOperation === 'running' ? (
-                <LoadingSpinner size="small" color="blue" message="" />
-              ) : (
-                <>
-                  <FaClock className="mr-2" />
-                  Run Now
-                </>
-              )}
-            </button>
-          </div>
-          
-          {/* Configuration Instructions */}
-          <div className="text-sm text-gray-600 dark:text-gray-400 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-md">
-            <p className="mb-2 font-medium">About Auto-Save Service</p>
-            <p>The auto-save service periodically saves repository data and analyses to MongoDB based on your settings.</p>
-            <ul className="list-disc list-inside mt-2 space-y-1">
-              <li>Use the controls above to manage the service</li>
-              <li>Configure what gets saved in the Additional Options section</li>
-              <li>The service runs in the background even when the UI is closed</li>
-              <li>For advanced configuration, use the server's management CLI</li>
-            </ul>
-          </div>
-        </div>
-        
-        {/* Additional Options */}
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-          <h2 className="text-xl font-semibold mb-4">Additional Options</h2>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-medium">Auto-Analyze Repositories</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Automatically analyze repositories when they are added
-                </p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  className="sr-only peer" 
-                  checked={settings.autoAnalyze}
-                  onChange={() => handleToggleSetting('autoAnalyze')}
-                  disabled={saving}
-                />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-              </label>
             </div>
             
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-medium">Auto-Save Repositories</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Automatically save repository data to MongoDB
-                </p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  className="sr-only peer" 
-                  checked={settings.autoSave?.repositories}
-                  onChange={() => handleAutoSaveSetting('repositories')}
-                  disabled={saving}
-                />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-              </label>
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-medium">Auto-Save Repository Analyses</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Automatically save analysis data to MongoDB
-                </p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  className="sr-only peer" 
-                  checked={settings.autoSave?.analysis}
-                  onChange={() => handleAutoSaveSetting('analysis')}
-                  disabled={saving}
-                />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-              </label>
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-medium">Auto-Save Enhanced Analyses</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Automatically save enhanced analysis data to MongoDB
-                </p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  className="sr-only peer" 
-                  checked={settings.autoSave?.enhancedAnalysis}
-                  onChange={() => handleAutoSaveSetting('enhancedAnalysis')}
-                  disabled={saving}
-                />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-              </label>
-            </div>
-            
-            <div className="max-w-md">
-              <label htmlFor="autoSaveInterval" className="block mb-2 text-sm font-medium">
-                Auto-Save Interval (minutes)
+            {/* Auto-Save Interval Settings */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" htmlFor="auto-save-interval">
+                Auto-Save Interval
               </label>
               <select
-                id="autoSaveInterval"
-                value={settings.autoSave?.interval || 30}
-                onChange={handleAutoSaveIntervalChange}
-                className="w-full rounded-md border border-gray-300 dark:border-gray-600 p-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                disabled={saving}
+                id="auto-save-interval"
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:text-white"
+                value={autoSaveServiceStatus?.interval ? Math.floor(autoSaveServiceStatus.interval / 60) : 60}
+                onChange={(e) => {
+                  const minutes = parseInt(e.target.value, 10);
+                  const seconds = minutes * 60;
+                  updateAutoSave('interval', seconds);
+                }}
               >
-                <option value="5">5 minutes</option>
-                <option value="15">15 minutes</option>
-                <option value="30">30 minutes</option>
-                <option value="60">1 hour</option>
-                <option value="120">2 hours</option>
-                <option value="1440">24 hours</option>
+                <option value="5">Every 5 minutes</option>
+                <option value="15">Every 15 minutes</option>
+                <option value="30">Every 30 minutes</option>
+                <option value="60">Every 1 hour</option>
+                <option value="120">Every 2 hours</option>
+                <option value="360">Every 6 hours</option>
+                <option value="720">Every 12 hours</option>
+                <option value="1440">Every 24 hours</option>
               </select>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                How often should repositories be automatically saved to MongoDB
+              </p>
             </div>
-            
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-medium">Notifications</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Enable notifications for repository updates
-                </p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  className="sr-only peer" 
-                  checked={settings.notificationsEnabled}
-                  onChange={() => handleToggleSetting('notificationsEnabled')}
-                  disabled={saving}
-                />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-              </label>
-            </div>
-            
-            <div className="max-w-md">
-              <label htmlFor="language" className="block mb-2 text-sm font-medium">
-                Language
-              </label>
-              <select
-                id="language"
-                value={settings.language}
-                onChange={handleLanguageChange}
-                className="w-full rounded-md border border-gray-300 dark:border-gray-600 p-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                disabled={saving}
-              >
-                <option value="en">English</option>
-                <option value="fr">Français</option>
-                <option value="es">Español</option>
-                <option value="de">Deutsch</option>
-                <option value="zh">中文</option>
-              </select>
+
+            {/* Auto-Save Features */}
+            <div>
+              <h3 className="font-medium text-gray-700 dark:text-gray-300 mb-2">Auto-Save Options</h3>
+              
+              {/* Keep existing settings here if any */}
             </div>
           </div>
         </div>
