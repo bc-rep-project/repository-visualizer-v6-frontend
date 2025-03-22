@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { FileNode } from '@/types/types';
 import { FaMagnifyingGlass } from 'react-icons/fa6';
 import CodeViewer from './CodeViewer';
@@ -84,6 +84,18 @@ export default function FunctionsClassesList({
   searchQuery = '',
   repoId
 }: FunctionsClassesListProps) {
+  // Debug log to check the structure of the data
+  useEffect(() => {
+    console.log('FunctionsClassesList received data:', data);
+    console.log('Data is array?', Array.isArray(data));
+    if (data && typeof data === 'object') {
+      console.log('Data keys:', Object.keys(data));
+      if ('children' in data) {
+        console.log('Children is array?', Array.isArray((data as any).children));
+      }
+    }
+  }, [data]);
+
   const [localSearchTerm, setLocalSearchTerm] = useState(searchQuery);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [filterType, setFilterType] = useState<'all' | 'functions' | 'classes'>('all');
@@ -92,15 +104,41 @@ export default function FunctionsClassesList({
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Ensure data is always an array
+  const normalizedData = useMemo(() => {
+    // Check if data is an array
+    if (Array.isArray(data)) {
+      return data;
+    }
+    // If data is a single FileNode object with children, extract its children
+    if (data && typeof data === 'object' && 'children' in data && Array.isArray((data as FileNode).children)) {
+      return (data as FileNode).children || [];
+    }
+    // If data is a single FileNode object without children, wrap it in an array
+    if (data && typeof data === 'object') {
+      return [data as FileNode];
+    }
+    // Default to empty array if data is invalid
+    return [] as FileNode[];
+  }, [data]);
+
   // Extract functions and classes from repository data
   const items = useMemo(() => {
+    // Defensive check to prevent "forEach is not a function" error
+    if (!normalizedData || !Array.isArray(normalizedData)) {
+      console.error('FunctionsClassesList received invalid data:', normalizedData);
+      return [];
+    }
+
     const extractItems = (nodes: FileNode[]): FunctionInfo[] => {
       const result: FunctionInfo[] = [];
       
       const processNode = (node: FileNode) => {
+        if (!node) return;
+        
         if (node.type === 'file') {
           // Add functions
-          if (node.functions) {
+          if (node.functions && Array.isArray(node.functions)) {
             node.functions.forEach(func => {
               result.push({
                 name: func.name,
@@ -114,7 +152,7 @@ export default function FunctionsClassesList({
           }
           
           // Add classes
-          if (node.classes) {
+          if (node.classes && Array.isArray(node.classes)) {
             node.classes.forEach(cls => {
               result.push({
                 name: cls.name,
@@ -126,7 +164,7 @@ export default function FunctionsClassesList({
               });
               
               // Add methods
-              if (cls.methods) {
+              if (cls.methods && Array.isArray(cls.methods)) {
                 cls.methods.forEach(method => {
                   result.push({
                     name: `${cls.name}.${method.name}`,
@@ -143,7 +181,7 @@ export default function FunctionsClassesList({
         }
         
         // Process children recursively
-        if (node.children) {
+        if (node.children && Array.isArray(node.children)) {
           node.children.forEach(processNode);
         }
       };
@@ -152,9 +190,9 @@ export default function FunctionsClassesList({
       return result;
     };
     
-    return extractItems(data);
-  }, [data]);
-
+    return extractItems(normalizedData);
+  }, [normalizedData]);
+  
   // Filter and sort the items
   const filteredItems = useMemo(() => {
     return items
@@ -247,17 +285,17 @@ export default function FunctionsClassesList({
       return null;
     }
   };
-
+  
   return (
     <div className="flex flex-col md:flex-row gap-4 w-full">
       <div className="md:w-1/2 lg:w-1/3">
         <div className="mb-4">
           <div className="relative">
-            <input
-              type="text"
+          <input
+            type="text"
               value={localSearchTerm}
               onChange={(e) => setLocalSearchTerm(e.target.value)}
-              placeholder="Search functions and classes..."
+            placeholder="Search functions and classes..."
               className="pl-10 pr-4 py-2 border rounded-lg w-full dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700"
             />
             <FaMagnifyingGlass className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -298,9 +336,9 @@ export default function FunctionsClassesList({
         
         <div className="border rounded-lg overflow-hidden dark:border-gray-700">
           <div className="max-h-[600px] overflow-y-auto">
-            {filteredItems.length > 0 ? (
+        {filteredItems.length > 0 ? (
               <ul className="divide-y dark:divide-gray-700">
-                {filteredItems.map((item, index) => (
+            {filteredItems.map((item, index) => (
                   <li 
                     key={`${item.path}-${item.name}-${index}`}
                     className={`p-3 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer ${
@@ -315,15 +353,15 @@ export default function FunctionsClassesList({
                       <Badge variant={item.type === 'function' ? 'default' : item.type === 'method' ? 'secondary' : 'outline'}>
                         {item.type}
                       </Badge>
-                    </div>
+                  </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400 truncate mt-1">
                       {item.path}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="p-4 text-center text-gray-500 dark:text-gray-400">
                 No functions or classes found.
               </div>
             )}
