@@ -385,8 +385,14 @@ export default function RepositoryAnalyze() {
               )}
               
               {activeTab === 'metrics' && rawData && (
-                <div className="max-w-full">
-                  <CodeMetrics data={rawData} />
+                <div className={activeTab === 'metrics' ? 'block' : 'hidden'}>
+                  {processedData && processedData.tree ? (
+                    <CodeMetrics data={processedData.tree} repoId={params.id as string} />
+                  ) : (
+                    <div className="text-center p-8 text-gray-500 dark:text-gray-400">
+                      No metrics data available.
+                    </div>
+                  )}
                 </div>
               )}
               
