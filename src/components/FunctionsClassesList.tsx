@@ -132,30 +132,30 @@ export default function FunctionsClassesList({
 
     const extractItems = (nodes: FileNode[]): FunctionInfo[] => {
       const result: FunctionInfo[] = [];
-      
-      const processNode = (node: FileNode) => {
+    
+    const processNode = (node: FileNode) => {
         if (!node) return;
         
         if (node.type === 'file') {
-          // Add functions
+        // Add functions
           if (node.functions && Array.isArray(node.functions)) {
-            node.functions.forEach(func => {
+          node.functions.forEach(func => {
               result.push({
-                name: func.name,
+              name: func.name,
                 type: 'function',
                 path: node.path,
                 language: node.language,
                 startLine: func.start_line,
                 endLine: func.end_line
               });
-            });
-          }
-          
-          // Add classes
+          });
+        }
+        
+        // Add classes
           if (node.classes && Array.isArray(node.classes)) {
-            node.classes.forEach(cls => {
+          node.classes.forEach(cls => {
               result.push({
-                name: cls.name,
+              name: cls.name,
                 type: 'class',
                 path: node.path,
                 language: node.language,
@@ -178,14 +178,14 @@ export default function FunctionsClassesList({
               }
             });
           }
-        }
-        
-        // Process children recursively
-        if (node.children && Array.isArray(node.children)) {
-          node.children.forEach(processNode);
-        }
-      };
+      }
       
+      // Process children recursively
+        if (node.children && Array.isArray(node.children)) {
+        node.children.forEach(processNode);
+      }
+    };
+    
       nodes.forEach(processNode);
       return result;
     };

@@ -32,7 +32,7 @@ export const SimpleSunburst: React.FC<SimpleSunburstProps> = ({
       if (containerRef.current) {
         const containerWidth = containerRef.current.clientWidth;
         // Use square aspect ratio but smaller on mobile
-        const size = mobile ? Math.min(containerWidth, 500) : Math.min(containerWidth, 800);
+        const size = mobile ? Math.min(containerWidth, 450) : Math.min(containerWidth, 750);
         
         setDimensions({
           width: size,
@@ -83,22 +83,26 @@ export const SimpleSunburst: React.FC<SimpleSunburstProps> = ({
     const g = svg.append('g')
       .attr('transform', `translate(${dimensions.width / 2},${dimensions.height / 2})`);
 
-    // Create a partition layout
-    const radius = Math.min(dimensions.width, dimensions.height) / 2;
+    // Create a partition layout with slightly reduced radius to prevent edge overlap
+    const radius = Math.min(dimensions.width, dimensions.height) / 2 * 0.95;
     const partition = d3.partition<FileNode>()
       .size([2 * Math.PI, radius]);
 
     // Compute the partition layout
     const rootWithPartition = partition(root);
 
+    // Adjust padAngle and padRadius based on device size
+    const padAngle = isMobile ? 0.005 : 0.002;
+    const padRadius = radius / (isMobile ? 2 : 3);
+
     // Create an arc generator
     const arc = d3.arc()
       .startAngle((d: any) => d.x0)
       .endAngle((d: any) => d.x1)
-      .padAngle(0.002)
-      .padRadius(radius / 3)
+      .padAngle(padAngle)
+      .padRadius(padRadius)
       .innerRadius((d: any) => Math.sqrt(d.y0))
-      .outerRadius((d: any) => Math.sqrt(d.y1) - 1);
+      .outerRadius((d: any) => Math.sqrt(d.y1) - (isMobile ? 0.5 : 1));
 
     // Create the sunburst visualization
     const path = g.append('g')
@@ -141,9 +145,14 @@ export const SimpleSunburst: React.FC<SimpleSunburstProps> = ({
               ${d.data.language ? `<div class="text-xs">${d.data.language}</div>` : ''}
               ${d.value ? `<div class="text-xs">${formatBytes(d.value)}</div>` : ''}
             </div>
-          `)
-          .style('left', (event.pageX + 10) + 'px')
-          .style('top', (event.pageY - 20) + 'px');
+          `);
+          
+        // Only set position for desktop, mobile position is handled by CSS
+        if (!isMobile) {
+          tooltip
+            .style('left', (event.pageX + 10) + 'px')
+            .style('top', (event.pageY - 20) + 'px');
+        }
       })
       .on('mouseout', () => {
         // Reset highlighting
@@ -211,15 +220,21 @@ export const SimpleSunburst: React.FC<SimpleSunburstProps> = ({
       </div>
       <div
         id="sunburst-tooltip"
-        className="absolute z-50 bg-white shadow-lg rounded-md p-2 pointer-events-none hidden"
-        style={{ display: 'none' }}
+        className="absolute z-50 bg-white shadow-lg rounded-md p-2 pointer-events-none"
+        style={{ 
+          display: 'none',
+          maxWidth: isMobile ? '80%' : '250px',
+          bottom: isMobile ? '20px' : 'auto',
+          left: isMobile ? '50%' : 'auto',
+          transform: isMobile ? 'translateX(-50%)' : 'none'
+        }}
       />
       {selectedPath && (
-        <div className="absolute bottom-4 left-4 right-4 md:right-auto bg-white p-4 rounded-lg shadow-lg z-20 max-w-xs md:max-w-md">
-          <h3 className="font-bold text-lg">Selected Path</h3>
+        <div className={`absolute bottom-4 left-4 right-4 md:right-auto bg-white ${isMobile ? 'p-2' : 'p-4'} rounded-lg shadow-lg z-20 max-w-xs md:max-w-md`}>
+          <h3 className={`font-bold ${isMobile ? 'text-base' : 'text-lg'}`}>Selected Path</h3>
           <p className="text-sm break-all">{selectedPath}</p>
           <button
-            className="mt-3 w-full md:w-auto px-3 py-1.5 bg-gray-200 text-gray-800 rounded text-sm"
+            className={`${isMobile ? 'mt-2 py-1' : 'mt-3 py-1.5'} w-full md:w-auto px-3 bg-gray-200 text-gray-800 rounded text-sm`}
             onClick={() => {
               setSelectedPath(null);
               // Reset highlighting
