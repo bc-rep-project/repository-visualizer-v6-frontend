@@ -1,11 +1,14 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { FileNode } from '@/types/types';
-import { FaCode, FaFileCode, FaFolder, FaCodeBranch, FaArrowUp, FaArrowDown } from 'react-icons/fa';
+import { FaCode, FaFileCode, FaFolder, FaCodeBranch, FaArrowUp, FaArrowDown, FaEye } from 'react-icons/fa';
+import { repositoryApi } from '@/services/api';
+import CodeViewer from './CodeViewer';
 
 interface CodeMetricsProps {
   data: FileNode;
+  repoId?: string;
 }
 
 interface Metrics {
@@ -27,7 +30,14 @@ interface Metrics {
   } | null;
 }
 
-const CodeMetrics: React.FC<CodeMetricsProps> = ({ data }) => {
+const CodeMetrics: React.FC<CodeMetricsProps> = ({ data, repoId }) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<{name: string, path: string} | null>(null);
+  const [fileContent, setFileContent] = useState<string | null>(null);
+  const [fileLanguage, setFileLanguage] = useState<string>('');
+  const [showCodeViewer, setShowCodeViewer] = useState(false);
+
   const metrics = useMemo(() => {
     const result: Metrics = {
       totalFiles: 0,
@@ -99,6 +109,45 @@ const CodeMetrics: React.FC<CodeMetricsProps> = ({ data }) => {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
+
+  const handleFileClick = async (filePath: string, fileName: string) => {
+    if (!repoId) {
+      setError('Repository ID is required to view file content');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    setSelectedFile({ name: fileName, path: filePath });
+    setShowCodeViewer(true);
+    
+    try {
+      // Extract file extension for syntax highlighting
+      const fileExt = filePath.split('.').pop()?.toLowerCase() || 'txt';
+      setFileLanguage(fileExt);
+      
+      // Fetch actual file content from the API
+      const response = await repositoryApi.getFileContent(repoId, filePath);
+      
+      if (response.file && response.file.content) {
+        setFileContent(response.file.content);
+      } else {
+        setFileContent('// No content available for this file');
+      }
+    } catch (err) {
+      console.error('Error fetching file content:', err);
+      setError('Failed to load file content. This might be a binary file or the file is too large.');
+      setFileContent('// Error loading file content');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const closeCodeViewer = () => {
+    setShowCodeViewer(false);
+    setSelectedFile(null);
+    setFileContent(null);
+  };
   
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
@@ -147,12 +196,16 @@ const CodeMetrics: React.FC<CodeMetricsProps> = ({ data }) => {
         {metrics.largestFile && (
           <div>
             <h3 className="text-md font-semibold mb-2 dark:text-white">Largest File</h3>
-            <div className="flex items-center">
+            <div 
+              className="flex items-center cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-md group transition-colors"
+              onClick={() => handleFileClick(metrics.largestFile!.path, metrics.largestFile!.name)}
+            >
               <FaArrowUp className="text-red-500 mr-2" />
-              <div>
+              <div className="flex-grow">
                 <p className="text-sm font-medium dark:text-white">{metrics.largestFile.name}</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">{formatSize(metrics.largestFile.size)}</p>
               </div>
+              <FaEye className="text-gray-400 group-hover:text-blue-500 transition-colors" title="View file content" />
             </div>
           </div>
         )}
@@ -160,18 +213,59 @@ const CodeMetrics: React.FC<CodeMetricsProps> = ({ data }) => {
         {metrics.mostComplexFile && (
           <div>
             <h3 className="text-md font-semibold mb-2 dark:text-white">Most Complex File</h3>
-            <div className="flex items-center">
+            <div 
+              className="flex items-center cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-md group transition-colors"
+              onClick={() => handleFileClick(metrics.mostComplexFile!.path, metrics.mostComplexFile!.name)}
+            >
               <FaArrowUp className="text-orange-500 mr-2" />
-              <div>
+              <div className="flex-grow">
                 <p className="text-sm font-medium dark:text-white">{metrics.mostComplexFile.name}</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   {metrics.mostComplexFile.functionCount} functions
                 </p>
               </div>
+              <FaEye className="text-gray-400 group-hover:text-blue-500 transition-colors" title="View file content" />
             </div>
           </div>
         )}
       </div>
+
+      {/* Modal for displaying code */}
+      {showCodeViewer && fileContent && selectedFile && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen p-4">
+            <div className="fixed inset-0 bg-black opacity-50" onClick={closeCodeViewer}></div>
+            <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-4xl w-full max-h-[90vh] overflow-hidden z-10">
+              <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-semibold dark:text-white">{selectedFile.name}</h3>
+                <button 
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200" 
+                  onClick={closeCodeViewer}
+                >
+                  <span className="text-xl">×</span>
+                </button>
+              </div>
+              <div className="p-1 h-[calc(90vh-4rem)] overflow-auto">
+                {isLoading ? (
+                  <div className="flex justify-center items-center h-full">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                  </div>
+                ) : error ? (
+                  <div className="p-4 text-red-500">
+                    {error}
+                  </div>
+                ) : (
+                  <CodeViewer 
+                    code={fileContent} 
+                    language={fileLanguage} 
+                    fileName={selectedFile.name}
+                  />
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
