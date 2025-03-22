@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { RepositoryGraph } from '@/components/RepositoryGraph';
 import { RepositoryTree } from '@/components/RepositoryTree';
 import { SimpleSunburst } from '@/components/SimpleSunburst';
@@ -24,90 +24,99 @@ const VisualizationWrapper: React.FC<VisualizationWrapperProps> = ({
   width = 900,
   height = 700,
 }) => {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [adaptedData, setAdaptedData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [dimensions, setDimensions] = useState({ width, height });
+  const [isMobile, setIsMobile] = useState(false);
 
-  // Whenever the data or visualization type changes, adapt the data
+  // Add a responsive dimensions handler
   useEffect(() => {
-    setIsLoading(true);
+    const handleResize = () => {
+      if (!containerRef.current) return;
+      
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      
+      const containerWidth = containerRef.current.clientWidth;
+      
+      // Adjust dimensions based on visualization type and device
+      let adjustedHeight = height;
+      let adjustedWidth = containerWidth;
+      
+      // Different height adjustments for different visualization types
+      if (mobile) {
+        // Mobile dimensions
+        adjustedHeight = visualizationType === 'graph' ? Math.min(450, height) : 
+                       (visualizationType === 'packed' ? Math.min(450, height) : 
+                       (visualizationType === 'sunburst' ? Math.min(450, height) : Math.min(500, height)));
+      } else {
+        // Desktop dimensions - prevent components from getting too large
+        adjustedHeight = Math.min(visualizationType === 'graph' ? 650 : 
+                       (visualizationType === 'packed' ? 650 : 
+                       (visualizationType === 'sunburst' ? 650 : 700)), height);
+      }
+      
+      setDimensions({
+        width: adjustedWidth,
+        height: adjustedHeight
+      });
+    };
+    
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [visualizationType, height]);
+
+  // Create a deep copy of the data to avoid modifying the original
+  const adaptData = () => {
+    if (!data) return null;
+
     try {
-      // Process the data for the specific visualization
-      const processedData = adaptData(data);
-      setAdaptedData(processedData);
-      setError(null);
+      // Return a copy of the original data
+      return JSON.parse(JSON.stringify(data));
     } catch (err) {
       console.error('Error adapting data for visualization:', err);
       setError('Failed to process data for visualization');
-    } finally {
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    if (!data || !graphData) {
+      setError('No data available for visualization');
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      
+      // Process data for the current visualization
+      const processedData = adaptData();
+      setAdaptedData(processedData);
+      
+      // Just a small delay to allow the UI to update
+      const timer = setTimeout(() => {
+        setIsLoading(false);
+      }, 300);
+      return () => clearTimeout(timer);
+    } catch (err) {
+      console.error('Error preparing visualization:', err);
+      setError('Failed to load visualization');
       setIsLoading(false);
     }
-  }, [data, visualizationType]);
+  }, [data, graphData, visualizationType]);
 
-  // Create a deep copy of the data to avoid modifying the original
-  const adaptData = (node: any): any => {
-    const adaptedNode = { ...node };
-    
-    // Adapt imports if they exist
-    if (adaptedNode.imports) {
-      if (Array.isArray(adaptedNode.imports) && adaptedNode.imports.length > 0) {
-        if (typeof adaptedNode.imports[0] === 'string') {
-          adaptedNode.imports = adaptedNode.imports.map((imp: string) => ({ source: imp }));
-        }
-      }
-    }
-    
-    // Adapt function dependencies if they exist
-    if (adaptedNode.functions) {
-      adaptedNode.functions = adaptedNode.functions.map((func: any) => {
-        const adaptedFunc = { ...func };
-        if (adaptedFunc.dependencies && Array.isArray(adaptedFunc.dependencies)) {
-          if (adaptedFunc.dependencies.length > 0 && typeof adaptedFunc.dependencies[0] === 'string') {
-            adaptedFunc.dependencies = adaptedFunc.dependencies.map((dep: string) => ({
-              target: dep,
-              type: 'calls'
-            }));
-          }
-        }
-        return adaptedFunc;
-      });
-    }
-    
-    // Adapt class methods dependencies if they exist
-    if (adaptedNode.classes) {
-      adaptedNode.classes = adaptedNode.classes.map((cls: any) => {
-        const adaptedClass = { ...cls };
-        if (adaptedClass.methods) {
-          adaptedClass.methods = adaptedClass.methods.map((method: any) => {
-            const adaptedMethod = { ...method };
-            if (adaptedMethod.dependencies && Array.isArray(adaptedMethod.dependencies)) {
-              if (adaptedMethod.dependencies.length > 0 && typeof adaptedMethod.dependencies[0] === 'string') {
-                adaptedMethod.dependencies = adaptedMethod.dependencies.map((dep: string) => ({
-                  target: dep,
-                  type: 'calls'
-                }));
-              }
-            }
-            return adaptedMethod;
-          });
-        }
-        return adaptedClass;
-      });
-    }
-    
-    // Recursively adapt children
-    if (adaptedNode.children) {
-      adaptedNode.children = adaptedNode.children.map(adaptData);
-    }
-    
-    return adaptedNode;
-  };
-  
   // Display loading spinner when data is being processed
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center" style={{ height }}>
-        <LoadingSpinner message="Preparing visualization..." color="blue" />
+      <div className="flex justify-center items-center" style={{ height: dimensions.height }}>
+        <LoadingSpinner message="Preparing visualization..." />
       </div>
     );
   }
@@ -115,10 +124,10 @@ const VisualizationWrapper: React.FC<VisualizationWrapperProps> = ({
   // Display error message if something went wrong
   if (error) {
     return (
-      <div className="flex justify-center items-center text-red-500" style={{ height }}>
+      <div className="flex justify-center items-center" style={{ height: dimensions.height }}>
         <div className="text-center">
-          <p className="text-xl font-bold mb-2">Visualization Error</p>
-          <p>{error}</p>
+          <p className="text-red-500 font-medium">{error}</p>
+          <p className="text-gray-500 mt-2">Try a different visualization type or refresh the page.</p>
         </div>
       </div>
     );
@@ -127,27 +136,54 @@ const VisualizationWrapper: React.FC<VisualizationWrapperProps> = ({
   // If data hasn't been processed yet, show a loading state
   if (!adaptedData && data) {
     return (
-      <div className="flex justify-center items-center" style={{ height }}>
-        <LoadingSpinner message="Processing data..." color="blue" />
+      <div className="flex justify-center items-center" style={{ height: dimensions.height }}>
+        <LoadingSpinner message="Processing data..." />
       </div>
     );
   }
   
-  // Render the appropriate visualization based on the selected type
-  switch (visualizationType) {
-    case 'graph':
-      // For graph visualization, we use the pre-processed graph data
-      return <RepositoryGraph data={graphData} width={width} height={height} />;
-    case 'tree':
-      return <RepositoryTree data={adaptedData} width={width} height={height} />;
-    case 'sunburst':
-      return <SimpleSunburst data={adaptedData} width={width} height={height} />;
-    case 'packed':
-      return <RepositoryPackedCircles data={adaptedData} width={width} height={height} />;
-    default:
-      // Default to packed circles if visualization type is not recognized
-      return <RepositoryPackedCircles data={adaptedData} width={width} height={height} />;
-  }
+  return (
+    <div 
+      ref={containerRef} 
+      className="w-full overflow-hidden"
+      style={{ 
+        height: dimensions.height,
+        maxHeight: isMobile ? '550px' : '700px'
+      }}
+    >
+      {visualizationType === 'graph' && (
+        <RepositoryGraph 
+          data={graphData} 
+          width={dimensions.width} 
+          height={dimensions.height} 
+        />
+      )}
+      
+      {visualizationType === 'tree' && (
+        <RepositoryTree 
+          data={adaptedData} 
+          width={dimensions.width} 
+          height={dimensions.height} 
+        />
+      )}
+      
+      {visualizationType === 'sunburst' && (
+        <SimpleSunburst 
+          data={adaptedData} 
+          width={dimensions.width} 
+          height={dimensions.height} 
+        />
+      )}
+      
+      {visualizationType === 'packed' && (
+        <RepositoryPackedCircles 
+          data={adaptedData} 
+          width={dimensions.width} 
+          height={dimensions.height} 
+        />
+      )}
+    </div>
+  );
 };
 
 export default VisualizationWrapper; 

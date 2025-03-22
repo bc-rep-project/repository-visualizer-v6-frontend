@@ -69,7 +69,7 @@ export const RepositoryGraph: React.FC<RepositoryGraphProps> = ({
       
       if (containerRef.current) {
         const containerWidth = containerRef.current.clientWidth;
-        const containerHeight = mobile ? 500 : 800; // Use smaller height on mobile
+        const containerHeight = mobile ? 450 : 650; // Use smaller height on mobile
         
         setDimensions({
           width: containerWidth || width,
@@ -121,24 +121,31 @@ export const RepositoryGraph: React.FC<RepositoryGraphProps> = ({
     return '#cbd5e0'; // Default gray
   }, []);
 
-  // Get node radius based on type and size
-  const getNodeRadius = useCallback((node: GraphNode) => {
-    const baseSize = node.size || 500;
+  // Function to get adjusted node radius based on type and device
+  const getAdjustedNodeRadius = (node: GraphNode) => {
+    const baseSize = isMobile ? 0.7 : 1; // Scale down on mobile
+    
+    // Base size based on node type
+    let size = 5 * baseSize; // Default size
     
     if (node.type === 'directory') {
-      return Math.sqrt(baseSize) * 0.8;
+      size = 8 * baseSize;
+    } else if (node.type === 'file') {
+      size = 6 * baseSize;
+    } else if (node.type === 'function' || node.type === 'method') {
+      size = 4 * baseSize;
+    } else if (node.type === 'class') {
+      size = 5 * baseSize;
     }
     
-    if (node.type === 'file') {
-      return Math.sqrt(baseSize) * 0.6;
+    // Add slight variation based on node size if available
+    if (node.size) {
+      const sizeBonus = Math.log(node.size) / 10;
+      size += Math.min(sizeBonus, 4); // Cap the size bonus
     }
     
-    if (node.type === 'function' || node.type === 'method' || node.type === 'class') {
-      return Math.sqrt(baseSize) * 0.4;
-    }
-    
-    return Math.sqrt(baseSize) * 0.5;
-  }, []);
+    return size;
+  };
 
   // Create and update visualization
   useEffect(() => {
@@ -209,29 +216,9 @@ export const RepositoryGraph: React.FC<RepositoryGraphProps> = ({
           return isMobile ? -30 : -50;
         }))
       .force('center', d3.forceCenter(dimensions.width / 2, dimensions.height / 2))
-      .force('collide', d3.forceCollide<GraphNode>().radius(d => getNodeRadius(d) + 2))
+      .force('collide', d3.forceCollide<GraphNode>().radius(d => getAdjustedNodeRadius(d) + 2))
       .force('x', d3.forceX(dimensions.width / 2).strength(0.05))
       .force('y', d3.forceY(dimensions.height / 2).strength(0.05));
-
-    // Modify the getNodeRadius function to make nodes smaller on mobile
-    const getAdjustedNodeRadius = (node: GraphNode) => {
-      const baseSize = node.size || 500;
-      const scaleFactor = isMobile ? 0.6 : 1; // Reduce size on mobile
-      
-      if (node.type === 'directory') {
-        return Math.sqrt(baseSize) * 0.8 * scaleFactor;
-      }
-      
-      if (node.type === 'file') {
-        return Math.sqrt(baseSize) * 0.6 * scaleFactor;
-      }
-      
-      if (node.type === 'function' || node.type === 'method' || node.type === 'class') {
-        return Math.sqrt(baseSize) * 0.4 * scaleFactor;
-      }
-      
-      return Math.sqrt(baseSize) * 0.5 * scaleFactor;
-    };
 
     // Create edges
     const edge = g.append('g')
@@ -346,7 +333,7 @@ export const RepositoryGraph: React.FC<RepositoryGraphProps> = ({
       .selectAll('text')
       .data(nodes)
       .join('text')
-      .attr('dx', d => getNodeRadius(d) + 5)
+      .attr('dx', d => getAdjustedNodeRadius(d) + 5)
       .attr('dy', '.35em')
       .text(d => d.name)
       .style('font-size', d => {
@@ -501,7 +488,7 @@ export const RepositoryGraph: React.FC<RepositoryGraphProps> = ({
       sim.stop();
       tooltip.remove();
     };
-  }, [data, dimensions.width, dimensions.height, isMobile, getNodeColor, getNodeRadius]);
+  }, [data, dimensions.width, dimensions.height, isMobile, getNodeColor, getAdjustedNodeRadius]);
 
   // Handle selected node changes
   useEffect(() => {

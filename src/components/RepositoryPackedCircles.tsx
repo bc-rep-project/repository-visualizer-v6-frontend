@@ -58,18 +58,15 @@ export const RepositoryPackedCircles: React.FC<RepositoryPackedCirclesProps> = (
       
       if (containerRef.current) {
         const containerWidth = containerRef.current.clientWidth;
-        // On mobile, use full width and adjust height ratio
-        if (mobile) {
-          setDimensions({
-            width: containerWidth,
-            height: Math.min(containerWidth * 0.8, 500)
-          });
-        } else {
-          setDimensions({
-            width: Math.min(containerWidth, 900),
-            height: Math.min(containerWidth * 0.6, 600)
-          });
-        }
+        // Use smaller size on mobile and limit maximum size on desktop
+        const size = mobile ? 
+          Math.min(containerWidth, 450) : 
+          Math.min(containerWidth, Math.min(width, 800)); // Restrict max size on desktop
+        
+        setDimensions({
+          width: size,
+          height: mobile ? size : Math.min(height, 650) // Adjust height to prevent overlap
+        });
       }
     };
     
@@ -79,25 +76,22 @@ export const RepositoryPackedCircles: React.FC<RepositoryPackedCirclesProps> = (
     return () => {
       window.removeEventListener('resize', checkMobile);
     };
-  }, []);
+  }, [width, height]);
 
+  // Create and update visualization
   useEffect(() => {
-    if (!svgRef.current || !data || !data.children || data.children.length === 0) {
-      if (data && (!data.children || data.children.length === 0)) {
-        setError('No data available to visualize');
-      }
+    if (!svgRef.current || !data) {
       setLoading(false);
       return;
     }
     
-    try {
     setLoading(true);
-      setError(null);
 
+    try {
     // Clear previous visualization
     d3.select(svgRef.current).selectAll('*').remove();
 
-      // Process the data to create a hierarchy
+      // Process data for circle packing
     const root = d3.hierarchy(data)
       .sum(d => {
           // Use file size for leaf nodes, or 1 for directories
@@ -108,73 +102,77 @@ export const RepositoryPackedCircles: React.FC<RepositoryPackedCirclesProps> = (
       })
       .sort((a, b) => (b.value || 0) - (a.value || 0));
 
-      // Create a pack layout
+      // Calculate appropriate padding based on dimensions
+      const padding = isMobile ? 1.5 : 2;
+      
+      // Create a pack layout with adjusted padding
     const pack = d3.pack<FileNode>()
         .size([dimensions.width, dimensions.height])
-        .padding(3);
+        .padding(padding);
 
       // Apply the pack layout to the hierarchy
-      const rootWithLayout = pack(root as d3.HierarchyNode<FileNode>);
+      const rootWithPack = pack(root);
 
-      // Create the SVG visualization
+      // Create SVG with responsive dimensions
     const svg = d3.select(svgRef.current)
         .attr('width', dimensions.width)
         .attr('height', dimensions.height)
-        .attr('viewBox', [0, 0, dimensions.width, dimensions.height])
-        .attr('style', 'max-width: 100%; height: auto;');
+        .attr('viewBox', [0, 0, dimensions.width, dimensions.height]);
 
-      // Create a group for the circles
+      // Add a group for zooming
       const g = svg.append('g');
 
-      // Add zoom behavior - adjust zoom levels for mobile
-      const zoom = d3.zoom()
-        .scaleExtent([0.5, isMobile ? 5 : 8])
+      // Create zoom behavior with limits to prevent excessive zooming
+    const zoom = d3.zoom<SVGSVGElement, unknown>()
+        .scaleExtent([0.5, 8]) // Limit zoom levels
       .on('zoom', (event) => {
         g.attr('transform', event.transform);
         });
 
-      svg.call(zoom as any);
+      // Apply zoom behavior to SVG
+      svg.call(zoom)
+        .on('dblclick.zoom', null); // Disable double-click zoom for better navigation
 
-      // Draw the circles
+      // Create circles for each node
       const node = g.selectAll('g')
-        .data(rootWithLayout.descendants() as d3.HierarchyCircularNode<FileNode>[])
+        .data(rootWithPack.descendants())
         .join('g')
         .attr('transform', d => `translate(${d.x},${d.y})`);
 
-      // Create circles for each node
+      // Adjust circle size based on device
+      const minRadius = isMobile ? 2 : 3;
+      
+      // Create circles with improved visibility
       node.append('circle')
-      .attr('r', d => d.r)
+        .attr('r', d => Math.max(d.r, minRadius))
         .attr('fill', d => {
-          // Color based on file type or directory
-          const node = d.data;
-          if (node.type === 'directory') return '#e2e8f0';
-          
-          // For files, color based on language
-          if (node.language) {
-            const lang = node.language.toLowerCase();
-            if (lang.includes('javascript')) return '#ecc94b';
+          const fileNode = d.data;
+          if (fileNode.type === 'directory') return '#f9f9f9';
+          if (fileNode.type === 'function' || fileNode.type === 'method') return '#b794f4';
+          if (fileNode.type === 'class') return '#f687b3';
+          if (fileNode.language) {
+            const lang = fileNode.language.toLowerCase();
+            if (lang.includes('javascript')) return '#f6e05e';
             if (lang.includes('typescript')) return '#4fd1c5';
-            if (lang.includes('css')) return '#4299e1';
-            if (lang.includes('html')) return '#f56565';
-            if (lang.includes('json')) return '#48bb78';
+            if (lang.includes('css')) return '#63b3ed';
+            if (lang.includes('html')) return '#fc8181';
+            if (lang.includes('json')) return '#68d391';
             if (lang.includes('markdown')) return '#a0aec0';
             if (lang.includes('python')) return '#667eea';
-            if (lang.includes('java')) return '#ed64a6';
+            if (lang.includes('java')) return '#f687b3';
           }
           return '#cbd5e0';
         })
+        .attr('stroke', d => d.depth > 1 ? '#fff' : '#e2e8f0')
+        .attr('stroke-width', d => d.depth > 1 ? 0.5 : 1)
       .attr('opacity', 0.9)
-        .attr('stroke', '#fff')
-        .attr('stroke-width', 1)
+        .style('cursor', 'pointer')
         .on('mouseover', function(event, d) {
-          // Skip mouseover on mobile devices - we'll use touch instead
-          if (isMobile) return;
-
-          // Highlight this node
-          d3.select(this).attr('stroke', '#2d3748').attr('stroke-width', 2);
-      
-      // Show tooltip
-          const tooltip = d3.select('#packed-circles-tooltip');
+          // Highlight on hover
+          d3.select(this).attr('stroke', '#4299e1').attr('stroke-width', 2);
+          
+          // Show tooltip with better positioning
+          const tooltip = d3.select('#circle-tooltip');
       tooltip.style('display', 'block')
         .html(`
               <div class="p-2">
@@ -188,79 +186,60 @@ export const RepositoryPackedCircles: React.FC<RepositoryPackedCirclesProps> = (
         .style('top', (event.pageY - 20) + 'px');
         })
         .on('mouseout', function() {
-          // Skip mouseout on mobile devices
-          if (isMobile) return;
-
-          // Reset highlight
-          d3.select(this).attr('stroke', '#fff').attr('stroke-width', 1);
+          // Reset highlighting
+          d3.select(this)
+            .attr('stroke', function(d: any) { return d.depth > 1 ? '#fff' : '#e2e8f0'; })
+            .attr('stroke-width', function(d: any) { return d.depth > 1 ? 0.5 : 1; });
       
       // Hide tooltip
-          d3.select('#packed-circles-tooltip').style('display', 'none');
+          d3.select('#circle-tooltip').style('display', 'none');
         })
         .on('click', (event, d) => {
-          // Set selected node for details panel
-          setSelectedNode(d.data);
-          
-          // Prevent event from bubbling up to SVG (which would reset the view)
       event.stopPropagation();
-        })
-        // Add touch support for mobile
-        .on('touchstart', function(event) {
-          // Prevent scrolling on touch
-          event.preventDefault();
-        })
-        .on('touchend', function(event, d) {
-          // Handle touch on mobile
-          event.preventDefault();
-          
-          // Highlight this node
-          d3.selectAll('circle').attr('stroke', '#fff').attr('stroke-width', 1);
-          d3.select(this).attr('stroke', '#2d3748').attr('stroke-width', 2);
-          
-          // Show tooltip at fixed position for mobile
-          const tooltip = d3.select('#packed-circles-tooltip');
-          tooltip.style('display', 'block')
-            .html(`
-              <div class="p-2">
-                <div class="font-bold">${d.data.name}</div>
-                <div class="text-sm">${d.data.type}</div>
-                ${d.data.language ? `<div class="text-xs">${d.data.language}</div>` : ''}
-                ${d.value ? `<div class="text-xs">${formatBytes(d.value)}</div>` : ''}
-              </div>
-            `)
-            .style('left', '50%')
-            .style('transform', 'translateX(-50%)')
-            .style('bottom', '20px')
-            .style('top', 'auto');
-            
-          // Set selected node for details panel
           setSelectedNode(d.data);
-          
-          // Hide tooltip after 2 seconds on mobile
-          setTimeout(() => {
-            d3.select('#packed-circles-tooltip').style('display', 'none');
-          }, 2000);
-          
-          // Prevent event from bubbling up
-          event.stopPropagation();
         });
 
-      // Add labels for larger circles
-      node.append('text')
+      // Only add text to larger circles to prevent overlap
+      node.filter(d => d.r > (isMobile ? 12 : 10))
+        .append('text')
         .attr('dy', '0.3em')
-        .style('text-anchor', 'middle')
-        .style('pointer-events', 'none')
-        .style('font-size', d => {
-          // Adjust text size based on circle radius and device
-          const size = Math.min(d.r / 3, isMobile ? 9 : 12);
-          return size > (isMobile ? 6 : 8) ? `${size}px` : '0px';
-        })
-        .text(d => d.data.name.substring(0, d.r / 3));
+        .attr('text-anchor', 'middle')
+        .attr('font-size', d => Math.min(d.r / 3.5, isMobile ? 10 : 12) + 'px')
+        .attr('pointer-events', 'none')
+        .text(d => d.data.name)
+        .attr('opacity', d => d.r > (isMobile ? 20 : 15) ? 1 : 0.7)
+        .style('fill', '#4a5568')
+        .each(function(d: any) {
+          // Truncate text if needed
+          const text = d3.select(this);
+          const textLength = text.node()?.getComputedTextLength() || 0;
+          const maxLength = d.r * (isMobile ? 1.6 : 1.8);
+          
+          if (textLength > maxLength) {
+            let name = d.data.name;
+            let truncated = name;
+            
+            // For very small circles on mobile, just show first few chars
+            if (isMobile && d.r < 15) {
+              truncated = name.length > 3 ? name.slice(0, 3) + '…' : name;
+              text.text(truncated);
+              return;
+            }
+            
+            while (truncated.length > 3 && (text.node()?.getComputedTextLength() || 0) > maxLength) {
+              truncated = name.slice(0, truncated.length - 4) + '...';
+              text.text(truncated);
+            }
+          }
+        });
 
-      // Add click handler to the SVG to reset selection
-      svg.on('click', () => {
-        setSelectedNode(null);
-      });
+      // Add touch support for mobile
+      if (isMobile) {
+        svg.on('touchstart', function(event) {
+          // Prevent scrolling on touch
+          event.preventDefault();
+        });
+      }
 
       setLoading(false);
     } catch (err) {
@@ -271,13 +250,13 @@ export const RepositoryPackedCircles: React.FC<RepositoryPackedCirclesProps> = (
   }, [data, dimensions, isMobile]);
 
     // Helper function to format bytes
-    function formatBytes(bytes: number) {
+  const formatBytes = (bytes: number) => {
       if (bytes < 1024) return bytes + ' B';
       const k = 1024;
       const sizes = ['B', 'KB', 'MB', 'GB'];
       const i = Math.floor(Math.log(bytes) / Math.log(k));
       return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    }
+  };
 
   return (
     <div ref={containerRef} className="relative w-full h-full">

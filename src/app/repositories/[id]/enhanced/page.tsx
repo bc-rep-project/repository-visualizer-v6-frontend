@@ -55,6 +55,7 @@ export default function RepositoryAnalyze() {
     searchQuery: '',
   });
   const [filtersChanged, setFiltersChanged] = useState<boolean>(false);
+  const [isMobile, setIsMobile] = useState<boolean>(false);
 
   useEffect(() => {
     if (params.id) {
@@ -62,6 +63,20 @@ export default function RepositoryAnalyze() {
       fetchGraphData();
     }
   }, [params.id]);
+
+  // Detect mobile devices
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+    };
+  }, []);
 
   // Debug rawData when it changes
   useEffect(() => {
@@ -192,7 +207,9 @@ export default function RepositoryAnalyze() {
     
     if (filtersChanged) {
       return (
-        <div className="flex justify-center items-center" style={{ height: '600px' }}>
+        <div className="flex justify-center items-center" style={{ 
+          minHeight: isMobile ? '450px' : '600px' 
+        }}>
           <LoadingSpinner message="Updating visualization..." />
         </div>
       );
@@ -204,7 +221,7 @@ export default function RepositoryAnalyze() {
         graphData={processedData.graph}
         visualizationType={visualizationType}
         width={1200}
-        height={600}
+        height={isMobile ? 450 : 600}
       />
     );
   };
@@ -249,59 +266,66 @@ export default function RepositoryAnalyze() {
             </div>
           )}
           
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6 mb-4 sm:mb-6">
-            <div className="flex flex-col md:flex-row justify-between md:items-center mb-4 md:mb-6 space-y-3 md:space-y-0">
-              <div className="flex flex-wrap gap-1 sm:gap-2">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-3 sm:p-4 mb-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap gap-2">
                 <button
+                  className={`px-2 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm rounded-md ${
+                    visualizationType === 'packed' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                  }`}
                   onClick={() => handleVisualizationTypeChange('packed')}
-                  className={`px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm rounded ${visualizationType === 'packed' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
                   title="Packed Circles View"
                 >
                   <MdOutlineFullscreen className="inline-block mr-0.5 sm:mr-1" /> Packed
                 </button>
                 <button
+                  className={`px-2 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm rounded-md ${
+                    visualizationType === 'graph' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                  }`}
                   onClick={() => handleVisualizationTypeChange('graph')}
-                  className={`px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm rounded ${visualizationType === 'graph' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
                   title="Force Graph View"
                 >
                   <BiZoomIn className="inline-block mr-0.5 sm:mr-1" /> Graph
                 </button>
                 <button
+                  className={`px-2 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm rounded-md ${
+                    visualizationType === 'sunburst' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                  }`}
                   onClick={() => handleVisualizationTypeChange('sunburst')}
-                  className={`px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm rounded ${visualizationType === 'sunburst' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
                   title="Sunburst View"
                 >
                   <BiZoomOut className="inline-block mr-0.5 sm:mr-1" /> Sunburst
                 </button>
                 <button
+                  className={`px-2 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm rounded-md ${
+                    visualizationType === 'tree' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                  }`}
                   onClick={() => handleVisualizationTypeChange('tree')}
-                  className={`px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm rounded ${visualizationType === 'tree' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
                   title="Tree View"
                 >
                   <FaFolder className="inline-block mr-0.5 sm:mr-1" /> Tree
                 </button>
               </div>
-              
-              <div className="flex flex-wrap gap-1 sm:gap-2">
+              <div className="flex gap-2">
                 <button
+                  className="px-2 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md flex items-center"
                   onClick={handleDownloadGraph}
-                  className="px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm bg-green-500 text-white rounded hover:bg-green-600"
                   title="Download Analysis Data"
                 >
-                  <FaDownload className="inline-block mr-0.5 sm:mr-1" /> Download
+                  <FaDownload className="mr-0.5 sm:mr-1" /> Export
                 </button>
                 <button
+                  className="px-2 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md flex items-center"
                   onClick={handleShareGraph}
-                  className="px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm bg-purple-500 text-white rounded hover:bg-purple-600"
                   title="Share Analysis"
                 >
-                  <FaShare className="inline-block mr-0.5 sm:mr-1" /> Share
+                  <FaShare className="mr-0.5 sm:mr-1" /> Share
                 </button>
               </div>
             </div>
             
-            <div className="flex flex-col md:flex-row justify-between md:items-center mb-4 md:mb-6 space-y-3 md:space-y-0">
-              <div className="relative w-full md:w-64">
+            <div className="flex flex-wrap justify-between items-center mt-3 gap-2">
+              <div className="relative w-full sm:w-64">
                 <input
                   type="text"
                   placeholder="Search files, functions..."
@@ -315,36 +339,30 @@ export default function RepositoryAnalyze() {
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => toggleFilter('showFiles')}
-                  className={`px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm rounded flex items-center ${filterOptions.showFiles ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
-                  aria-pressed={filterOptions.showFiles}
                 >
-                  <FaFile className="mr-0.5 sm:mr-1 flex-shrink-0" /> Files
+                  {filterOptions.showFiles ? 'Hide Files' : 'Show Files'}
                 </button>
                 <button
                   onClick={() => toggleFilter('showDirectories')}
-                  className={`px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm rounded flex items-center ${filterOptions.showDirectories ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
-                  aria-pressed={filterOptions.showDirectories}
                 >
-                  <FaFolder className="mr-0.5 sm:mr-1 flex-shrink-0" /> Dirs
+                  {filterOptions.showDirectories ? 'Hide Directories' : 'Show Directories'}
                 </button>
                 <button
                   onClick={() => toggleFilter('showFunctions')}
-                  className={`px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm rounded flex items-center ${filterOptions.showFunctions ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
-                  aria-pressed={filterOptions.showFunctions}
                 >
-                  <FaCode className="mr-0.5 sm:mr-1 flex-shrink-0" /> Funcs
+                  {filterOptions.showFunctions ? 'Hide Functions' : 'Show Functions'}
                 </button>
                 <button
                   onClick={() => toggleFilter('showClasses')}
-                  className={`px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm rounded flex items-center ${filterOptions.showClasses ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
-                  aria-pressed={filterOptions.showClasses}
                 >
-                  <FaCode className="mr-0.5 sm:mr-1 flex-shrink-0" /> Classes
+                  {filterOptions.showClasses ? 'Hide Classes' : 'Show Classes'}
                 </button>
               </div>
             </div>
-            
-            <div className="visualization-container w-full" style={{ height: 'min(60vh, 600px)', overflow: 'hidden' }}>
+          </div>
+          
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md mb-4 overflow-hidden">
+            <div className="visualization-container w-full" style={{ minHeight: isMobile ? '450px' : '600px', maxHeight: isMobile ? '550px' : '700px' }}>
               {renderVisualization()}
             </div>
           </div>
