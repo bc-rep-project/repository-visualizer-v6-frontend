@@ -147,7 +147,7 @@ export default function FunctionsClassesList({
                 language: node.language,
                 startLine: func.start_line,
                 endLine: func.end_line
-              });
+            });
           });
         }
         
@@ -176,8 +176,8 @@ export default function FunctionsClassesList({
                   });
                 });
               }
-            });
-          }
+          });
+        }
       }
       
       // Process children recursively
