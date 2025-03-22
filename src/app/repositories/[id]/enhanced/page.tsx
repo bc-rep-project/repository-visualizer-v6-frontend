@@ -63,6 +63,23 @@ export default function RepositoryAnalyze() {
     }
   }, [params.id]);
 
+  // Debug rawData when it changes
+  useEffect(() => {
+    if (rawData) {
+      console.log('Enhanced view rawData:', rawData);
+      console.log('Enhanced view rawData type:', typeof rawData);
+      console.log('Enhanced view rawData is array?', Array.isArray(rawData));
+      
+      if (typeof rawData === 'object') {
+        console.log('Enhanced view rawData keys:', Object.keys(rawData));
+        if ('children' in rawData) {
+          console.log('Enhanced view rawData.children is array?', Array.isArray((rawData as any).children));
+          console.log('Enhanced view rawData.children length:', ((rawData as any).children || []).length);
+        }
+      }
+    }
+  }, [rawData]);
+
   // Reprocess data when filters change
   useEffect(() => {
     if (rawData) {
@@ -375,14 +392,49 @@ export default function RepositoryAnalyze() {
               
               {activeTab === 'functions' && rawData && (
                 <div className="max-w-full">
-                  {/* FunctionsClassesList now allows clicking on any function or class to view its code */}
-                  <FunctionsClassesList data={rawData} searchQuery={searchQuery} repoId={params.id as string} />
+                  {/* 
+                    FunctionsClassesList expects an array of FileNode objects.
+                    Ensure we're passing the correct structure by checking the 
+                    shape of rawData and normalizing it properly.
+                  */}
+                  <FunctionsClassesList 
+                    data={(() => {
+                      // Debug the actual structure
+                      console.log('Raw data structure for functions tab:', rawData);
+                      console.log('Raw data is array?', Array.isArray(rawData));
+                      
+                      // Handle different possible data structures
+                      if (Array.isArray(rawData)) {
+                        return rawData;
+                      } else if (rawData && typeof rawData === 'object') {
+                        if ('children' in rawData && Array.isArray(rawData.children)) {
+                          return rawData.children;
+                        } else {
+                          return [rawData];
+                        }
+                      }
+                      return [];
+                    })()} 
+                    searchQuery={searchQuery} 
+                    repoId={params.id as string} 
+                  />
                 </div>
               )}
               
               {activeTab === 'directory' && rawData && (
                 <div className="max-w-full">
-                  <DirectoryStructure data={rawData} searchQuery={searchQuery} repoId={params.id as string} />
+                  <DirectoryStructure 
+                    data={(() => {
+                      // Handle different possible data structures
+                      if (rawData && typeof rawData === 'object') {
+                        // DirectoryStructure expects a single root node
+                        return rawData;
+                      }
+                      return { name: 'root', path: '/', type: 'directory', children: [] };
+                    })()} 
+                    searchQuery={searchQuery} 
+                    repoId={params.id as string} 
+                  />
                 </div>
               )}
             </div>
