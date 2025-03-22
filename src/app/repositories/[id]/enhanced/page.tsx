@@ -237,77 +237,77 @@ export default function RepositoryAnalyze() {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <Navigation />
         
-        <div className="container mx-auto px-4 py-8 max-w-7xl">
+        <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-7xl">
           {repository && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
-              <h1 className="text-3xl font-bold text-gray-800 dark:text-white">{repository.name}</h1>
-              <p className="text-gray-600 dark:text-gray-300 mt-2">{repository.description || 'No description available'}</p>
-              <div className="flex items-center mt-4 text-sm text-gray-500 dark:text-gray-400">
-                <span className="mr-4">Owner: {repository.owner}</span>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6 mb-4 sm:mb-6">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 dark:text-white break-words">{repository.name}</h1>
+              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 mt-1 sm:mt-2 break-words">{repository.description || 'No description available'}</p>
+              <div className="flex flex-col sm:flex-row sm:items-center mt-3 sm:mt-4 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                <span className="mb-1 sm:mb-0 sm:mr-4">Owner: {repository.owner}</span>
                 <span>Last updated: {new Date(repository.updatedAt).toLocaleDateString()}</span>
               </div>
             </div>
           )}
           
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
-            <div className="flex flex-col md:flex-row justify-between md:items-center mb-6 space-y-4 md:space-y-0">
-              <div className="flex flex-wrap gap-2">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6 mb-4 sm:mb-6">
+            <div className="flex flex-col md:flex-row justify-between md:items-center mb-4 md:mb-6 space-y-3 md:space-y-0">
+              <div className="flex flex-wrap gap-1 sm:gap-2">
                 <button
                   onClick={() => handleVisualizationTypeChange('packed')}
-                  className={`px-3 py-2 rounded ${visualizationType === 'packed' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
+                  className={`px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm rounded ${visualizationType === 'packed' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
                   title="Packed Circles View"
                 >
-                  <MdOutlineFullscreen className="inline mr-1" /> Packed
+                  <MdOutlineFullscreen className="inline-block mr-0.5 sm:mr-1" /> Packed
                 </button>
                 <button
                   onClick={() => handleVisualizationTypeChange('graph')}
-                  className={`px-3 py-2 rounded ${visualizationType === 'graph' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
+                  className={`px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm rounded ${visualizationType === 'graph' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
                   title="Force Graph View"
                 >
-                  <BiZoomIn className="inline mr-1" /> Graph
+                  <BiZoomIn className="inline-block mr-0.5 sm:mr-1" /> Graph
                 </button>
                 <button
                   onClick={() => handleVisualizationTypeChange('sunburst')}
-                  className={`px-3 py-2 rounded ${visualizationType === 'sunburst' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
+                  className={`px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm rounded ${visualizationType === 'sunburst' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
                   title="Sunburst View"
                 >
-                  <BiZoomOut className="inline mr-1" /> Sunburst
+                  <BiZoomOut className="inline-block mr-0.5 sm:mr-1" /> Sunburst
                 </button>
                 <button
                   onClick={() => handleVisualizationTypeChange('tree')}
-                  className={`px-3 py-2 rounded ${visualizationType === 'tree' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
+                  className={`px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm rounded ${visualizationType === 'tree' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
                   title="Tree View"
                 >
-                  <FaFolder className="inline mr-1" /> Tree
+                  <FaFolder className="inline-block mr-0.5 sm:mr-1" /> Tree
                 </button>
               </div>
               
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1 sm:gap-2">
                 <button
                   onClick={handleDownloadGraph}
-                  className="px-3 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                  className="px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm bg-green-500 text-white rounded hover:bg-green-600"
                   title="Download Analysis Data"
                 >
-                  <FaDownload className="inline mr-1" /> Download
+                  <FaDownload className="inline-block mr-0.5 sm:mr-1" /> Download
                 </button>
                 <button
                   onClick={handleShareGraph}
-                  className="px-3 py-2 bg-purple-500 text-white rounded hover:bg-purple-600"
+                  className="px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm bg-purple-500 text-white rounded hover:bg-purple-600"
                   title="Share Analysis"
                 >
-                  <FaShare className="inline mr-1" /> Share
+                  <FaShare className="inline-block mr-0.5 sm:mr-1" /> Share
                 </button>
               </div>
             </div>
             
-            <div className="flex flex-col md:flex-row justify-between md:items-center mb-6 space-y-4 md:space-y-0">
+            <div className="flex flex-col md:flex-row justify-between md:items-center mb-4 md:mb-6 space-y-3 md:space-y-0">
               <div className="relative w-full md:w-64">
                 <input
                   type="text"
                   placeholder="Search files, functions..."
                   value={searchQuery}
                   onChange={handleSearch}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                 />
                 <FaSearch className="absolute right-3 top-3 text-gray-400" />
               </div>
@@ -315,63 +315,63 @@ export default function RepositoryAnalyze() {
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => toggleFilter('showFiles')}
-                  className={`px-3 py-2 rounded flex items-center ${filterOptions.showFiles ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
+                  className={`px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm rounded flex items-center ${filterOptions.showFiles ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
                   aria-pressed={filterOptions.showFiles}
                 >
-                  <FaFile className="mr-1" /> Files
+                  <FaFile className="mr-0.5 sm:mr-1 flex-shrink-0" /> Files
                 </button>
                 <button
                   onClick={() => toggleFilter('showDirectories')}
-                  className={`px-3 py-2 rounded flex items-center ${filterOptions.showDirectories ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
+                  className={`px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm rounded flex items-center ${filterOptions.showDirectories ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
                   aria-pressed={filterOptions.showDirectories}
                 >
-                  <FaFolder className="mr-1" /> Directories
+                  <FaFolder className="mr-0.5 sm:mr-1 flex-shrink-0" /> Dirs
                 </button>
                 <button
                   onClick={() => toggleFilter('showFunctions')}
-                  className={`px-3 py-2 rounded flex items-center ${filterOptions.showFunctions ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
+                  className={`px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm rounded flex items-center ${filterOptions.showFunctions ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
                   aria-pressed={filterOptions.showFunctions}
                 >
-                  <FaCode className="mr-1" /> Functions
+                  <FaCode className="mr-0.5 sm:mr-1 flex-shrink-0" /> Funcs
                 </button>
                 <button
                   onClick={() => toggleFilter('showClasses')}
-                  className={`px-3 py-2 rounded flex items-center ${filterOptions.showClasses ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
+                  className={`px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm rounded flex items-center ${filterOptions.showClasses ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
                   aria-pressed={filterOptions.showClasses}
                 >
-                  <FaCode className="mr-1" /> Classes
+                  <FaCode className="mr-0.5 sm:mr-1 flex-shrink-0" /> Classes
                 </button>
               </div>
             </div>
             
-            <div className="visualization-container w-full" style={{ height: '600px', overflow: 'hidden' }}>
+            <div className="visualization-container w-full" style={{ height: 'min(60vh, 600px)', overflow: 'hidden' }}>
               {renderVisualization()}
             </div>
           </div>
           
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-            <div className="flex flex-wrap border-b border-gray-200 dark:border-gray-700 mb-6 overflow-x-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6">
+            <div className="flex flex-wrap border-b border-gray-200 dark:border-gray-700 mb-4 sm:mb-6 overflow-x-auto whitespace-nowrap">
               <button
                 onClick={() => setActiveTab('overview')}
-                className={`px-4 py-2 font-medium ${activeTab === 'overview' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500 dark:text-gray-400'}`}
+                className={`px-3 py-2 sm:px-4 sm:py-2 text-sm sm:text-base font-medium ${activeTab === 'overview' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500 dark:text-gray-400'}`}
               >
                 Overview
               </button>
               <button
                 onClick={() => setActiveTab('metrics')}
-                className={`px-4 py-2 font-medium ${activeTab === 'metrics' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500 dark:text-gray-400'}`}
+                className={`px-3 py-2 sm:px-4 sm:py-2 text-sm sm:text-base font-medium ${activeTab === 'metrics' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500 dark:text-gray-400'}`}
               >
                 Code Metrics
               </button>
               <button
                 onClick={() => setActiveTab('functions')}
-                className={`px-4 py-2 font-medium ${activeTab === 'functions' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500 dark:text-gray-400'}`}
+                className={`px-3 py-2 sm:px-4 sm:py-2 text-sm sm:text-base font-medium ${activeTab === 'functions' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500 dark:text-gray-400'}`}
               >
                 Functions & Classes
               </button>
               <button
                 onClick={() => setActiveTab('directory')}
-                className={`px-4 py-2 font-medium ${activeTab === 'directory' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500 dark:text-gray-400'}`}
+                className={`px-3 py-2 sm:px-4 sm:py-2 text-sm sm:text-base font-medium ${activeTab === 'directory' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500 dark:text-gray-400'}`}
               >
                 Directory Structure
               </button>
@@ -379,17 +379,17 @@ export default function RepositoryAnalyze() {
             
             <div className="tab-content overflow-x-auto">
               {activeTab === 'overview' && rawData && (
-                <div className="max-w-full">
+                <div className="w-full px-0">
                   <RepositoryOverview data={rawData} />
                 </div>
               )}
               
               {activeTab === 'metrics' && rawData && (
-                <div className={activeTab === 'metrics' ? 'block' : 'hidden'}>
+                <div className="w-full px-0">
                   {processedData && processedData.tree ? (
                     <CodeMetrics data={processedData.tree} repoId={params.id as string} />
                   ) : (
-                    <div className="text-center p-8 text-gray-500 dark:text-gray-400">
+                    <div className="text-center p-4 sm:p-8 text-gray-500 dark:text-gray-400">
                       No metrics data available.
                     </div>
                   )}
@@ -397,7 +397,7 @@ export default function RepositoryAnalyze() {
               )}
               
               {activeTab === 'functions' && rawData && (
-                <div className="max-w-full">
+                <div className="w-full px-0">
                   {/* 
                     FunctionsClassesList expects an array of FileNode objects.
                     Ensure we're passing the correct structure by checking the 
@@ -428,7 +428,7 @@ export default function RepositoryAnalyze() {
               )}
               
               {activeTab === 'directory' && rawData && (
-                <div className="max-w-full">
+                <div className="w-full px-0">
                   <DirectoryStructure 
                     data={(() => {
                       // Handle different possible data structures

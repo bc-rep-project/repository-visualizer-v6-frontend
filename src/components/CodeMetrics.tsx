@@ -150,47 +150,47 @@ const CodeMetrics: React.FC<CodeMetricsProps> = ({ data, repoId }) => {
   };
   
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 sm:p-6">
       <h2 className="text-xl font-bold mb-4 dark:text-white">Code Metrics</h2>
       
-      <div className="grid grid-cols-2 gap-4 mb-6">
-        <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-          <div className="flex items-center mb-2">
-            <FaFileCode className="text-blue-500 mr-2" />
-            <h3 className="text-md font-semibold dark:text-white">Files</h3>
+      <div className="grid grid-cols-1 xs:grid-cols-2 gap-3 sm:gap-4 mb-6">
+        <div className="bg-blue-50 dark:bg-blue-900/20 p-3 sm:p-4 rounded-lg">
+          <div className="flex items-center mb-1 sm:mb-2">
+            <FaFileCode className="text-blue-500 mr-2 flex-shrink-0" />
+            <h3 className="text-sm sm:text-md font-semibold dark:text-white">Files</h3>
           </div>
-          <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{metrics.totalFiles}</p>
+          <p className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400">{metrics.totalFiles}</p>
         </div>
         
-        <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
-          <div className="flex items-center mb-2">
-            <FaFolder className="text-green-500 mr-2" />
-            <h3 className="text-md font-semibold dark:text-white">Directories</h3>
+        <div className="bg-green-50 dark:bg-green-900/20 p-3 sm:p-4 rounded-lg">
+          <div className="flex items-center mb-1 sm:mb-2">
+            <FaFolder className="text-green-500 mr-2 flex-shrink-0" />
+            <h3 className="text-sm sm:text-md font-semibold dark:text-white">Directories</h3>
           </div>
-          <p className="text-2xl font-bold text-green-600 dark:text-green-400">{metrics.totalDirectories}</p>
+          <p className="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">{metrics.totalDirectories}</p>
         </div>
         
-        <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
-          <div className="flex items-center mb-2">
-            <FaCode className="text-purple-500 mr-2" />
-            <h3 className="text-md font-semibold dark:text-white">Functions</h3>
+        <div className="bg-purple-50 dark:bg-purple-900/20 p-3 sm:p-4 rounded-lg">
+          <div className="flex items-center mb-1 sm:mb-2">
+            <FaCode className="text-purple-500 mr-2 flex-shrink-0" />
+            <h3 className="text-sm sm:text-md font-semibold dark:text-white">Functions</h3>
           </div>
-          <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">{metrics.totalFunctions}</p>
+          <p className="text-xl sm:text-2xl font-bold text-purple-600 dark:text-purple-400">{metrics.totalFunctions}</p>
         </div>
         
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg">
-          <div className="flex items-center mb-2">
-            <FaCodeBranch className="text-yellow-500 mr-2" />
-            <h3 className="text-md font-semibold dark:text-white">Classes</h3>
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 sm:p-4 rounded-lg">
+          <div className="flex items-center mb-1 sm:mb-2">
+            <FaCodeBranch className="text-yellow-500 mr-2 flex-shrink-0" />
+            <h3 className="text-sm sm:text-md font-semibold dark:text-white">Classes</h3>
           </div>
-          <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{metrics.totalClasses}</p>
+          <p className="text-xl sm:text-2xl font-bold text-yellow-600 dark:text-yellow-400">{metrics.totalClasses}</p>
         </div>
       </div>
       
       <div className="space-y-4">
         <div>
           <h3 className="text-md font-semibold mb-2 dark:text-white">Lines of Code (est.)</h3>
-          <p className="text-2xl font-bold text-gray-700 dark:text-gray-300">{metrics.totalLines.toLocaleString()}</p>
+          <p className="text-xl sm:text-2xl font-bold text-gray-700 dark:text-gray-300">{metrics.totalLines.toLocaleString()}</p>
         </div>
         
         {metrics.largestFile && (
@@ -200,12 +200,12 @@ const CodeMetrics: React.FC<CodeMetricsProps> = ({ data, repoId }) => {
               className="flex items-center cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-md group transition-colors"
               onClick={() => handleFileClick(metrics.largestFile!.path, metrics.largestFile!.name)}
             >
-              <FaArrowUp className="text-red-500 mr-2" />
-              <div className="flex-grow">
-                <p className="text-sm font-medium dark:text-white">{metrics.largestFile.name}</p>
+              <FaArrowUp className="text-red-500 mr-2 flex-shrink-0" />
+              <div className="flex-grow min-w-0">
+                <p className="text-sm font-medium dark:text-white truncate">{metrics.largestFile.name}</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">{formatSize(metrics.largestFile.size)}</p>
               </div>
-              <FaEye className="text-gray-400 group-hover:text-blue-500 transition-colors" title="View file content" />
+              <FaEye className="text-gray-400 group-hover:text-blue-500 transition-colors flex-shrink-0 ml-2" title="View file content" />
             </div>
           </div>
         )}
@@ -217,14 +217,14 @@ const CodeMetrics: React.FC<CodeMetricsProps> = ({ data, repoId }) => {
               className="flex items-center cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-md group transition-colors"
               onClick={() => handleFileClick(metrics.mostComplexFile!.path, metrics.mostComplexFile!.name)}
             >
-              <FaArrowUp className="text-orange-500 mr-2" />
-              <div className="flex-grow">
-                <p className="text-sm font-medium dark:text-white">{metrics.mostComplexFile.name}</p>
+              <FaArrowUp className="text-orange-500 mr-2 flex-shrink-0" />
+              <div className="flex-grow min-w-0">
+                <p className="text-sm font-medium dark:text-white truncate">{metrics.mostComplexFile.name}</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   {metrics.mostComplexFile.functionCount} functions
                 </p>
               </div>
-              <FaEye className="text-gray-400 group-hover:text-blue-500 transition-colors" title="View file content" />
+              <FaEye className="text-gray-400 group-hover:text-blue-500 transition-colors flex-shrink-0 ml-2" title="View file content" />
             </div>
           </div>
         )}
@@ -233,13 +233,13 @@ const CodeMetrics: React.FC<CodeMetricsProps> = ({ data, repoId }) => {
       {/* Modal for displaying code */}
       {showCodeViewer && fileContent && selectedFile && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex items-center justify-center min-h-screen p-4">
+          <div className="flex items-center justify-center min-h-screen p-2 sm:p-4">
             <div className="fixed inset-0 bg-black opacity-50" onClick={closeCodeViewer}></div>
-            <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-4xl w-full max-h-[90vh] overflow-hidden z-10">
-              <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
-                <h3 className="text-lg font-semibold dark:text-white">{selectedFile.name}</h3>
+            <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] overflow-hidden z-10">
+              <div className="flex justify-between items-center p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 className="text-base sm:text-lg font-semibold dark:text-white truncate">{selectedFile.name}</h3>
                 <button 
-                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200" 
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1" 
                   onClick={closeCodeViewer}
                 >
                   <span className="text-xl">×</span>
