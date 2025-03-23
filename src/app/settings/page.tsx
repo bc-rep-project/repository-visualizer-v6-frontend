@@ -391,7 +391,7 @@ export default function SettingsPage() {
           {/* Code Syntax Highlighting Theme */}
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
             <h2 className="text-xl font-semibold mb-4">Code Highlighting</h2>
-            <div className="max-w-md">
+            <div className="w-full">
               <label htmlFor="code-theme" className="block mb-2 text-sm font-medium">
                 Syntax Highlighting Theme
               </label>
@@ -409,7 +409,7 @@ export default function SettingsPage() {
               </select>
               <div className="mt-4 p-4 border rounded-md bg-gray-50 dark:bg-gray-900">
                 <code className="text-sm">// Example code preview</code>
-                <pre className="text-sm mt-1"><code>{`function example() {
+                <pre className="text-sm mt-1 overflow-x-auto"><code>{`function example() {
   return "This is how your code will look";
 }`}</code></pre>
               </div>
@@ -482,7 +482,7 @@ export default function SettingsPage() {
               <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-md">
                 <h3 className="text-lg font-medium mb-3 text-gray-900 dark:text-white">Service Status</h3>
                 
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div>
                     <div className="flex items-center mb-1">
                       <span className="font-medium text-gray-700 dark:text-gray-300 mr-2">Status:</span>
@@ -508,44 +508,44 @@ export default function SettingsPage() {
                     </div>
                   </div>
                   
-                  <div className="flex space-x-2">
+                  <div className="flex flex-wrap gap-2">
                     {!autoSaveServiceStatus?.running ? (
                       <button
-                        className="py-2 px-4 bg-green-600 hover:bg-green-700 text-white font-medium rounded-md flex items-center"
+                        className="py-2 px-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-md flex items-center text-sm"
                         onClick={handleStartAutoSave}
                         disabled={serviceOperation !== 'idle'}
                       >
                         {serviceOperation === 'starting' ? (
-                          <LoadingSpinner size="small" color="green" message="" className="mr-2" />
+                          <LoadingSpinner size="small" color="green" message="" className="mr-1" />
                         ) : (
-                          <FaPlayCircle className="mr-2" />
+                          <FaPlayCircle className="mr-1" />
                         )}
                         Start Service
                       </button>
                     ) : (
                       <button
-                        className="py-2 px-4 bg-red-600 hover:bg-red-700 text-white font-medium rounded-md flex items-center"
+                        className="py-2 px-3 bg-red-600 hover:bg-red-700 text-white font-medium rounded-md flex items-center text-sm"
                         onClick={handleStopAutoSave}
                         disabled={serviceOperation !== 'idle'}
                       >
                         {serviceOperation === 'stopping' ? (
-                          <LoadingSpinner size="small" color="red" message="" className="mr-2" />
+                          <LoadingSpinner size="small" color="red" message="" className="mr-1" />
                         ) : (
-                          <FaStopCircle className="mr-2" />
+                          <FaStopCircle className="mr-1" />
                         )}
                         Stop Service
                       </button>
                     )}
                     
                     <button
-                      className="py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md flex items-center"
+                      className="py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md flex items-center text-sm"
                       onClick={handleRunAutoSave}
                       disabled={serviceOperation !== 'idle'}
                     >
                       {serviceOperation === 'running' ? (
-                        <LoadingSpinner size="small" color="blue" message="" className="mr-2" />
+                        <LoadingSpinner size="small" color="blue" message="" className="mr-1" />
                       ) : (
-                        <FaSync className="mr-2" />
+                        <FaSync className="mr-1" />
                       )}
                       Run Now
                     </button>
@@ -556,7 +556,7 @@ export default function SettingsPage() {
                 {(autoSaveStats || (autoSaveServiceStatus?.repositories_saved && autoSaveServiceStatus.repositories_saved > 0) || (backupsData && backupsData.total > 0)) && (
                   <div className="mt-4 border-t border-gray-200 dark:border-gray-600 pt-4">
                     <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-2">Statistics</h4>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="bg-gray-100 dark:bg-gray-600 rounded-md p-3">
                         <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                           {backupsData?.total || 0}
