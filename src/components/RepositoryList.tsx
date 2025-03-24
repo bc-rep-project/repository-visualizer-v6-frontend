@@ -62,6 +62,18 @@ export default function RepositoryList() {
     '> 100 MB'
   ];
 
+  // Check for status parameter in URL
+  useEffect(() => {
+    // Get the URL search parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const statusParam = urlParams.get('status');
+    
+    // Set the status filter if the parameter exists
+    if (statusParam && ['completed', 'pending', 'failed'].includes(statusParam)) {
+      setStatusFilter(statusParam);
+    }
+  }, []);
+
   useEffect(() => {
     fetchRepositories();
     fetchLanguages();

@@ -55,7 +55,7 @@ export default function DashboardPage() {
   }, []);
 
   const navigateToRepositories = (status: 'completed' | 'failed' | 'pending') => {
-    router.push(`/?status=${status}`);
+    router.push(`/repositories?status=${status}`);
   };
 
   if (loading) {
