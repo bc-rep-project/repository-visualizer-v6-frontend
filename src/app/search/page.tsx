@@ -131,8 +131,9 @@ export default function SearchPage() {
       <Navigation />
       <div className="flex-grow">
         <div className="container mx-auto px-4 py-6">
+          {/* Search form */}
           <div className="mb-6">
-            <form onSubmit={handleSearch} className="flex w-full">
+            <form onSubmit={handleSearch} className="flex flex-col sm:flex-row w-full gap-2">
               <div className="relative flex-grow">
                 <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                   <FaSearch className="text-gray-400" />
@@ -141,13 +142,13 @@ export default function SearchPage() {
                   type="search"
                   name="search"
                   defaultValue={query}
-                  className="block w-full p-4 pl-10 text-sm border border-gray-300 rounded-lg bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                  placeholder="Search across repositories, files and functions..."
+                  className="block w-full p-3 sm:p-4 pl-10 text-sm border border-gray-300 rounded-lg bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                  placeholder="Search repositories, files and functions..."
                 />
               </div>
               <button
                 type="submit"
-                className="ml-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg"
+                className="px-4 py-3 sm:py-0 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg"
               >
                 Search
               </button>
@@ -161,11 +162,11 @@ export default function SearchPage() {
           )}
           
           {query && !loading && !error && (
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-2">
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 Found {totalResults.toLocaleString()} results ({searchTime.toFixed(2)} seconds)
               </p>
-              <div className="flex space-x-4">
+              <div className="flex flex-wrap gap-4">
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   Repositories: {repositoryCount.toLocaleString()}
                 </p>
@@ -181,8 +182,8 @@ export default function SearchPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {/* Filters */}
-            <div className="md:col-span-1">
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+            <div className="order-2 md:order-1 md:col-span-1">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 sticky top-4">
                 <h2 className="text-lg font-semibold mb-4 dark:text-white">Filters</h2>
                 
                 <div className="space-y-2">
@@ -249,7 +250,7 @@ export default function SearchPage() {
             </div>
 
             {/* Results */}
-            <div className="md:col-span-3">
+            <div className="order-1 md:order-2 md:col-span-3">
               {loading ? (
                 <div className="flex justify-center items-center h-64">
                   <LoadingSpinner size="medium" />
@@ -270,25 +271,30 @@ export default function SearchPage() {
                     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden mb-6">
                       <ul className="divide-y dark:divide-gray-700">
                         {results.filter(r => r.type === 'repository').map((result) => (
-                          <li key={result.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                          <li key={result.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition duration-150">
                             <div className="flex items-start">
                               <div className="flex-shrink-0 pt-1">
                                 {getResultIcon(result.type)}
                               </div>
                               <div className="ml-3 flex-1">
-                                <div className="flex items-center">
+                                <div className="flex flex-wrap items-center gap-2">
                                   <h3 className="text-md font-medium text-gray-900 dark:text-white">
                                     {result.name}
                                   </h3>
+                                  {result.language && (
+                                    <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded">
+                                      {result.language}
+                                    </span>
+                                  )}
                                 </div>
                                 <p 
-                                  className="text-sm text-gray-500 dark:text-gray-400 mt-1"
+                                  className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2"
                                   dangerouslySetInnerHTML={{ __html: highlightMatches(result.content || '') }}
                                 ></p>
-                                <div className="flex items-center mt-2">
+                                <div className="flex items-center mt-3">
                                   <button
                                     onClick={() => router.push(`/repositories/${result.id}`)}
-                                    className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center"
+                                    className="text-xs py-1 px-3 bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/30 rounded flex items-center transition-colors"
                                   >
                                     View Repository <FaChevronRight className="ml-1" size={10} />
                                   </button>
@@ -307,44 +313,49 @@ export default function SearchPage() {
                     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden mb-6">
                       <ul className="divide-y dark:divide-gray-700">
                         {results.filter(r => r.type === 'file').map((result) => (
-                          <li key={result.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                          <li key={result.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition duration-150">
                             <div className="flex items-start">
                               <div className="flex-shrink-0 pt-1">
                                 {getResultIcon(result.type)}
                               </div>
                               <div className="ml-3 flex-1">
-                                <div className="flex items-center">
+                                <div className="flex flex-wrap items-center gap-2">
                                   <h3 className="text-md font-medium text-gray-900 dark:text-white">
                                     {result.name}
                                   </h3>
                                   {result.language && (
-                                    <span className="ml-2 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded">
+                                    <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded">
                                       {result.language}
                                     </span>
                                   )}
                                 </div>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                   {result.repository} &gt; {result.path}
                                 </p>
                                 {result.matches && result.matches.length > 0 && (
                                   <div className="mt-2 bg-gray-50 dark:bg-gray-900 p-2 rounded border border-gray-200 dark:border-gray-700 font-mono text-xs overflow-x-auto">
-                                    {result.matches.map((match, idx) => (
+                                    {result.matches.slice(0, 3).map((match, idx) => (
                                       <div key={idx} className="flex">
-                                        <span className="text-gray-500 dark:text-gray-400 mr-2 select-none w-7 text-right">
+                                        <span className="text-gray-500 dark:text-gray-400 mr-2 select-none w-5 text-right flex-shrink-0">
                                           {match.line}
                                         </span>
                                         <span 
                                           dangerouslySetInnerHTML={{ __html: highlightMatches(match.text) }}
-                                          className="text-gray-800 dark:text-gray-200"
+                                          className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-all"
                                         ></span>
                                       </div>
                                     ))}
+                                    {result.matches.length > 3 && (
+                                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 pl-7">
+                                        ... and {result.matches.length - 3} more matches
+                                      </div>
+                                    )}
                                   </div>
                                 )}
-                                <div className="flex items-center mt-2">
+                                <div className="flex items-center mt-3">
                                   <button
                                     onClick={() => router.push(`/repositories/${result.id.split(':')[0]}`)}
-                                    className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center"
+                                    className="text-xs py-1 px-3 bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/30 rounded flex items-center transition-colors"
                                   >
                                     Open File <FaChevronRight className="ml-1" size={10} />
                                   </button>
@@ -363,37 +374,37 @@ export default function SearchPage() {
                     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden mb-6">
                       <ul className="divide-y dark:divide-gray-700">
                         {results.filter(r => r.type === 'function').map((result) => (
-                          <li key={result.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                          <li key={result.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition duration-150">
                             <div className="flex items-start">
                               <div className="flex-shrink-0 pt-1">
                                 {getResultIcon(result.type)}
                               </div>
                               <div className="ml-3 flex-1">
-                                <div className="flex items-center">
+                                <div className="flex flex-wrap items-center gap-2">
                                   <h3 className="text-md font-medium text-gray-900 dark:text-white">
                                     {result.name}
                                   </h3>
                                   {result.language && (
-                                    <span className="ml-2 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded">
+                                    <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded">
                                       {result.language}
                                     </span>
                                   )}
                                 </div>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                   {result.repository} &gt; {result.path}
                                 </p>
                                 {result.content && (
                                   <div className="mt-2 bg-gray-50 dark:bg-gray-900 p-2 rounded border border-gray-200 dark:border-gray-700 font-mono text-xs overflow-x-auto">
                                     <pre 
-                                      dangerouslySetInnerHTML={{ __html: highlightMatches(result.content) }}
-                                      className="text-gray-800 dark:text-gray-200"
+                                      dangerouslySetInnerHTML={{ __html: highlightMatches(result.content.length > 500 ? result.content.substring(0, 500) + '...' : result.content) }}
+                                      className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-all"
                                     ></pre>
                                   </div>
                                 )}
-                                <div className="flex items-center mt-2">
+                                <div className="flex items-center mt-3">
                                   <button
                                     onClick={() => router.push(`/repositories/${result.id.split(':')[0]}`)}
-                                    className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center"
+                                    className="text-xs py-1 px-3 bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/30 rounded flex items-center transition-colors"
                                   >
                                     Jump to Definition <FaChevronRight className="ml-1" size={10} />
                                   </button>
@@ -408,62 +419,65 @@ export default function SearchPage() {
                   
                   {/* Pagination */}
                   {totalPages > 1 && (
-                    <div className="flex justify-between items-center mt-6">
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                    <div className="flex flex-col sm:flex-row justify-between items-center mt-6 gap-3">
+                      <div className="text-sm text-gray-500 dark:text-gray-400 w-full sm:w-auto text-center sm:text-left">
                         Showing {(currentPage - 1) * resultsPerPage + 1}-
                         {Math.min(currentPage * resultsPerPage, totalResults)} of {totalResults}
                       </div>
-                      <div className="flex space-x-2">
+                      <div className="flex flex-wrap justify-center sm:justify-end gap-1 w-full sm:w-auto">
                         <button
                           onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                           disabled={currentPage === 1}
-                          className={`px-3 py-1 rounded-md ${
-                            currentPage === 1
-                              ? 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500 cursor-not-allowed'
-                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-                          }`}
+                          className="px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-medium bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-200 disabled:opacity-50"
                         >
                           Previous
                         </button>
-                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                          const pageNum = i + 1;
-                          return (
-                            <button
-                              key={pageNum}
-                              onClick={() => setCurrentPage(pageNum)}
-                              className={`px-3 py-1 rounded-md ${
-                                currentPage === pageNum
-                                  ? 'bg-blue-600 text-white'
-                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-                              }`}
-                            >
-                              {pageNum}
-                            </button>
-                          );
-                        })}
-                        {totalPages > 5 && (
-                          <>
-                            <span className="px-1 py-1 text-gray-500 dark:text-gray-400">...</span>
-                            <button
-                              onClick={() => setCurrentPage(totalPages)}
-                              className={`px-3 py-1 rounded-md ${
-                                currentPage === totalPages
-                                  ? 'bg-blue-600 text-white'
-                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-                              }`}
-                            >
-                              {totalPages}
-                            </button>
-                          </>
-                        )}
+                        {Array.from({ length: totalPages }, (_, i) => i + 1)
+                          // Only show a few pages on mobile to prevent overflow
+                          .filter(page => {
+                            // On mobile, only show current page, first page, last page, and adjacent pages
+                            if (window.innerWidth < 640) {
+                              return page === 1 || page === totalPages || 
+                                Math.abs(page - currentPage) <= 1;
+                            }
+                            // On desktop, show more pages
+                            return Math.abs(page - currentPage) <= 2 || page === 1 || page === totalPages;
+                          })
+                          // Add ellipsis markers
+                          .reduce((acc, page, i, arr) => {
+                            if (i > 0 && arr[i - 1] !== page - 1) {
+                              acc.push('ellipsis' + page);
+                            }
+                            acc.push(page);
+                            return acc;
+                          }, [] as (number | string)[])
+                          .map((page, i) => {
+                            if (typeof page === 'string' && page.startsWith('ellipsis')) {
+                              return (
+                                <span key={page} className="px-2 py-1 text-gray-500 dark:text-gray-400">
+                                  ...
+                                </span>
+                              );
+                            }
+                            
+                            return (
+                              <button
+                                key={i}
+                                onClick={() => setCurrentPage(page as number)}
+                                className={`px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-medium ${
+                                  currentPage === page
+                                    ? 'bg-blue-500 text-white'
+                                    : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-200'
+                                }`}
+                              >
+                                {page}
+                              </button>
+                            );
+                          })}
                         <button
                           onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                           disabled={currentPage === totalPages}
-                          className={`px-3 py-1 rounded-md ${
-                            currentPage === totalPages
-                              ? 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500 cursor-not-allowed'
-                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-                          }`}
+                          className="px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-medium bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-200 disabled:opacity-50"
                         >
                           Next
                         </button>

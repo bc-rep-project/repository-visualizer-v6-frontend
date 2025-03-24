@@ -256,50 +256,110 @@ export default function RepositoryList() {
     }
   };
 
-  const renderLanguageBar = (languages: Record<string, number>) => {
-    if (!languages || Object.keys(languages).length === 0) {
-      return <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded"></div>;
+  const getLanguageColor = (language: string) => {
+    // Implement your logic to determine the color based on the language
+    // For example, you can use a switch statement or a mapping object
+    switch (language) {
+      case 'JavaScript':
+        return 'bg-yellow-400';
+      case 'TypeScript':
+        return 'bg-blue-500';
+      case 'Python':
+        return 'bg-blue-600';
+      case 'Java':
+        return 'bg-orange-600';
+      case 'C++':
+        return 'bg-pink-500';
+      case 'C':
+        return 'bg-gray-600';
+      case 'C#':
+        return 'bg-green-600';
+      case 'PHP':
+        return 'bg-purple-500';
+      case 'Ruby':
+        return 'bg-red-600';
+      case 'Go':
+        return 'bg-blue-300';
+      case 'Rust':
+        return 'bg-orange-800';
+      case 'HTML':
+        return 'bg-red-500';
+      case 'CSS':
+        return 'bg-blue-400';
+      case 'SCSS':
+        return 'bg-pink-400';
+      case 'Markdown':
+        return 'bg-gray-500';
+      case 'JSON':
+        return 'bg-yellow-600';
+      case 'YAML':
+        return 'bg-green-400';
+      default:
+        return 'bg-gray-400';
     }
+  };
+
+  const renderLanguageBar = (languages: Record<string, number>) => {
+    // Calculate total size
+    const totalSize = Object.values(languages).reduce((acc, size) => acc + size, 0);
     
-    const totalSize = Object.values(languages).reduce((sum, size) => sum + size, 0);
+    // Sort languages by size (descending)
+    const sortedLanguages = Object.entries(languages)
+      .sort(([, a], [, b]) => b - a)
+      .map(([lang, size]) => ({
+        name: lang.startsWith('.') ? lang.substring(1) : lang,
+        size,
+        percentage: (size / totalSize) * 100
+      }));
     
-    // Color mapping for common languages
-    const languageColors: Record<string, string> = {
-      JavaScript: 'bg-yellow-400',
-      TypeScript: 'bg-blue-500',
-      Python: 'bg-blue-600',
-      Java: 'bg-orange-600',
-      'C++': 'bg-pink-500',
-      C: 'bg-gray-600',
-      'C#': 'bg-green-600',
-      PHP: 'bg-purple-500',
-      Ruby: 'bg-red-600',
-      Go: 'bg-blue-300',
-      Rust: 'bg-orange-800',
-      HTML: 'bg-red-500',
-      CSS: 'bg-blue-400',
-      SCSS: 'bg-pink-400',
-      Markdown: 'bg-gray-500',
-      JSON: 'bg-yellow-600',
-      YAML: 'bg-green-400',
-      Other: 'bg-gray-400'
-    };
+    // For mobile screens, limit to top 3 languages
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+    const displayLanguages = isMobile ? sortedLanguages.slice(0, 3) : sortedLanguages.slice(0, 5);
+    const otherLanguages = isMobile && sortedLanguages.length > 3 
+      ? sortedLanguages.slice(3).reduce((acc, lang) => acc + lang.percentage, 0) 
+      : sortedLanguages.length > 5 
+        ? sortedLanguages.slice(5).reduce((acc, lang) => acc + lang.percentage, 0) 
+        : 0;
     
     return (
-      <div className="h-2 flex rounded overflow-hidden">
-        {Object.entries(languages).map(([language, size], index) => {
-          const percentage = (size / totalSize) * 100;
-          const color = languageColors[language] || 'bg-gray-400';
-          
-          return (
+      <div>
+        <div className="h-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden flex">
+          {displayLanguages.map((lang, i) => (
             <div
-              key={index}
-              className={`${color}`}
-              style={{ width: `${percentage}%` }}
-              title={`${language}: ${formatBytes(size)} (${percentage.toFixed(1)}%)`}
-            ></div>
-          );
-        })}
+              key={i}
+              className="h-full"
+              style={{
+                width: `${lang.percentage}%`,
+                backgroundColor: getLanguageColor(lang.name)
+              }}
+              title={`${lang.name}: ${lang.percentage.toFixed(1)}%`}
+            />
+          ))}
+          {otherLanguages > 0 && (
+            <div
+              className="h-full bg-gray-400 dark:bg-gray-500"
+              style={{ width: `${otherLanguages}%` }}
+              title={`Other: ${otherLanguages.toFixed(1)}%`}
+            />
+          )}
+        </div>
+        <div className="mt-1 flex flex-wrap gap-x-2 gap-y-1 text-xs">
+          {displayLanguages.map((lang, i) => (
+            <div key={i} className="flex items-center">
+              <span
+                className="inline-block w-2 h-2 rounded-full mr-1"
+                style={{ backgroundColor: getLanguageColor(lang.name) }}
+              />
+              <span className="truncate max-w-[80px]">{lang.name}</span>
+            </div>
+          ))}
+          {otherLanguages > 0 && (
+            <div className="flex items-center">
+              <span className="inline-block w-2 h-2 rounded-full mr-1 bg-gray-400 dark:bg-gray-500" />
+              <span>Other</span>
+            </div>
+          )}
+        </div>
       </div>
     );
   };
@@ -339,78 +399,57 @@ export default function RepositoryList() {
         </button>
       </div>
 
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mt-4 space-y-4 sm:space-y-0">
-          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="form-select rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 w-full sm:w-auto"
-            >
-              <option>All Status</option>
-              <option>completed</option>
-              <option>pending</option>
-              <option>failed</option>
-            </select>
-            
-            <select
-              value={languageFilter}
-              onChange={(e) => setLanguageFilter(e.target.value)}
-              className="form-select rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 w-full sm:w-auto"
-            >
-              {languages.map((lang) => (
-                <option key={lang}>{lang}</option>
-              ))}
-            </select>
-            
-            <select
-              value={sizeFilter}
-              onChange={(e) => setSizeFilter(e.target.value)}
-              className="form-select rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 w-full sm:w-auto"
-            >
-              {sizeRanges.map((range) => (
-                <option key={range}>{range}</option>
-              ))}
-            </select>
-            
-            <form onSubmit={handleSearch} className="flex w-full sm:w-auto mt-2 sm:mt-0">
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-6 space-y-4 sm:space-y-0">
+          <div className="w-full sm:w-auto">
+            <form onSubmit={handleSearch} className="relative flex w-full sm:w-auto">
               <input
                 type="text"
-                placeholder="Search repositories..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="rounded-l-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 w-full sm:w-48"
+                className="w-full sm:w-64 px-4 py-2 pr-10 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Search repositories..."
               />
               <button
                 type="submit"
-                className="px-3 py-2 bg-blue-600 text-white rounded-r-md hover:bg-blue-700"
+                className="absolute inset-y-0 right-0 px-3 flex items-center bg-transparent text-gray-500 dark:text-gray-400"
               >
                 <FaSearch />
               </button>
             </form>
           </div>
-          
-          <div className="flex items-center space-x-2">
+
+          <div className="flex flex-wrap justify-center sm:justify-end items-center gap-2 w-full sm:w-auto">
+            <div className="flex space-x-1">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-2 rounded-md ${
+                  viewMode === 'grid'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-200'
+                }`}
+                aria-label="Grid view"
+              >
+                <BsGrid className="h-5 w-5" />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-2 rounded-md ${
+                  viewMode === 'list'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-200'
+                }`}
+                aria-label="List view"
+              >
+                <BsList className="h-5 w-5" />
+              </button>
+            </div>
             <button
-              onClick={() => setViewMode('grid')}
-              className={`p-2 rounded-md ${
-                viewMode === 'grid'
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-200'
-              }`}
-              aria-label="Grid view"
+              onClick={() => handleRefresh()}
+              disabled={isRefreshing}
+              className="p-2 rounded-md bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
+              aria-label="Refresh repositories"
             >
-              <BsGrid className="h-5 w-5" />
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={`p-2 rounded-md ${
-                viewMode === 'list'
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-200'
-              }`}
-              aria-label="List view"
-            >
-              <BsList className="h-5 w-5" />
+              <FaSync className={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`} />
             </button>
             <button
               onClick={() => setIsAddingRepo(true)}
@@ -419,6 +458,40 @@ export default function RepositoryList() {
               <FaPlus className="mr-1" /> Add
             </button>
           </div>
+        </div>
+
+        {/* Filter controls */}
+        <div className="flex flex-wrap gap-2 mb-4">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="All Status">All Status</option>
+            <option value="completed">Completed</option>
+            <option value="pending">Pending</option>
+            <option value="failed">Failed</option>
+          </select>
+          
+          <select
+            value={languageFilter}
+            onChange={(e) => setLanguageFilter(e.target.value)}
+            className="px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            {languages.map((lang) => (
+              <option key={lang} value={lang}>{lang}</option>
+            ))}
+          </select>
+          
+          <select
+            value={sizeFilter}
+            onChange={(e) => setSizeFilter(e.target.value)}
+            className="px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            {sizeRanges.map((range) => (
+              <option key={range} value={range}>{range}</option>
+            ))}
+          </select>
         </div>
       </div>
       
@@ -447,25 +520,25 @@ export default function RepositoryList() {
           {viewMode === 'grid' ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {repositories.map((repo) => (
-          <div
-            key={repo._id}
+                <div
+                  key={repo._id}
                   className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow"
                 >
-                  <div className="p-4">
+                  <div className="p-3 sm:p-4">
                     <div className="flex justify-between items-start mb-2">
-                      <h3 className="text-lg font-medium text-gray-900 dark:text-white truncate">
+                      <h3 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white truncate">
                         {repo.repo_name || repo.repo_url.split('/').pop()?.replace('.git', '') || 'Unnamed Repository'}
                       </h3>
                       <span
-                        className={`text-xs font-medium px-2 py-1 rounded-full ${getStatusColor(
+                        className={`text-xs font-medium px-2 py-0.5 sm:py-1 rounded-full ${getStatusColor(
                           repo.status
                         )}`}
                       >
                         {repo.status}
-              </span>
-            </div>
+                      </span>
+                    </div>
 
-                    <p className="text-sm text-gray-500 dark:text-gray-400 truncate mb-2">
+                    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate mb-2">
                       {repo.repo_url}
                     </p>
                     
@@ -475,38 +548,38 @@ export default function RepositoryList() {
                       </div>
                     )}
                     
-                    <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 mt-3">
+                    <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 mt-2 sm:mt-3">
                       <span>Created: {formatTimeAgo(repo.created_at)}</span>
                       <span>
                         {repo.file_count ? `${repo.file_count} files` : ''}
                         {repo.total_size ? ` · ${formatBytes(repo.total_size)}` : ''}
                       </span>
                     </div>
-                </div>
+                  </div>
 
-                  <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-3 bg-gray-50 dark:bg-gray-800 flex space-x-2">
+                  <div className="border-t border-gray-200 dark:border-gray-700 px-2 sm:px-4 py-2 sm:py-3 bg-gray-50 dark:bg-gray-800 flex flex-wrap gap-2">
                     <Link 
                       href={`/repositories/${repo._id}/details`}
-                      className="flex-1 flex justify-center items-center px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-sm font-medium rounded-md hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+                      className="flex-1 flex justify-center items-center px-2 sm:px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs sm:text-sm font-medium rounded-md hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors min-w-[60px]"
                     >
                       <FaInfoCircle className="mr-1" /> Details
                     </Link>
                     <Link 
                       href={`/repositories/${repo._id}/enhanced`}
-                      className="flex-1 flex justify-center items-center px-3 py-1.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 text-sm font-medium rounded-md hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors"
+                      className="flex-1 flex justify-center items-center px-2 sm:px-3 py-1.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 text-xs sm:text-sm font-medium rounded-md hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors min-w-[60px]"
                     >
                       <FiEye className="mr-1" /> Enhanced
                     </Link>
                     <Link
                       href={`/repositories/${repo._id}/analyze`}
-                      className="flex-1 flex justify-center items-center px-3 py-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-sm font-medium rounded-md hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
+                      className="flex-1 flex justify-center items-center px-2 sm:px-3 py-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs sm:text-sm font-medium rounded-md hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors min-w-[60px]"
                     >
                       <BiAnalyse className="mr-1" /> Analyze
                     </Link>
                     <button
                       onClick={() => handleDeleteRepository(repo._id)}
                       disabled={deleteInProgress === repo._id}
-                      className="flex items-center px-3 py-1.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm font-medium rounded-md hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
+                      className="flex items-center px-2 sm:px-3 py-1.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs sm:text-sm font-medium rounded-md hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
                     >
                       {deleteInProgress === repo._id ? (
                         <LoadingSpinner size="small" />
@@ -562,26 +635,26 @@ export default function RepositoryList() {
                   <div className="flex mt-3 sm:mt-0 space-x-2">
                     <Link
                       href={`/repositories/${repo._id}/details`}
-                      className="flex items-center px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-sm font-medium rounded-md hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+                      className="flex items-center px-2 sm:px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs sm:text-sm font-medium rounded-md hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
                     >
                       <FaInfoCircle className="mr-1" /> Details
                     </Link>
                     <Link
                       href={`/repositories/${repo._id}/enhanced`}
-                      className="flex items-center px-3 py-1.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 text-sm font-medium rounded-md hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors"
+                      className="flex items-center px-2 sm:px-3 py-1.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 text-xs sm:text-sm font-medium rounded-md hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors"
                     >
                       <FiEye className="mr-1" /> Enhanced
                     </Link>
                     <Link
                       href={`/repositories/${repo._id}/analyze`}
-                      className="flex items-center px-3 py-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-sm font-medium rounded-md hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
+                      className="flex items-center px-2 sm:px-3 py-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs sm:text-sm font-medium rounded-md hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
                     >
                       <BiAnalyse className="mr-1" /> Analyze
                     </Link>
                     <button
                       onClick={() => handleDeleteRepository(repo._id)}
                       disabled={deleteInProgress === repo._id}
-                      className="flex items-center px-3 py-1.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm font-medium rounded-md hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
+                      className="flex items-center px-2 sm:px-3 py-1.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm font-medium rounded-md hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
                     >
                       {deleteInProgress === repo._id ? (
                         <LoadingSpinner size="small" />
@@ -599,21 +672,49 @@ export default function RepositoryList() {
       {totalPages > 1 && (
         <div className="flex flex-col sm:flex-row justify-between items-center mt-6 gap-3">
           <div className="text-sm text-gray-500 dark:text-gray-400 w-full sm:w-auto text-center sm:text-left">
-                Showing {repositories.length} of {totalRepos} repositories
+            Showing {repositories.length} of {totalRepos} repositories
           </div>
-              <div className="flex flex-wrap justify-center sm:justify-end gap-1 w-full sm:w-auto">
+          <div className="flex flex-wrap justify-center sm:justify-end gap-1 w-full sm:w-auto">
             <button
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1}
-                  className="px-3 py-1 rounded-md text-sm font-medium bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-200 disabled:opacity-50"
+              className="px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-medium bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-200 disabled:opacity-50"
             >
               Previous
             </button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              // Only show a few pages on mobile to prevent overflow
+              .filter(page => {
+                // On mobile, only show current page, first page, last page, and adjacent pages
+                if (window.innerWidth < 640) {
+                  return page === 1 || page === totalPages || 
+                    Math.abs(page - currentPage) <= 1;
+                }
+                // On desktop, show more pages
+                return Math.abs(page - currentPage) <= 2 || page === 1 || page === totalPages;
+              })
+              // Add ellipsis markers
+              .reduce((acc, page, i, arr) => {
+                if (i > 0 && arr[i - 1] !== page - 1) {
+                  acc.push('ellipsis' + page);
+                }
+                acc.push(page);
+                return acc;
+              }, [] as (number | string)[])
+              .map((page, i) => {
+                if (typeof page === 'string' && page.startsWith('ellipsis')) {
+                  return (
+                    <span key={page} className="px-2 py-1 text-gray-500 dark:text-gray-400">
+                      ...
+                    </span>
+                  );
+                }
+                
+                return (
                   <button
-                    key={page}
-                    onClick={() => handlePageChange(page)}
-                    className={`px-3 py-1 rounded-md text-sm font-medium ${
+                    key={i}
+                    onClick={() => handlePageChange(page as number)}
+                    className={`px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-medium ${
                       currentPage === page
                         ? 'bg-blue-500 text-white'
                         : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-200'
@@ -621,11 +722,12 @@ export default function RepositoryList() {
                   >
                     {page}
                   </button>
-                ))}
+                );
+              })}
             <button
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
-                  className="px-3 py-1 rounded-md text-sm font-medium bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-200 disabled:opacity-50"
+              className="px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-medium bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-200 disabled:opacity-50"
             >
               Next
             </button>

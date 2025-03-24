@@ -34,6 +34,7 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showAllLanguages, setShowAllLanguages] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -158,9 +159,22 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Language Distribution */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 lg:col-span-2">
-            <h2 className="text-lg font-semibold mb-4 dark:text-white">Language Distribution</h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold dark:text-white">Language Distribution</h2>
+              {stats.language_distribution.length > 5 && (
+                <button 
+                  className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                  onClick={() => setShowAllLanguages(!showAllLanguages)}
+                >
+                  {showAllLanguages ? 'Show Less' : 'View All'}
+                </button>
+              )}
+            </div>
             <div className="space-y-4">
-              {stats.language_distribution.map((lang, index) => (
+              {(showAllLanguages 
+                ? stats.language_distribution 
+                : stats.language_distribution.slice(0, 5)
+              ).map((lang, index) => (
                 <div key={index}>
                   <div className="flex justify-between mb-1">
                     <span className="text-sm font-medium dark:text-white">{lang.language}</span>
@@ -174,6 +188,11 @@ export default function DashboardPage() {
                   </div>
                 </div>
               ))}
+              {!showAllLanguages && stats.language_distribution.length > 5 && (
+                <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-3">
+                  +{stats.language_distribution.length - 5} more languages
+                </p>
+              )}
             </div>
           </div>
           
