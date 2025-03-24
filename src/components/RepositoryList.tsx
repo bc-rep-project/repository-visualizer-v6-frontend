@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { FaPlus, FaSearch, FaTrash, FaSync } from 'react-icons/fa';
+import { FaPlus, FaSearch, FaTrash, FaSync, FaInfoCircle } from 'react-icons/fa';
 import { BsGrid, BsList } from 'react-icons/bs';
 import { BiAnalyse } from 'react-icons/bi';
 import { FiEye } from 'react-icons/fi';
@@ -486,6 +486,12 @@ export default function RepositoryList() {
 
                   <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-3 bg-gray-50 dark:bg-gray-800 flex space-x-2">
                     <Link 
+                      href={`/repositories/${repo._id}/details`}
+                      className="flex-1 flex justify-center items-center px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-sm font-medium rounded-md hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+                    >
+                      <FaInfoCircle className="mr-1" /> Details
+                    </Link>
+                    <Link 
                       href={`/repositories/${repo._id}/enhanced`}
                       className="flex-1 flex justify-center items-center px-3 py-1.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 text-sm font-medium rounded-md hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors"
                     >
@@ -554,30 +560,36 @@ export default function RepositoryList() {
             </div>
 
                   <div className="flex mt-3 sm:mt-0 space-x-2">
-                  <Link
+                    <Link
+                      href={`/repositories/${repo._id}/details`}
+                      className="flex items-center px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-sm font-medium rounded-md hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+                    >
+                      <FaInfoCircle className="mr-1" /> Details
+                    </Link>
+                    <Link
                       href={`/repositories/${repo._id}/enhanced`}
                       className="flex items-center px-3 py-1.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 text-sm font-medium rounded-md hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors"
-                  >
+                    >
                       <FiEye className="mr-1" /> Enhanced
-                  </Link>
-                  <Link
+                    </Link>
+                    <Link
                       href={`/repositories/${repo._id}/analyze`}
                       className="flex items-center px-3 py-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-sm font-medium rounded-md hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
-                  >
+                    >
                       <BiAnalyse className="mr-1" /> Analyze
-                  </Link>
-                  <button
-                    onClick={() => handleDeleteRepository(repo._id)}
+                    </Link>
+                    <button
+                      onClick={() => handleDeleteRepository(repo._id)}
                       disabled={deleteInProgress === repo._id}
                       className="flex items-center px-3 py-1.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm font-medium rounded-md hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
-                  >
-                    {deleteInProgress === repo._id ? (
-                      <LoadingSpinner size="small" />
-                    ) : (
+                    >
+                      {deleteInProgress === repo._id ? (
+                        <LoadingSpinner size="small" />
+                      ) : (
                         <FaTrash className="h-4 w-4" />
-                    )}
-                  </button>
-                </div>
+                      )}
+                    </button>
+                  </div>
             </div>
           ))}
         </div>
