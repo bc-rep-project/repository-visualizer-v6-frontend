@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useRouter } from 'next/navigation';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -33,6 +34,7 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -51,6 +53,10 @@ export default function DashboardPage() {
 
     fetchStats();
   }, []);
+
+  const navigateToRepositories = (status: 'completed' | 'failed' | 'pending') => {
+    router.push(`/?status=${status}`);
+  };
 
   if (loading) {
     return (
@@ -100,7 +106,10 @@ export default function DashboardPage() {
         
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <div 
+            className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 cursor-pointer transition-all hover:shadow-lg hover:bg-green-50 dark:hover:bg-green-900/30"
+            onClick={() => navigateToRepositories('completed')}
+          >
             <h2 className="text-lg font-semibold mb-4 dark:text-white">Completed Analyses</h2>
             <div className="flex items-center">
               <div className="bg-green-100 dark:bg-green-900/30 p-3 rounded-full mr-4">
@@ -113,7 +122,10 @@ export default function DashboardPage() {
             </div>
           </div>
           
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <div 
+            className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 cursor-pointer transition-all hover:shadow-lg hover:bg-red-50 dark:hover:bg-red-900/30"
+            onClick={() => navigateToRepositories('failed')}
+          >
             <h2 className="text-lg font-semibold mb-4 dark:text-white">Failed Analyses</h2>
             <div className="flex items-center">
               <div className="bg-red-100 dark:bg-red-900/30 p-3 rounded-full mr-4">
@@ -126,7 +138,10 @@ export default function DashboardPage() {
             </div>
           </div>
           
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <div 
+            className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 cursor-pointer transition-all hover:shadow-lg hover:bg-yellow-50 dark:hover:bg-yellow-900/30"
+            onClick={() => navigateToRepositories('pending')}
+          >
             <h2 className="text-lg font-semibold mb-4 dark:text-white">Pending Analyses</h2>
             <div className="flex items-center">
               <div className="bg-yellow-100 dark:bg-yellow-900/30 p-3 rounded-full mr-4">
