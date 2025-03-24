@@ -6,7 +6,7 @@ import { BsGrid, BsList } from 'react-icons/bs';
 import { BiAnalyse } from 'react-icons/bi';
 import { FiEye } from 'react-icons/fi';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import LoadingSpinner from './LoadingSpinner';
 import axios from 'axios';
 import { repositoryApi } from '../services/api';
@@ -50,6 +50,7 @@ export default function RepositoryList() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   // Size range options
   const sizeRanges = [
@@ -64,15 +65,14 @@ export default function RepositoryList() {
 
   // Check for status parameter in URL
   useEffect(() => {
-    // Get the URL search parameters
-    const urlParams = new URLSearchParams(window.location.search);
-    const statusParam = urlParams.get('status');
+    // Get the status from the URL search parameters
+    const statusParam = searchParams.get('status');
     
     // Set the status filter if the parameter exists
     if (statusParam && ['completed', 'pending', 'failed'].includes(statusParam)) {
       setStatusFilter(statusParam);
     }
-  }, []);
+  }, [searchParams]);
 
   useEffect(() => {
     fetchRepositories();
