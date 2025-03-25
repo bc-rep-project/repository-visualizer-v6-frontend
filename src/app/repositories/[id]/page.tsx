@@ -107,7 +107,7 @@ export default function RepositoryDetail() {
 
   useEffect(() => {
     if (repoId) {
-      fetchRepositoryDetails();
+    fetchRepositoryDetails();
       fetchGitHubData();
     }
   }, [repoId]);
@@ -338,8 +338,8 @@ export default function RepositoryDetail() {
 
   const renderCommits = () => {
     if (githubData && githubData.commits && githubData.commits.length > 0) {
-      return (
-        <div className="space-y-4">
+  return (
+          <div className="space-y-4">
           {githubData.commits.map((commit, index) => (
             <div key={index} className="border-b pb-4 dark:border-gray-700 last:border-0">
               <div className="flex justify-between mb-1">
@@ -376,20 +376,20 @@ export default function RepositoryDetail() {
     } else {
       // Fall back to mock data
       return (
-        <div className="space-y-4">
-          {commits.map((commit, index) => (
-            <div key={index} className="border-b pb-4 dark:border-gray-700 last:border-0">
-              <div className="flex justify-between mb-1">
-                <span className="font-medium dark:text-white">{commit.message}</span>
-                <span className="text-sm text-gray-500 dark:text-gray-400">{commit.date}</span>
-              </div>
-              <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                <span className="mr-2">{commit.hash}</span>
-                <span>by {commit.author}</span>
-              </div>
-            </div>
-          ))}
-        </div>
+                  <div className="space-y-4">
+                    {commits.map((commit, index) => (
+                      <div key={index} className="border-b pb-4 dark:border-gray-700 last:border-0">
+                        <div className="flex justify-between mb-1">
+                          <span className="font-medium dark:text-white">{commit.message}</span>
+                          <span className="text-sm text-gray-500 dark:text-gray-400">{commit.date}</span>
+                        </div>
+                        <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                          <span className="mr-2">{commit.hash}</span>
+                          <span>by {commit.author}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
       );
     }
   };
@@ -456,27 +456,27 @@ export default function RepositoryDetail() {
     } else {
       // Fall back to mock data
       return (
-        <div className="space-y-4">
-          {issues.map((issue, index) => (
-            <div key={index} className="border-b pb-4 dark:border-gray-700 last:border-0">
-              <div className="flex justify-between mb-1">
-                <span className="font-medium dark:text-white">{issue.title}</span>
-                <span className={`px-2 py-1 rounded-full text-xs ${
-                  issue.state === 'open' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                }`}>
-                  {issue.state}
-                </span>
-              </div>
-              <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                <span>#{issue.id}</span>
-                <span className="mx-2">•</span>
-                <span>Opened on {new Date(issue.created_at).toLocaleDateString()}</span>
-                <span className="mx-2">•</span>
-                <span>by {issue.user}</span>
-              </div>
-            </div>
-          ))}
-        </div>
+                  <div className="space-y-4">
+                    {issues.map((issue, index) => (
+                      <div key={index} className="border-b pb-4 dark:border-gray-700 last:border-0">
+                        <div className="flex justify-between mb-1">
+                          <span className="font-medium dark:text-white">{issue.title}</span>
+                          <span className={`px-2 py-1 rounded-full text-xs ${
+                            issue.state === 'open' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                          }`}>
+                            {issue.state}
+                          </span>
+                        </div>
+                        <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                          <span>#{issue.id}</span>
+                          <span className="mx-2">•</span>
+                          <span>Opened on {new Date(issue.created_at).toLocaleDateString()}</span>
+                          <span className="mx-2">•</span>
+                          <span>by {issue.user}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
       );
     }
   };
@@ -526,34 +526,34 @@ export default function RepositoryDetail() {
               </div>
             </div>
           ))}
-        </div>
+                </div>
       );
     } else {
       // Fall back to mock data
       return (
-        <div className="space-y-4">
-          {pullRequests.map((pr, index) => (
-            <div key={index} className="border-b pb-4 dark:border-gray-700 last:border-0">
-              <div className="flex justify-between mb-1">
-                <span className="font-medium dark:text-white">{pr.title}</span>
-                <span className={`px-2 py-1 rounded-full text-xs ${
-                  pr.state === 'open' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 
-                  pr.state === 'merged' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300' :
-                  'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                }`}>
-                  {pr.state}
-                </span>
-              </div>
-              <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                <span>#{pr.id}</span>
-                <span className="mx-2">•</span>
-                <span>Opened on {new Date(pr.created_at).toLocaleDateString()}</span>
-                <span className="mx-2">•</span>
-                <span>by {pr.user}</span>
-              </div>
-            </div>
-          ))}
-        </div>
+                  <div className="space-y-4">
+                    {pullRequests.map((pr, index) => (
+                      <div key={index} className="border-b pb-4 dark:border-gray-700 last:border-0">
+                        <div className="flex justify-between mb-1">
+                          <span className="font-medium dark:text-white">{pr.title}</span>
+                          <span className={`px-2 py-1 rounded-full text-xs ${
+                            pr.state === 'open' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 
+                            pr.state === 'merged' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300' :
+                            'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                          }`}>
+                            {pr.state}
+                          </span>
+                        </div>
+                        <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                          <span>#{pr.id}</span>
+                          <span className="mx-2">•</span>
+                          <span>Opened on {new Date(pr.created_at).toLocaleDateString()}</span>
+                          <span className="mx-2">•</span>
+                          <span>by {pr.user}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
       );
     }
   };
@@ -609,8 +609,8 @@ export default function RepositoryDetail() {
           {repo.description && (
             <div className="mb-4">
               <p className="text-gray-600 dark:text-gray-400">{repo.description}</p>
-            </div>
-          )}
+                </div>
+              )}
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
@@ -897,7 +897,7 @@ export default function RepositoryDetail() {
           )}
         </div>
         <Footer />
-      </div>
+    </div>
     </SettingsProvider>
   );
 } 

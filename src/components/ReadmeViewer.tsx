@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, ComponentPropsWithoutRef } from 'react';
 import ReactMarkdown from 'react-markdown';
-import rehypeHighlight from 'rehype-highlight';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/cjs/styles/prism';
 import rehypeRaw from 'rehype-raw';
 import remarkGfm from 'remark-gfm';
-import 'highlight.js/styles/github-dark.css';
 
 interface ReadmeViewerProps {
   content: string;
@@ -46,8 +46,28 @@ const ReadmeViewer: React.FC<ReadmeViewerProps> = ({ content, filename = 'README
       
       <div className="prose prose-sm dark:prose-invert max-w-none overflow-auto markdown-body">
         <ReactMarkdown
-          rehypePlugins={[rehypeHighlight, rehypeRaw]}
           remarkPlugins={[remarkGfm]}
+          rehypePlugins={[rehypeRaw]}
+          components={{
+            code({ className, children, ...props }: ComponentPropsWithoutRef<'code'> & { inline?: boolean }) {
+              const match = /language-(\w+)/.exec(className || '');
+              const inline = props.inline;
+              
+              return !inline && match ? (
+                <SyntaxHighlighter
+                  style={vscDarkPlus}
+                  language={match[1]}
+                  {...props}
+                >
+                  {String(children).replace(/\n$/, '')}
+                </SyntaxHighlighter>
+              ) : (
+                <code className={className} {...props}>
+                  {children}
+                </code>
+              );
+            }
+          }}
         >
           {displayContent}
         </ReactMarkdown>
