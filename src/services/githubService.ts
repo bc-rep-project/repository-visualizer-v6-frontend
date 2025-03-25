@@ -1,9 +1,13 @@
 import { Octokit } from "@octokit/rest";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
+import axios from "axios";
 
 // Setup dayjs plugins
 dayjs.extend(relativeTime);
+
+// API URL from environment
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // Define interface for GitHub API responses
 export interface GitHubRepository {
@@ -158,22 +162,46 @@ class GitHubService {
   }
   
   /**
+   * Extract repo ID from the repository URL pattern
+   */
+  private getRepoIdFromUrl(repoUrl: string): string | null {
+    try {
+      // Get all repositories
+      return localStorage.getItem(`repo_id_${repoUrl}`);
+    } catch (error) {
+      console.error('Error getting repo ID:', error);
+      return null;
+    }
+  }
+  
+  /**
    * Fetch repository details from GitHub
    */
   async getRepositoryDetails(repoUrl: string): Promise<GitHubRepository | null> {
     try {
-      const parsed = this.parseGitHubUrl(repoUrl);
-      if (!parsed) {
-        throw new Error(`Could not parse GitHub URL: ${repoUrl}`);
+      // First, try to get the repository ID
+      const repoId = this.getRepoIdFromUrl(repoUrl);
+      
+      if (repoId) {
+        // Use our backend API to get repository details
+        const { data } = await axios.get(`${API_URL}/api/repositories/${repoId}/github`);
+        // The repository data is inside the 'repository' field in the response
+        return data.repository || data;
+      } else {
+        // Fall back to direct GitHub API call
+        const parsed = this.parseGitHubUrl(repoUrl);
+        if (!parsed) {
+          throw new Error(`Could not parse GitHub URL: ${repoUrl}`);
+        }
+        
+        const { owner, repo } = parsed;
+        const { data } = await this.octokit.repos.get({
+          owner,
+          repo,
+        });
+        
+        return data as GitHubRepository;
       }
-      
-      const { owner, repo } = parsed;
-      const { data } = await this.octokit.repos.get({
-        owner,
-        repo,
-      });
-      
-      return data as GitHubRepository;
     } catch (error) {
       console.error('Error fetching repository details:', error);
       return null;
@@ -185,19 +213,29 @@ class GitHubService {
    */
   async getCommits(repoUrl: string, perPage = 20): Promise<GitHubCommit[]> {
     try {
-      const parsed = this.parseGitHubUrl(repoUrl);
-      if (!parsed) {
-        throw new Error(`Could not parse GitHub URL: ${repoUrl}`);
+      // First, try to get the repository ID
+      const repoId = this.getRepoIdFromUrl(repoUrl);
+      
+      if (repoId) {
+        // Use our backend API to get commits
+        const { data } = await axios.get(`${API_URL}/api/repositories/${repoId}/github/commits`);
+        return data as GitHubCommit[];
+      } else {
+        // Fall back to direct GitHub API call
+        const parsed = this.parseGitHubUrl(repoUrl);
+        if (!parsed) {
+          throw new Error(`Could not parse GitHub URL: ${repoUrl}`);
+        }
+        
+        const { owner, repo } = parsed;
+        const { data } = await this.octokit.repos.listCommits({
+          owner,
+          repo,
+          per_page: perPage,
+        });
+        
+        return data as GitHubCommit[];
       }
-      
-      const { owner, repo } = parsed;
-      const { data } = await this.octokit.repos.listCommits({
-        owner,
-        repo,
-        per_page: perPage,
-      });
-      
-      return data as GitHubCommit[];
     } catch (error) {
       console.error('Error fetching commits:', error);
       return [];
@@ -209,22 +247,32 @@ class GitHubService {
    */
   async getIssues(repoUrl: string, perPage = 20): Promise<GitHubIssue[]> {
     try {
-      const parsed = this.parseGitHubUrl(repoUrl);
-      if (!parsed) {
-        throw new Error(`Could not parse GitHub URL: ${repoUrl}`);
+      // First, try to get the repository ID
+      const repoId = this.getRepoIdFromUrl(repoUrl);
+      
+      if (repoId) {
+        // Use our backend API to get issues
+        const { data } = await axios.get(`${API_URL}/api/repositories/${repoId}/github/issues`);
+        return data as GitHubIssue[];
+      } else {
+        // Fall back to direct GitHub API call
+        const parsed = this.parseGitHubUrl(repoUrl);
+        if (!parsed) {
+          throw new Error(`Could not parse GitHub URL: ${repoUrl}`);
+        }
+        
+        const { owner, repo } = parsed;
+        const { data } = await this.octokit.issues.listForRepo({
+          owner,
+          repo,
+          state: 'all',
+          per_page: perPage,
+        });
+        
+        // Filter out pull requests, as GitHub API includes PRs in the issues endpoint
+        const issues = data.filter(issue => !('pull_request' in issue)) as GitHubIssue[];
+        return issues;
       }
-      
-      const { owner, repo } = parsed;
-      const { data } = await this.octokit.issues.listForRepo({
-        owner,
-        repo,
-        state: 'all',
-        per_page: perPage,
-      });
-      
-      // Filter out pull requests, as GitHub API includes PRs in the issues endpoint
-      const issues = data.filter(issue => !('pull_request' in issue)) as GitHubIssue[];
-      return issues;
     } catch (error) {
       console.error('Error fetching issues:', error);
       return [];
@@ -236,20 +284,30 @@ class GitHubService {
    */
   async getPullRequests(repoUrl: string, perPage = 20): Promise<GitHubPullRequest[]> {
     try {
-      const parsed = this.parseGitHubUrl(repoUrl);
-      if (!parsed) {
-        throw new Error(`Could not parse GitHub URL: ${repoUrl}`);
+      // First, try to get the repository ID
+      const repoId = this.getRepoIdFromUrl(repoUrl);
+      
+      if (repoId) {
+        // Use our backend API to get pull requests
+        const { data } = await axios.get(`${API_URL}/api/repositories/${repoId}/github/pulls`);
+        return data as GitHubPullRequest[];
+      } else {
+        // Fall back to direct GitHub API call
+        const parsed = this.parseGitHubUrl(repoUrl);
+        if (!parsed) {
+          throw new Error(`Could not parse GitHub URL: ${repoUrl}`);
+        }
+        
+        const { owner, repo } = parsed;
+        const { data } = await this.octokit.pulls.list({
+          owner,
+          repo,
+          state: 'all',
+          per_page: perPage,
+        });
+        
+        return data as GitHubPullRequest[];
       }
-      
-      const { owner, repo } = parsed;
-      const { data } = await this.octokit.pulls.list({
-        owner,
-        repo,
-        state: 'all',
-        per_page: perPage,
-      });
-      
-      return data as GitHubPullRequest[];
     } catch (error) {
       console.error('Error fetching pull requests:', error);
       return [];
@@ -257,121 +315,64 @@ class GitHubService {
   }
   
   /**
-   * Fetch contributors from GitHub
-   */
-  async getContributors(repoUrl: string, perPage = 10): Promise<GitHubContributor[]> {
-    try {
-      const parsed = this.parseGitHubUrl(repoUrl);
-      if (!parsed) {
-        throw new Error(`Could not parse GitHub URL: ${repoUrl}`);
-      }
-      
-      const { owner, repo } = parsed;
-      const { data } = await this.octokit.repos.listContributors({
-        owner,
-        repo,
-        per_page: perPage,
-      });
-      
-      return data as GitHubContributor[];
-    } catch (error) {
-      console.error('Error fetching contributors:', error);
-      return [];
-    }
-  }
-  
-  /**
-   * Fetch README content from GitHub
-   */
-  async getReadmeContent(repoUrl: string): Promise<GitHubFileContent | null> {
-    try {
-      const parsed = this.parseGitHubUrl(repoUrl);
-      if (!parsed) {
-        throw new Error(`Could not parse GitHub URL: ${repoUrl}`);
-      }
-      
-      const { owner, repo } = parsed;
-      const { data } = await this.octokit.repos.getReadme({
-        owner,
-        repo,
-      });
-      
-      return data as GitHubFileContent;
-    } catch (error) {
-      console.error('Error fetching README:', error);
-      return null;
-    }
-  }
-  
-  /**
-   * Fetch a specific file's content from GitHub
-   */
-  async getFileContent(repoUrl: string, path: string): Promise<GitHubFileContent | null> {
-    try {
-      const parsed = this.parseGitHubUrl(repoUrl);
-      if (!parsed) {
-        throw new Error(`Could not parse GitHub URL: ${repoUrl}`);
-      }
-      
-      const { owner, repo } = parsed;
-      const { data } = await this.octokit.repos.getContent({
-        owner,
-        repo,
-        path,
-      });
-      
-      return data as GitHubFileContent;
-    } catch (error) {
-      console.error(`Error fetching file content for ${path}:`, error);
-      return null;
-    }
-  }
-  
-  /**
-   * Fetch languages statistics from GitHub
+   * Fetch languages from GitHub
    */
   async getLanguages(repoUrl: string): Promise<Record<string, number>> {
     try {
-      const parsed = this.parseGitHubUrl(repoUrl);
-      if (!parsed) {
-        throw new Error(`Could not parse GitHub URL: ${repoUrl}`);
+      // First, try to get the repository ID
+      const repoId = this.getRepoIdFromUrl(repoUrl);
+      
+      if (repoId) {
+        // Use our backend API to get languages
+        const { data } = await axios.get(`${API_URL}/api/repositories/${repoId}/github/languages`);
+        return data as Record<string, number>;
+      } else {
+        // Fall back to direct GitHub API call
+        const parsed = this.parseGitHubUrl(repoUrl);
+        if (!parsed) {
+          throw new Error(`Could not parse GitHub URL: ${repoUrl}`);
+        }
+        
+        const { owner, repo } = parsed;
+        const { data } = await this.octokit.repos.listLanguages({
+          owner,
+          repo,
+        });
+        
+        return data as Record<string, number>;
       }
-      
-      const { owner, repo } = parsed;
-      const { data } = await this.octokit.repos.listLanguages({
-        owner,
-        repo,
-      });
-      
-      return data as Record<string, number>;
     } catch (error) {
-      console.error('Error fetching language statistics:', error);
+      console.error('Error fetching languages:', error);
       return {};
     }
   }
   
   /**
-   * Format dates in a more readable way (e.g., "2 days ago")
+   * Store repository ID for a given URL
+   */
+  storeRepoId(repoUrl: string, repoId: string): void {
+    try {
+      localStorage.setItem(`repo_id_${repoUrl}`, repoId);
+    } catch (error) {
+      console.error('Error storing repo ID:', error);
+    }
+  }
+  
+  /**
+   * Format date as relative time
    */
   formatDate(dateString: string): string {
     return dayjs(dateString).fromNow();
   }
   
   /**
-   * Check if the GitHub token is valid and available
+   * Check if GitHub token is valid
    */
   async isTokenValid(): Promise<boolean> {
     try {
-      // If there's no token, it's not valid
-      if (!process.env.NEXT_PUBLIC_GITHUB_TOKEN) {
-        return false;
-      }
-      
-      // Try a simple API call to check if the token works
       await this.octokit.users.getAuthenticated();
       return true;
     } catch (error) {
-      console.error('GitHub token validation failed:', error);
       return false;
     }
   }
