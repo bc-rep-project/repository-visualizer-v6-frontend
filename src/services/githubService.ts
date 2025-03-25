@@ -184,26 +184,40 @@ class GitHubService {
       
       if (repoId) {
         // Use our backend API to get repository details
-        const { data } = await axios.get(`${API_URL}/api/repositories/${repoId}/github`);
-        // The repository data is inside the 'repository' field in the response
-        return data.repository || data;
-      } else {
-        // Fall back to direct GitHub API call
-        const parsed = this.parseGitHubUrl(repoUrl);
-        if (!parsed) {
-          throw new Error(`Could not parse GitHub URL: ${repoUrl}`);
+        try {
+          console.log(`Making API request to ${API_URL}/api/repositories/${repoId}/github`);
+          const { data } = await axios.get(`${API_URL}/api/repositories/${repoId}/github`);
+          // The repository data is inside the 'repository' field in the response
+          return data.repository || data;
+        } catch (error: any) {
+          console.error('Error from backend GitHub API:', error.response?.status, error.response?.data);
+          if (error.response?.status === 403) {
+            console.warn('GitHub API rate limit may have been exceeded or token might be invalid');
+          }
+          // Fall back to direct GitHub API call
+          console.log('Falling back to direct GitHub API call...');
         }
-        
-        const { owner, repo } = parsed;
-        const { data } = await this.octokit.repos.get({
-          owner,
-          repo,
-        });
-        
-        return data as GitHubRepository;
       }
-    } catch (error) {
+      
+      // Fall back to direct GitHub API call
+      const parsed = this.parseGitHubUrl(repoUrl);
+      if (!parsed) {
+        throw new Error(`Could not parse GitHub URL: ${repoUrl}`);
+      }
+      
+      const { owner, repo } = parsed;
+      console.log(`Making direct GitHub API request for ${owner}/${repo}`);
+      const { data } = await this.octokit.repos.get({
+        owner,
+        repo,
+      });
+      
+      return data as GitHubRepository;
+    } catch (error: any) {
       console.error('Error fetching repository details:', error);
+      if (error.response?.status === 403) {
+        console.error('GitHub API rate limit exceeded or invalid token');
+      }
       return null;
     }
   }

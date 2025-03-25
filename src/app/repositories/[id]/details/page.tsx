@@ -114,33 +114,59 @@ export default function RepositoryDetailsPage() {
       }
       
       // Try to get basic repository info first to validate access
-      const repoDetails = await githubService.getRepositoryDetails(repoUrl);
-      if (!repoDetails) {
-        setGithubError('Could not access the GitHub repository. It may be private or may not exist.');
-        setLoadingGitHub(false);
-        return;
-      }
-      
-      // Now fetch all data in parallel
       try {
-        const [commits, issues, pullRequests, languages] = await Promise.all([
-          githubService.getCommits(repoUrl),
-          githubService.getIssues(repoUrl),
-          githubService.getPullRequests(repoUrl),
-          githubService.getLanguages(repoUrl)
-        ]);
+        const repoDetails = await githubService.getRepositoryDetails(repoUrl);
+        if (!repoDetails) {
+          setGithubError('Could not access the GitHub repository. It may be private or may not exist.');
+          setLoadingGitHub(false);
+          return;
+        }
         
-        setGithubCommits(commits);
-        setGithubIssues(issues);
-        setGithubPullRequests(pullRequests);
-        setGithubLanguages(languages);
-        setShowGitHubData(true);
-      } catch (error) {
-        console.error('Error fetching GitHub data:', error);
-        setGithubError('Failed to fetch data from GitHub API. Some data may be incomplete.');
+        // Now fetch all data in parallel
+        try {
+          const [commits, issues, pullRequests, languages] = await Promise.all([
+            githubService.getCommits(repoUrl),
+            githubService.getIssues(repoUrl),
+            githubService.getPullRequests(repoUrl),
+            githubService.getLanguages(repoUrl)
+          ]);
+          
+          setGithubCommits(commits);
+          setGithubIssues(issues);
+          setGithubPullRequests(pullRequests);
+          setGithubLanguages(languages);
+          setShowGitHubData(true);
+        } catch (error: any) {
+          console.error('Error fetching GitHub data:', error);
+          
+          let errorMessage = 'Failed to fetch some GitHub data. ';
+          if (error.response?.status === 403) {
+            errorMessage += 'The API rate limit may have been exceeded or access token may be invalid.';
+          } else if (error.response?.status === 404) {
+            errorMessage += 'Some resources could not be found.';
+          } else {
+            errorMessage += 'Some data may be incomplete.';
+          }
+          
+          setGithubError(errorMessage);
+          
+          // Still set showGitHubData if we at least got repo details
+          setShowGitHubData(true);
+        }
+      } catch (error: any) {
+        console.error('Error getting repository details:', error);
         
-        // Still set showGitHubData if we at least got repo details
-        setShowGitHubData(true);
+        let errorMessage = 'Failed to access GitHub repository data. ';
+        if (error.response?.status === 403) {
+          errorMessage += 'GitHub API rate limit may have been exceeded or authorization failed.';
+        } else if (error.response?.status === 404) {
+          errorMessage += 'The repository could not be found.';
+        } else {
+          errorMessage += 'The repository may be private or GitHub may be temporarily unavailable.';
+        }
+        
+        setGithubError(errorMessage);
+        setLoadingGitHub(false);
       }
     } catch (err) {
       console.error('Error in GitHub data fetching process:', err);
