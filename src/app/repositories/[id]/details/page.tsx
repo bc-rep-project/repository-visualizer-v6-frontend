@@ -25,9 +25,17 @@ interface Repository {
 interface Commit {
   id: string;
   message: string;
-  author: string;
+  author: {
+    name: string;
+    email: string;
+  };
   date: string;
   hash: string;
+  stats?: {
+    additions: number;
+    deletions: number;
+    files_changed: number;
+  };
 }
 
 interface Issue {
@@ -322,15 +330,22 @@ export default function RepositoryDetailsPage() {
                           <p className="font-semibold dark:text-white">{commit.message}</p>
                           <div className="flex justify-between mt-2">
                             <p className="text-gray-600 dark:text-gray-400">
-                              <span className="font-medium">Author:</span> {commit.author}
+                              <span className="font-medium">Author:</span> {commit.author.name} <span className="text-xs">({commit.author.email})</span>
                             </p>
                             <p className="text-gray-600 dark:text-gray-400">
                               {new Date(commit.date).toLocaleString()}
                             </p>
                           </div>
                           <p className="text-gray-500 dark:text-gray-500 text-sm mt-1">
-                            <span className="font-medium">Hash:</span> {commit.hash}
+                            <span className="font-medium">Hash:</span> {commit.hash || commit.id}
                           </p>
+                          {commit.stats && (
+                            <div className="flex space-x-4 mt-2 text-xs text-gray-500 dark:text-gray-400">
+                              <span className="text-green-600 dark:text-green-400">+{commit.stats.additions}</span>
+                              <span className="text-red-600 dark:text-red-400">-{commit.stats.deletions}</span>
+                              <span>{commit.stats.files_changed} files</span>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
