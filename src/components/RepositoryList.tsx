@@ -420,21 +420,21 @@ export default function RepositoryList() {
 
           <div className="flex flex-wrap justify-center sm:justify-end items-center gap-2 w-full sm:w-auto">
             <div className="flex space-x-1">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`p-2 rounded-md ${
-                  viewMode === 'grid'
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`p-2 rounded-md ${
+                viewMode === 'grid'
                     ? 'bg-blue-500 text-white'
                     : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-200'
-                }`}
+              }`}
                 aria-label="Grid view"
-              >
+            >
                 <BsGrid className="h-5 w-5" />
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-2 rounded-md ${
-                  viewMode === 'list'
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`p-2 rounded-md ${
+                viewMode === 'list'
                     ? 'bg-blue-500 text-white'
                     : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-200'
                 }`}
@@ -472,7 +472,7 @@ export default function RepositoryList() {
             <option value="pending">Pending</option>
             <option value="failed">Failed</option>
           </select>
-          
+
           <select
             value={languageFilter}
             onChange={(e) => setLanguageFilter(e.target.value)}
@@ -482,7 +482,7 @@ export default function RepositoryList() {
               <option key={lang} value={lang}>{lang}</option>
             ))}
           </select>
-          
+
           <select
             value={sizeFilter}
             onChange={(e) => setSizeFilter(e.target.value)}
@@ -520,8 +520,8 @@ export default function RepositoryList() {
           {viewMode === 'grid' ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {repositories.map((repo) => (
-                <div
-                  key={repo._id}
+          <div
+            key={repo._id}
                   className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow"
                 >
                   <div className="p-3 sm:p-4">
@@ -535,8 +535,8 @@ export default function RepositoryList() {
                         )}`}
                       >
                         {repo.status}
-                      </span>
-                    </div>
+              </span>
+            </div>
 
                     <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate mb-2">
                       {repo.repo_url}
@@ -555,16 +555,16 @@ export default function RepositoryList() {
                         {repo.total_size ? ` · ${formatBytes(repo.total_size)}` : ''}
                       </span>
                     </div>
-                  </div>
+                </div>
 
                   <div className="border-t border-gray-200 dark:border-gray-700 px-2 sm:px-4 py-2 sm:py-3 bg-gray-50 dark:bg-gray-800 flex flex-wrap gap-2">
-                    <Link 
+                    <Link
                       href={`/repositories/${repo._id}/details`}
                       className="flex-1 flex justify-center items-center px-2 sm:px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs sm:text-sm font-medium rounded-md hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors min-w-[60px]"
                     >
                       <FaInfoCircle className="mr-1" /> Details
                     </Link>
-                    <Link 
+                    <Link
                       href={`/repositories/${repo._id}/enhanced`}
                       className="flex-1 flex justify-center items-center px-2 sm:px-3 py-1.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 text-xs sm:text-sm font-medium rounded-md hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors min-w-[60px]"
                     >
@@ -633,14 +633,14 @@ export default function RepositoryList() {
             </div>
 
                   <div className="flex mt-3 sm:mt-0 space-x-2">
-                    <Link
+                  <Link
                       href={`/repositories/${repo._id}/details`}
                       className="flex items-center px-2 sm:px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs sm:text-sm font-medium rounded-md hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
-                    >
+                  >
                       <FaInfoCircle className="mr-1" /> Details
-                    </Link>
-                    <Link
-                      href={`/repositories/${repo._id}/enhanced`}
+                  </Link>
+                  <Link
+                    href={`/repositories/${repo._id}/enhanced`}
                       className="flex items-center px-2 sm:px-3 py-1.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 text-xs sm:text-sm font-medium rounded-md hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors"
                     >
                       <FiEye className="mr-1" /> Enhanced
@@ -650,19 +650,19 @@ export default function RepositoryList() {
                       className="flex items-center px-2 sm:px-3 py-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs sm:text-sm font-medium rounded-md hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
                     >
                       <BiAnalyse className="mr-1" /> Analyze
-                    </Link>
-                    <button
-                      onClick={() => handleDeleteRepository(repo._id)}
+                  </Link>
+                  <button
+                    onClick={() => handleDeleteRepository(repo._id)}
                       disabled={deleteInProgress === repo._id}
                       className="flex items-center px-2 sm:px-3 py-1.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm font-medium rounded-md hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
-                    >
-                      {deleteInProgress === repo._id ? (
-                        <LoadingSpinner size="small" />
-                      ) : (
+                  >
+                    {deleteInProgress === repo._id ? (
+                      <LoadingSpinner size="small" />
+                    ) : (
                         <FaTrash className="h-4 w-4" />
-                      )}
-                    </button>
-                  </div>
+                    )}
+                  </button>
+                </div>
             </div>
           ))}
         </div>
@@ -706,7 +706,7 @@ export default function RepositoryList() {
                   return (
                     <span key={page} className="px-2 py-1 text-gray-500 dark:text-gray-400">
                       ...
-                    </span>
+            </span>
                   );
                 }
                 

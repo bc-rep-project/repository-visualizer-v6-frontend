@@ -104,14 +104,14 @@ export default function RepositoryAnalyze() {
       // Use a small timeout to ensure the loading UI is visible
       // This makes the user experience better by showing feedback
       setTimeout(() => {
-        const processed = transformAnalysisData(rawData, {
-          showFiles: filterOptions.showFiles,
-          showDirectories: filterOptions.showDirectories,
-          showFunctions: filterOptions.showFunctions,
-          showClasses: filterOptions.showClasses,
-          searchQuery: filterOptions.searchQuery
-        });
-        setProcessedData(processed);
+      const processed = transformAnalysisData(rawData, {
+        showFiles: filterOptions.showFiles,
+        showDirectories: filterOptions.showDirectories,
+        showFunctions: filterOptions.showFunctions,
+        showClasses: filterOptions.showClasses,
+        searchQuery: filterOptions.searchQuery
+      });
+      setProcessedData(processed);
         
         // Small delay before hiding the loading state for better UX
         setTimeout(() => {
@@ -171,8 +171,8 @@ export default function RepositoryAnalyze() {
     console.log(`Toggle filter called for: ${filter}, current value: ${filterOptions[filter]}`);
     setFilterOptions(prev => {
       const newOptions = {
-        ...prev,
-        [filter]: !prev[filter]
+      ...prev,
+      [filter]: !prev[filter]
       };
       console.log(`Filter updated: ${filter} => ${newOptions[filter]}`);
       return newOptions;
@@ -360,119 +360,119 @@ export default function RepositoryAnalyze() {
   return (
     <SettingsProvider>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <Navigation />
-        
+      <Navigation />
+      
         <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-7xl">
-          {repository && (
+        {repository && (
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6 mb-4 sm:mb-6">
               <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 dark:text-white break-words">{repository.name}</h1>
               <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 mt-1 sm:mt-2 break-words">{repository.description || 'No description available'}</p>
               <div className="flex flex-col sm:flex-row sm:items-center mt-3 sm:mt-4 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                 <span className="mb-1 sm:mb-0 sm:mr-4">Owner: {repository.owner}</span>
-                <span>Last updated: {new Date(repository.updatedAt).toLocaleDateString()}</span>
-              </div>
+              <span>Last updated: {new Date(repository.updatedAt).toLocaleDateString()}</span>
             </div>
-          )}
-          
+          </div>
+        )}
+        
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-3 sm:p-4 mb-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex flex-wrap gap-2">
-                <button
+              <button
                   className={`px-2 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm rounded-md ${
                     visualizationType === 'packed' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
                   }`}
                   onClick={() => handleVisualizationTypeChange('packed')}
-                  title="Packed Circles View"
-                >
+                title="Packed Circles View"
+              >
                   <MdOutlineFullscreen className="inline-block mr-0.5 sm:mr-1" /> Packed
-                </button>
-                <button
+              </button>
+              <button
                   className={`px-2 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm rounded-md ${
                     visualizationType === 'graph' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
                   }`}
                   onClick={() => handleVisualizationTypeChange('graph')}
-                  title="Force Graph View"
-                >
+                title="Force Graph View"
+              >
                   <BiZoomIn className="inline-block mr-0.5 sm:mr-1" /> Graph
-                </button>
-                <button
+              </button>
+              <button
                   className={`px-2 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm rounded-md ${
                     visualizationType === 'sunburst' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
                   }`}
                   onClick={() => handleVisualizationTypeChange('sunburst')}
-                  title="Sunburst View"
-                >
+                title="Sunburst View"
+              >
                   <BiZoomOut className="inline-block mr-0.5 sm:mr-1" /> Sunburst
-                </button>
-                <button
+              </button>
+              <button
                   className={`px-2 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm rounded-md ${
                     visualizationType === 'tree' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
                   }`}
                   onClick={() => handleVisualizationTypeChange('tree')}
-                  title="Tree View"
-                >
+                title="Tree View"
+              >
                   <FaFolder className="inline-block mr-0.5 sm:mr-1" /> Tree
-                </button>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  className="px-2 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md flex items-center"
-                  onClick={handleDownloadGraph}
-                  title="Download Analysis Data"
-                >
-                  <FaDownload className="mr-0.5 sm:mr-1" /> Export
-                </button>
-                <button
-                  className="px-2 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md flex items-center"
-                  onClick={handleShareGraph}
-                  title="Share Analysis"
-                >
-                  <FaShare className="mr-0.5 sm:mr-1" /> Share
-                </button>
-              </div>
+              </button>
             </div>
-            
+              <div className="flex gap-2">
+              <button
+                  className="px-2 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md flex items-center"
+                onClick={handleDownloadGraph}
+                title="Download Analysis Data"
+              >
+                  <FaDownload className="mr-0.5 sm:mr-1" /> Export
+              </button>
+              <button
+                  className="px-2 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md flex items-center"
+                onClick={handleShareGraph}
+                title="Share Analysis"
+              >
+                  <FaShare className="mr-0.5 sm:mr-1" /> Share
+              </button>
+            </div>
+          </div>
+          
             <div className="flex flex-wrap justify-between items-center mt-3 gap-2">
               <div className="relative w-full sm:w-64">
-                <input
-                  type="text"
-                  placeholder="Search files, functions..."
-                  value={searchQuery}
-                  onChange={handleSearch}
+              <input
+                type="text"
+                placeholder="Search files, functions..."
+                value={searchQuery}
+                onChange={handleSearch}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                />
-                <FaSearch className="absolute right-3 top-3 text-gray-400" />
-              </div>
-              
+              />
+              <FaSearch className="absolute right-3 top-3 text-gray-400" />
+            </div>
+            
               <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={() => toggleFilter('showFiles')}
+              <button
+                onClick={() => toggleFilter('showFiles')}
                   className={`px-2 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm rounded-md flex items-center transition-all duration-200 ease-in-out ${filterOptions.showFiles ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
                   aria-pressed={filterOptions.showFiles}
-                >
+              >
                   <FaFile className="mr-0.5 sm:mr-1 flex-shrink-0" /> Files
-                </button>
-                <button
-                  onClick={() => toggleFilter('showDirectories')}
+              </button>
+              <button
+                onClick={() => toggleFilter('showDirectories')}
                   className={`px-2 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm rounded-md flex items-center transition-all duration-200 ease-in-out ${filterOptions.showDirectories ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
                   aria-pressed={filterOptions.showDirectories}
-                >
+              >
                   <FaFolder className="mr-0.5 sm:mr-1 flex-shrink-0" /> Dirs
-                </button>
-                <button
-                  onClick={() => toggleFilter('showFunctions')}
+              </button>
+              <button
+                onClick={() => toggleFilter('showFunctions')}
                   className={`px-2 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm rounded-md flex items-center transition-all duration-200 ease-in-out ${filterOptions.showFunctions ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
                   aria-pressed={filterOptions.showFunctions}
-                >
+              >
                   <FaCode className="mr-0.5 sm:mr-1 flex-shrink-0" /> Funcs
-                </button>
-                <button
-                  onClick={() => toggleFilter('showClasses')}
+              </button>
+              <button
+                onClick={() => toggleFilter('showClasses')}
                   className={`px-2 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm rounded-md flex items-center transition-all duration-200 ease-in-out ${filterOptions.showClasses ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
                   aria-pressed={filterOptions.showClasses}
-                >
+              >
                   <FaCubes className="mr-0.5 sm:mr-1 flex-shrink-0" /> Classes
-                </button>
+              </button>
               </div>
             </div>
           </div>
@@ -483,46 +483,46 @@ export default function RepositoryAnalyze() {
               maxHeight: isMobile ? '550px' : '700px',
               ...pulseStyle 
             }}>
-              {renderVisualization()}
-            </div>
+            {renderVisualization()}
           </div>
-          
+        </div>
+        
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6">
             <div className="flex flex-wrap border-b border-gray-200 dark:border-gray-700 mb-4 sm:mb-6 overflow-x-auto whitespace-nowrap">
-              <button
-                onClick={() => setActiveTab('overview')}
+            <button
+              onClick={() => setActiveTab('overview')}
                 className={`px-3 py-2 sm:px-4 sm:py-2 text-sm sm:text-base font-medium ${activeTab === 'overview' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500 dark:text-gray-400'}`}
-              >
-                Overview
-              </button>
-              <button
-                onClick={() => setActiveTab('metrics')}
+            >
+              Overview
+            </button>
+            <button
+              onClick={() => setActiveTab('metrics')}
                 className={`px-3 py-2 sm:px-4 sm:py-2 text-sm sm:text-base font-medium ${activeTab === 'metrics' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500 dark:text-gray-400'}`}
-              >
-                Code Metrics
-              </button>
-              <button
-                onClick={() => setActiveTab('functions')}
+            >
+              Code Metrics
+            </button>
+            <button
+              onClick={() => setActiveTab('functions')}
                 className={`px-3 py-2 sm:px-4 sm:py-2 text-sm sm:text-base font-medium ${activeTab === 'functions' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500 dark:text-gray-400'}`}
-              >
-                Functions & Classes
-              </button>
-              <button
-                onClick={() => setActiveTab('directory')}
+            >
+              Functions & Classes
+            </button>
+            <button
+              onClick={() => setActiveTab('directory')}
                 className={`px-3 py-2 sm:px-4 sm:py-2 text-sm sm:text-base font-medium ${activeTab === 'directory' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500 dark:text-gray-400'}`}
-              >
-                Directory Structure
-              </button>
-            </div>
-            
+            >
+              Directory Structure
+            </button>
+          </div>
+          
             <div className="tab-content overflow-x-auto">
-              {activeTab === 'overview' && rawData && (
+            {activeTab === 'overview' && rawData && (
                 <div className="w-full px-0">
-                  <RepositoryOverview data={rawData} />
+              <RepositoryOverview data={rawData} />
                 </div>
-              )}
-              
-              {activeTab === 'metrics' && rawData && (
+            )}
+            
+            {activeTab === 'metrics' && rawData && (
                 <div className="w-full px-0">
                   {processedData && processedData.tree ? (
                     <CodeMetrics data={processedData.tree} repoId={params.id as string} />
@@ -532,9 +532,9 @@ export default function RepositoryAnalyze() {
                     </div>
                   )}
                 </div>
-              )}
-              
-              {activeTab === 'functions' && rawData && (
+            )}
+            
+            {activeTab === 'functions' && rawData && (
                 <div className="w-full px-0">
                   {/* 
                     FunctionsClassesList expects an array of FileNode objects.
@@ -563,9 +563,9 @@ export default function RepositoryAnalyze() {
                     repoId={params.id as string} 
                   />
                 </div>
-              )}
-              
-              {activeTab === 'directory' && rawData && (
+            )}
+            
+            {activeTab === 'directory' && rawData && (
                 <div className="w-full px-0">
                   <DirectoryStructure 
                     data={(() => {
