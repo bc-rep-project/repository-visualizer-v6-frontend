@@ -2,13 +2,17 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { FaFolder, FaFile, FaCode, FaBell } from 'react-icons/fa';
+import { FaFolder, FaFile, FaCode, FaBell, FaStar, FaCodeBranch, FaExclamationCircle, FaGithub } from 'react-icons/fa';
 import { BiAnalyse } from 'react-icons/bi';
 import { MdDelete } from 'react-icons/md';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import CodeViewer from '@/components/CodeViewer';
 import { SettingsProvider } from '@/contexts/SettingsContext';
 import Navigation from '@/components/Navigation';
+import Footer from '@/components/Footer';
+import githubService from '@/services/githubService';
+import ReadmeViewer from '@/components/ReadmeViewer';
+import LanguageChart from '@/components/LanguageChart';
 
 interface Repository {
   _id: string;
@@ -52,6 +56,29 @@ interface PullRequest {
   user: string;
 }
 
+interface GitHubData {
+  repository: {
+    name: string;
+    full_name: string;
+    html_url: string;
+    description: string;
+    stargazers_count: number;
+    watchers_count: number;
+    forks_count: number;
+    open_issues_count: number;
+    language: string;
+    created_at: string;
+    updated_at: string;
+    pushed_at: string;
+    visibility: string;
+  };
+  commits: any[];
+  issues: any[];
+  pulls: any[];
+  contributors: any[];
+  readme?: any;
+}
+
 export default function RepositoryDetail() {
   const params = useParams();
   const router = useRouter();
@@ -62,7 +89,7 @@ export default function RepositoryDetail() {
   const [commits, setCommits] = useState<Commit[]>([]);
   const [issues, setIssues] = useState<Issue[]>([]);
   const [pullRequests, setPullRequests] = useState<PullRequest[]>([]);
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('structure');
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [fileContent, setFileContent] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -70,10 +97,26 @@ export default function RepositoryDetail() {
   const [breadcrumbs, setBreadcrumbs] = useState<string[]>([]);
   const [functions, setFunctions] = useState<string[]>([]);
   const [classes, setClasses] = useState<string[]>([]);
+  const [githubData, setGithubData] = useState<GitHubData | null>(null);
+  const [isGitHubRepo, setIsGitHubRepo] = useState<boolean>(true);
+  const [githubError, setGithubError] = useState<string | null>(null);
+  const [loadingGitHub, setLoadingGitHub] = useState<boolean>(true);
+  const [githubLanguages, setGithubLanguages] = useState<Record<string, number> | null>(null);
+  const [loadingLanguages, setLoadingLanguages] = useState(false);
+  const [languagesError, setLanguagesError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchRepositoryDetails();
+    if (repoId) {
+      fetchRepositoryDetails();
+      fetchGitHubData();
+    }
   }, [repoId]);
+
+  useEffect(() => {
+    if (isGitHubRepo && githubData) {
+      fetchGitHubLanguages();
+    }
+  }, [isGitHubRepo, githubData]);
 
   const fetchRepositoryDetails = async () => {
     try {
@@ -84,6 +127,14 @@ export default function RepositoryDetail() {
       }
       const data = await response.json();
       setRepository(data);
+      
+      // Check if it's a GitHub repository and fetch GitHub data
+      if (data.repo_url && data.repo_url.includes('github.com')) {
+        await fetchGitHubData();
+      } else {
+        setIsGitHubRepo(false);
+        setLoadingGitHub(false);
+      }
       
       // Mock file structure for demo
       setFileStructure({
@@ -143,6 +194,71 @@ export default function RepositoryDetail() {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchGitHubData = async () => {
+    try {
+      setLoadingGitHub(true);
+      // Fetch GitHub data from our backend endpoint
+      const response = await fetch(`http://localhost:8000/api/repositories/${repoId}/github`);
+      
+      if (!response.ok) {
+        if (response.status === 400) {
+          // Not a GitHub repository or other client error
+          setIsGitHubRepo(false);
+          setGithubError('This is not a GitHub repository or the URL format is not supported.');
+        } else {
+          throw new Error(`Failed to fetch GitHub data: ${response.statusText}`);
+        }
+        return;
+      }
+      
+      const data = await response.json();
+      
+      // Fetch README content
+      try {
+        const readmeResponse = await fetch(`http://localhost:8000/api/repositories/${repoId}/github?path=readme`);
+        if (readmeResponse.ok) {
+          const readmeData = await readmeResponse.json();
+          data.readme = readmeData;
+        }
+      } catch (readmeErr) {
+        console.error('Error fetching README:', readmeErr);
+        // We'll continue even if README fetch fails
+      }
+      
+      setGithubData(data);
+      setIsGitHubRepo(true);
+      setGithubError(null);
+    } catch (err) {
+      console.error('Error fetching GitHub data:', err);
+      setGithubError('Failed to fetch GitHub data. Using mock data instead.');
+    } finally {
+      setLoadingGitHub(false);
+    }
+  };
+
+  const fetchGitHubLanguages = async () => {
+    if (!repoId || !isGitHubRepo) return;
+    
+    try {
+      setLoadingLanguages(true);
+      // Fetch GitHub language statistics
+      const response = await fetch(`http://localhost:8000/api/repositories/${repoId}/github/languages`);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch GitHub language data: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      setGithubLanguages(data);
+      setLanguagesError(null);
+    } catch (err) {
+      console.error('Error fetching GitHub language data:', err);
+      setLanguagesError('Failed to fetch GitHub language statistics.');
+    } finally {
+      setLoadingLanguages(false);
     }
   };
 
@@ -220,6 +336,351 @@ export default function RepositoryDetail() {
     );
   };
 
+  const renderCommits = () => {
+    if (githubData && githubData.commits && githubData.commits.length > 0) {
+      return (
+        <div className="space-y-4">
+          {githubData.commits.map((commit, index) => (
+            <div key={index} className="border-b pb-4 dark:border-gray-700 last:border-0">
+              <div className="flex justify-between mb-1">
+                <span className="font-medium dark:text-white">{commit.commit.message}</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  {new Date(commit.commit.author.date).toLocaleDateString()}
+                </span>
+              </div>
+              <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                <span className="mr-2">{commit.sha.substring(0, 7)}</span>
+                <span>by {commit.author ? commit.author.login : commit.commit.author.name}</span>
+                {commit.author && (
+                  <img 
+                    src={commit.author.avatar_url} 
+                    alt={commit.author.login} 
+                    className="w-5 h-5 rounded-full ml-2"
+                  />
+                )}
+              </div>
+              <div className="mt-2">
+                <a 
+                  href={commit.html_url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                >
+                  View on GitHub
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    } else {
+      // Fall back to mock data
+      return (
+        <div className="space-y-4">
+          {commits.map((commit, index) => (
+            <div key={index} className="border-b pb-4 dark:border-gray-700 last:border-0">
+              <div className="flex justify-between mb-1">
+                <span className="font-medium dark:text-white">{commit.message}</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400">{commit.date}</span>
+              </div>
+              <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                <span className="mr-2">{commit.hash}</span>
+                <span>by {commit.author}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+  };
+
+  const renderIssues = () => {
+    if (githubData && githubData.issues && githubData.issues.length > 0) {
+      return (
+        <div className="space-y-4">
+          {githubData.issues.map((issue, index) => (
+            <div key={index} className="border-b pb-4 dark:border-gray-700 last:border-0">
+              <div className="flex justify-between mb-1">
+                <span className="font-medium dark:text-white">{issue.title}</span>
+                <span className={`px-2 py-1 rounded-full text-xs ${
+                  issue.state === 'open' 
+                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' 
+                    : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                }`}>
+                  {issue.state}
+                </span>
+              </div>
+              <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                <span>#{issue.number}</span>
+                <span className="mx-2">•</span>
+                <span>Opened on {new Date(issue.created_at).toLocaleDateString()}</span>
+                <span className="mx-2">•</span>
+                <span>by {issue.user.login}</span>
+                <img 
+                  src={issue.user.avatar_url} 
+                  alt={issue.user.login} 
+                  className="w-5 h-5 rounded-full ml-2"
+                />
+              </div>
+              {issue.labels && issue.labels.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {issue.labels.map((label, labelIndex) => (
+                    <span 
+                      key={labelIndex}
+                      className="px-2 py-0.5 text-xs rounded-full"
+                      style={{ 
+                        backgroundColor: `#${label.color}20`,
+                        color: `#${label.color}`,
+                        border: `1px solid #${label.color}`
+                      }}
+                    >
+                      {label.name}
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div className="mt-2">
+                <a 
+                  href={issue.html_url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                >
+                  View on GitHub
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    } else {
+      // Fall back to mock data
+      return (
+        <div className="space-y-4">
+          {issues.map((issue, index) => (
+            <div key={index} className="border-b pb-4 dark:border-gray-700 last:border-0">
+              <div className="flex justify-between mb-1">
+                <span className="font-medium dark:text-white">{issue.title}</span>
+                <span className={`px-2 py-1 rounded-full text-xs ${
+                  issue.state === 'open' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                }`}>
+                  {issue.state}
+                </span>
+              </div>
+              <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                <span>#{issue.id}</span>
+                <span className="mx-2">•</span>
+                <span>Opened on {new Date(issue.created_at).toLocaleDateString()}</span>
+                <span className="mx-2">•</span>
+                <span>by {issue.user}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+  };
+
+  const renderPullRequests = () => {
+    if (githubData && githubData.pulls && githubData.pulls.length > 0) {
+      return (
+        <div className="space-y-4">
+          {githubData.pulls.map((pr, index) => (
+            <div key={index} className="border-b pb-4 dark:border-gray-700 last:border-0">
+              <div className="flex justify-between mb-1">
+                <span className="font-medium dark:text-white">{pr.title}</span>
+                <span className={`px-2 py-1 rounded-full text-xs ${
+                  pr.state === 'open' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 
+                  pr.merged_at ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300' :
+                  'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                }`}>
+                  {pr.merged_at ? 'merged' : pr.state}
+                </span>
+              </div>
+              <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                <span>#{pr.number}</span>
+                <span className="mx-2">•</span>
+                <span>Opened on {new Date(pr.created_at).toLocaleDateString()}</span>
+                <span className="mx-2">•</span>
+                <span>by {pr.user.login}</span>
+                <img 
+                  src={pr.user.avatar_url} 
+                  alt={pr.user.login} 
+                  className="w-5 h-5 rounded-full ml-2"
+                />
+              </div>
+              <div className="flex items-center mt-2 text-xs">
+                <span className="bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded text-gray-600 dark:text-gray-300">
+                  {pr.head.ref} → {pr.base.ref}
+                </span>
+              </div>
+              <div className="mt-2">
+                <a 
+                  href={pr.html_url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                >
+                  View on GitHub
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    } else {
+      // Fall back to mock data
+      return (
+        <div className="space-y-4">
+          {pullRequests.map((pr, index) => (
+            <div key={index} className="border-b pb-4 dark:border-gray-700 last:border-0">
+              <div className="flex justify-between mb-1">
+                <span className="font-medium dark:text-white">{pr.title}</span>
+                <span className={`px-2 py-1 rounded-full text-xs ${
+                  pr.state === 'open' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 
+                  pr.state === 'merged' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300' :
+                  'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                }`}>
+                  {pr.state}
+                </span>
+              </div>
+              <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                <span>#{pr.id}</span>
+                <span className="mx-2">•</span>
+                <span>Opened on {new Date(pr.created_at).toLocaleDateString()}</span>
+                <span className="mx-2">•</span>
+                <span>by {pr.user}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+  };
+
+  const renderGitHubInfo = () => {
+    if (!isGitHubRepo) {
+      return null;
+    }
+    
+    if (loadingGitHub) {
+      return (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+          <h2 className="text-lg font-semibold mb-4 dark:text-white">GitHub Information</h2>
+          <LoadingSpinner size="small" message="Loading GitHub data..." />
+        </div>
+      );
+    }
+    
+    if (githubError) {
+      return (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+          <h2 className="text-lg font-semibold mb-4 dark:text-white">GitHub Information</h2>
+          <div className="bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-400 dark:border-yellow-700 text-yellow-700 dark:text-yellow-400 px-4 py-3 rounded">
+            <p>{githubError}</p>
+          </div>
+        </div>
+      );
+    }
+    
+    if (githubData) {
+      const repo = githubData.repository;
+      
+      return (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
+            <h2 className="text-lg font-semibold mb-2 md:mb-0 dark:text-white">GitHub Information</h2>
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center">
+                <FaStar className="text-yellow-400 mr-1" />
+                <span className="font-medium dark:text-white">{repo.stargazers_count}</span>
+              </div>
+              <div className="flex items-center">
+                <FaCodeBranch className="text-gray-500 mr-1" />
+                <span className="font-medium dark:text-white">{repo.forks_count}</span>
+              </div>
+              <div className="flex items-center">
+                <FaExclamationCircle className="text-red-500 mr-1" />
+                <span className="font-medium dark:text-white">{repo.open_issues_count}</span>
+              </div>
+            </div>
+          </div>
+          
+          {repo.description && (
+            <div className="mb-4">
+              <p className="text-gray-600 dark:text-gray-400">{repo.description}</p>
+            </div>
+          )}
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Created</h3>
+              <p className="dark:text-white">{new Date(repo.created_at).toLocaleDateString()}</p>
+            </div>
+            <div>
+              <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Last Updated</h3>
+              <p className="dark:text-white">{new Date(repo.updated_at).toLocaleDateString()}</p>
+            </div>
+            <div>
+              <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Primary Language</h3>
+              <p className="dark:text-white">{repo.language || 'Not specified'}</p>
+            </div>
+            <div>
+              <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Visibility</h3>
+              <p className="dark:text-white capitalize">{repo.visibility}</p>
+            </div>
+          </div>
+          
+          <div className="mt-2">
+            <a 
+              href={repo.html_url} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 px-4 py-2 rounded-md text-sm font-medium flex items-center w-fit dark:text-white"
+            >
+              <FaGithub className="mr-2" /> View on GitHub
+            </a>
+          </div>
+        </div>
+      );
+    }
+    
+    return null;
+  };
+
+  const renderContributors = () => {
+    if (!githubData || !githubData.contributors || githubData.contributors.length === 0) {
+      return null;
+    }
+    
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+        <h2 className="text-lg font-semibold mb-4 dark:text-white">Contributors</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          {githubData.contributors.map((contributor, index) => (
+            <div key={index} className="flex items-center p-3 border rounded-lg dark:border-gray-700">
+              <img 
+                src={contributor.avatar_url} 
+                alt={contributor.login} 
+                className="w-10 h-10 rounded-full mr-3"
+              />
+              <div>
+                <div className="font-medium dark:text-white">{contributor.login}</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  {contributor.contributions} contributions
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+  };
+
   if (loading) {
     return <LoadingSpinner size="large" message="Loading repository details..." />;
   }
@@ -263,264 +724,179 @@ export default function RepositoryDetail() {
                     >
                       <BiAnalyse className="mr-2" /> Analyze
                     </button>
-          <button
+                    <button
                       onClick={() => router.push(`/repositories/${repository._id}/enhanced`)}
                       className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 flex items-center"
-          >
+                    >
                       <FaCode className="mr-2" /> Enhanced
-          </button>
-          <button
-            onClick={deleteRepository}
+                    </button>
+                    <button
+                      onClick={deleteRepository}
                       className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 flex items-center"
-          >
+                    >
                       <MdDelete className="mr-2" /> Delete
-          </button>
-        </div>
-      </div>
-
-      {/* Repository Structure */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm mb-6 p-6">
-        <h2 className="text-lg font-semibold mb-4 dark:text-white">Repository Structure</h2>
-        <div className="bg-gray-100 dark:bg-gray-900 rounded-lg p-6 h-80 flex items-center justify-center">
-          <p className="text-gray-500 dark:text-gray-400">Interactive Repository Graph Visualization</p>
-        </div>
-      </div>
-
-      {/* Stats Panels */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        {/* File Types */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-          <h3 className="text-lg font-semibold mb-4 dark:text-white">File Types</h3>
-          <div className="space-y-4">
-            <div>
-              <div className="flex justify-between mb-1">
-                <span className="text-sm font-medium dark:text-white">.js</span>
-                <span className="text-sm font-medium dark:text-white">45%</span>
+                    </button>
+                  </div>
+                </div>
+                
+                {/* GitHub info */}
+                {renderGitHubInfo()}
               </div>
-              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
-                <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: '45%' }}></div>
+
+              {/* Tabs for different views */}
+              <div className="mb-6">
+                <div className="border-b border-gray-200 dark:border-gray-700">
+                  <nav className="flex space-x-8">
+                    <button
+                      onClick={() => handleTabChange('structure')}
+                      className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                        activeTab === 'structure'
+                          ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                      }`}
+                    >
+                      Repository Structure
+                    </button>
+                    <button
+                      onClick={() => handleTabChange('languages')}
+                      className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                        activeTab === 'languages'
+                          ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                      }`}
+                    >
+                      Languages
+                    </button>
+                    <button
+                      onClick={() => handleTabChange('commits')}
+                      className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                        activeTab === 'commits'
+                          ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                      }`}
+                    >
+                      Commits
+                    </button>
+                    <button
+                      onClick={() => handleTabChange('issues')}
+                      className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                        activeTab === 'issues'
+                          ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                      }`}
+                    >
+                      Issues
+                    </button>
+                    <button
+                      onClick={() => handleTabChange('readme')}
+                      className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                        activeTab === 'readme'
+                          ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                      }`}
+                    >
+                      README
+                    </button>
+                  </nav>
+                </div>
               </div>
-            </div>
-            {/* Add more file types here */}
-          </div>
-        </div>
 
-        {/* Directory Structure */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-          <h3 className="text-lg font-semibold mb-4 dark:text-white">Directory Structure</h3>
-          <ul className="space-y-2">
-            <li className="flex items-center dark:text-white">
-              <FaFolder className="text-yellow-500 mr-2" /> src (156 files)
-            </li>
-            <li className="flex items-center dark:text-white">
-              <FaFolder className="text-yellow-500 mr-2" /> tests (45 files)
-            </li>
-            {/* Add more directories here */}
-          </ul>
-        </div>
-
-        {/* Code Metrics */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-          <h3 className="text-lg font-semibold mb-4 dark:text-white">Code Metrics</h3>
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <span className="dark:text-white">Lines of Code</span>
-              <span className="font-semibold dark:text-white">24,567</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="dark:text-white">Functions</span>
-              <span className="font-semibold dark:text-white">342</span>
-            </div>
-            {/* Add more metrics here */}
-          </div>
-        </div>
-      </div>
-
-      {/* Functions & Classes + Tabs */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {/* Functions & Classes */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-          <h3 className="text-lg font-semibold mb-4 dark:text-white">Functions & Classes</h3>
-          <div className="space-y-4">
-            <div>
-              <h4 className="font-medium mb-2 flex items-center dark:text-white">
-                <FaCode className="mr-2" /> class UserController
-              </h4>
-              <ul className="ml-6 space-y-1">
-                <li className="text-sm text-gray-600 dark:text-gray-400 flex items-center">
-                  <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span> handleSubmit()
-                </li>
-                {/* Add more methods here */}
-              </ul>
-            </div>
-            {/* Add more classes here */}
-          </div>
-        </div>
-
-        {/* Tabs Content */}
-        <div className="md:col-span-3">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
-            {/* Tabs */}
-            <div className="flex border-b dark:border-gray-700">
-              <button
-                className={`px-4 py-2 font-medium ${activeTab === 'overview' ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}
-                onClick={() => setActiveTab('overview')}
-              >
-                Overview
-              </button>
-              <button
-                className={`px-4 py-2 font-medium ${activeTab === 'file-explorer' ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}
-                onClick={() => setActiveTab('file-explorer')}
-              >
-                File Explorer
-              </button>
-              <button
-                className={`px-4 py-2 font-medium ${activeTab === 'commits' ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}
-                onClick={() => setActiveTab('commits')}
-              >
-                Commits
-              </button>
-              <button
-                className={`px-4 py-2 font-medium ${activeTab === 'issues' ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}
-                onClick={() => setActiveTab('issues')}
-              >
-                Issues
-              </button>
-              <button
-                className={`px-4 py-2 font-medium ${activeTab === 'pull-requests' ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}
-                onClick={() => setActiveTab('pull-requests')}
-              >
-                Pull Requests
-              </button>
-            </div>
-
-            {/* Tab Content */}
-            <div className="p-6">
-              {activeTab === 'overview' && (
-                <div>
-                  <h3 className="text-lg font-semibold mb-4 dark:text-white">Repository Overview</h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4">
-                    This repository contains {repository.file_count} files across {repository.directory_count} directories,
-                    with a total size of {formatSize(repository.total_size)}.
-                  </p>
-                  {/* Add more overview content here */}
-                </div>
-              )}
-
-              {activeTab === 'file-explorer' && (
-                <div>
-                  {selectedFile ? (
-                    <div>
-                      <div className="flex items-center mb-4 text-sm text-gray-500 dark:text-gray-400">
-                        {breadcrumbs.map((crumb, index) => (
-                          <React.Fragment key={index}>
-                            {index > 0 && <span className="mx-1">/</span>}
-                            <span>{crumb}</span>
-                          </React.Fragment>
-                        ))}
-                      </div>
-                                <CodeViewer 
-                                  code={fileContent || ''} 
-                                  language={selectedFile.split('.').pop() || 'txt'} 
-                                  fileName={selectedFile.split('/').pop() || 'file'}
-                                />
+              {/* Tab content */}
+              <div className="mb-6">
+                {activeTab === 'structure' && (
+                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                    <h2 className="text-lg font-semibold mb-4 dark:text-white">Repository Structure</h2>
+                    <div className="bg-gray-100 dark:bg-gray-900 rounded-lg p-6 h-80 flex items-center justify-center">
+                      <p className="text-gray-500 dark:text-gray-400">Interactive Repository Graph Visualization</p>
                     </div>
-                  ) : (
-                    <div>
-                      <h3 className="text-lg font-semibold mb-4 dark:text-white">File Explorer</h3>
-                      {fileStructure && renderFileTree(fileStructure)}
+                  </div>
+                )}
+                
+                {activeTab === 'languages' && (
+                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                    <h2 className="text-lg font-semibold mb-4 dark:text-white">Language Distribution</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <h3 className="text-md font-medium mb-3 dark:text-white">Repository Analysis</h3>
+                        {repository.languages && Object.keys(repository.languages).length > 0 ? (
+                          <LanguageChart languages={repository.languages} />
+                        ) : (
+                          <p className="text-gray-500 dark:text-gray-400">No language data available</p>
+                        )}
+                      </div>
+                      <div>
+                        <h3 className="text-md font-medium mb-3 dark:text-white">GitHub Analysis</h3>
+                        {loadingLanguages ? (
+                          <LoadingSpinner size="small" message="Loading GitHub language data..." />
+                        ) : languagesError ? (
+                          <div className="text-red-500 dark:text-red-400">{languagesError}</div>
+                        ) : githubLanguages && Object.keys(githubLanguages).length > 0 ? (
+                          <LanguageChart languages={githubLanguages} />
+                        ) : (
+                          <p className="text-gray-500 dark:text-gray-400">No GitHub language data available</p>
+                        )}
+                      </div>
                     </div>
-                  )}
-                </div>
-              )}
+                  </div>
+                )}
+                
+                {activeTab === 'commits' && (
+                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                    <h2 className="text-lg font-semibold mb-4 dark:text-white">Commit History</h2>
+                    {renderCommits()}
+                  </div>
+                )}
+                
+                {activeTab === 'issues' && (
+                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                    <h2 className="text-lg font-semibold mb-4 dark:text-white">Issues</h2>
+                    {renderIssues()}
+                  </div>
+                )}
+                
+                {activeTab === 'readme' && (
+                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                    <h2 className="text-lg font-semibold mb-4 dark:text-white">README</h2>
+                    {githubData && githubData.readme ? (
+                      <ReadmeViewer content={githubData.readme.content} filename={githubData.readme.name} />
+                    ) : (
+                      <p className="text-gray-500 dark:text-gray-400">No README found for this repository</p>
+                    )}
+                  </div>
+                )}
+              </div>
 
-              {activeTab === 'commits' && (
-                <div>
-                  <h3 className="text-lg font-semibold mb-4 dark:text-white">Commits</h3>
-                  <div className="space-y-4">
-                    {commits.map((commit, index) => (
-                      <div key={index} className="border-b pb-4 dark:border-gray-700 last:border-0">
-                        <div className="flex justify-between mb-1">
-                          <span className="font-medium dark:text-white">{commit.message}</span>
-                          <span className="text-sm text-gray-500 dark:text-gray-400">{commit.date}</span>
-                        </div>
-                        <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                          <span className="mr-2">{commit.hash}</span>
-                          <span>by {commit.author}</span>
+              {/* Contributors */}
+              {githubData && githubData.contributors && githubData.contributors.length > 0 && (
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+                  <h2 className="text-lg font-semibold mb-4 dark:text-white">Contributors</h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    {githubData.contributors.map((contributor, index) => (
+                      <div key={index} className="flex items-center p-3 border rounded-lg dark:border-gray-700">
+                        <img 
+                          src={contributor.avatar_url} 
+                          alt={contributor.login} 
+                          className="w-10 h-10 rounded-full mr-3"
+                        />
+                        <div>
+                          <div className="font-medium dark:text-white">{contributor.login}</div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">
+                            {contributor.contributions} contributions
+                          </div>
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
-
-              {activeTab === 'issues' && (
-                <div>
-                  <h3 className="text-lg font-semibold mb-4 dark:text-white">Issues</h3>
-                  <div className="space-y-4">
-                    {issues.map((issue, index) => (
-                      <div key={index} className="border-b pb-4 dark:border-gray-700 last:border-0">
-                        <div className="flex justify-between mb-1">
-                          <span className="font-medium dark:text-white">{issue.title}</span>
-                          <span className={`px-2 py-1 rounded-full text-xs ${
-                            issue.state === 'open' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                          }`}>
-                            {issue.state}
-                          </span>
-                        </div>
-                        <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                          <span>#{issue.id}</span>
-                          <span className="mx-2">•</span>
-                          <span>Opened on {new Date(issue.created_at).toLocaleDateString()}</span>
-                          <span className="mx-2">•</span>
-                          <span>by {issue.user}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'pull-requests' && (
-                <div>
-                  <h3 className="text-lg font-semibold mb-4 dark:text-white">Pull Requests</h3>
-                  <div className="space-y-4">
-                    {pullRequests.map((pr, index) => (
-                      <div key={index} className="border-b pb-4 dark:border-gray-700 last:border-0">
-                        <div className="flex justify-between mb-1">
-                          <span className="font-medium dark:text-white">{pr.title}</span>
-                          <span className={`px-2 py-1 rounded-full text-xs ${
-                            pr.state === 'open' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 
-                            pr.state === 'merged' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300' :
-                            'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                          }`}>
-                            {pr.state}
-                          </span>
-                        </div>
-                        <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                          <span>#{pr.id}</span>
-                          <span className="mx-2">•</span>
-                          <span>Opened on {new Date(pr.created_at).toLocaleDateString()}</span>
-                          <span className="mx-2">•</span>
-                          <span>by {pr.user}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
             </>
           ) : (
-            <div className="flex justify-center items-center h-64">
-              <LoadingSpinner />
+            <div className="bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-400 dark:border-yellow-700 text-yellow-700 dark:text-yellow-400 px-4 py-3 rounded">
+              <p>Repository not found</p>
             </div>
           )}
         </div>
+        <Footer />
       </div>
     </SettingsProvider>
   );
