@@ -478,8 +478,8 @@ export default function SearchPage() {
                           onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                           disabled={currentPage === totalPages}
                           className="px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-medium bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-200 disabled:opacity-50"
-                        >
-                          Next
+                    >
+                      Next
                     </button>
                   </div>
                 </div>
