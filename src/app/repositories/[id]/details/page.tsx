@@ -493,66 +493,73 @@ export default function RepositoryDetailsPage() {
   return (
     <div className="flex flex-col min-h-screen">
       <Navigation />
-      <main className="container mx-auto px-4 py-6 flex-grow">
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 flex-grow">
         {loading ? (
           <LoadingSpinner size="large" fullPage message="Loading repository details..." />
         ) : error ? (
           <div className="text-red-500 text-center py-8">{error}</div>
         ) : repository ? (
           <>
-            <h1 className="text-3xl font-bold mb-4 dark:text-white">
+            <h1 className="text-2xl sm:text-3xl font-bold mb-2 sm:mb-4 dark:text-white break-words">
               {getRepoName(repository.repo_url)}
             </h1>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
-              <a href={repository.repo_url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+            <div className="flex flex-col sm:flex-row sm:items-center mb-4 sm:mb-6">
+              <a 
+                href={repository.repo_url} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-blue-500 hover:underline text-sm sm:text-base break-words mr-auto"
+              >
                 {repository.repo_url}
               </a>
               <button
                 onClick={() => deleteRepository()}
-                className="ml-4 text-sm text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                className="mt-2 sm:mt-0 text-sm text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 self-start sm:self-center"
               >
                 Delete Repository
               </button>
-            </p>
-
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
-              <h2 className="text-xl font-bold mb-4 dark:text-white">Repository Overview</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                  <div className="text-sm text-gray-500 dark:text-gray-400">Files</div>
-                  <div className="text-xl font-bold text-gray-900 dark:text-white">{repository.file_count}</div>
-        </div>
-                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                  <div className="text-sm text-gray-500 dark:text-gray-400">Directories</div>
-                  <div className="text-xl font-bold text-gray-900 dark:text-white">{repository.directory_count}</div>
       </div>
-                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                  <div className="text-sm text-gray-500 dark:text-gray-400">Total Size</div>
-                  <div className="text-xl font-bold text-gray-900 dark:text-white">{formatSize(repository.total_size)}</div>
+      
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 sm:p-6 mb-6 sm:mb-8">
+              <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4 dark:text-white">Repository Overview</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+                <div className="bg-gray-50 dark:bg-gray-700 p-3 sm:p-4 rounded-lg">
+                  <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Files</div>
+                  <div className="text-base sm:text-xl font-bold text-gray-900 dark:text-white">{repository.file_count}</div>
+                </div>
+                <div className="bg-gray-50 dark:bg-gray-700 p-3 sm:p-4 rounded-lg">
+                  <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Directories</div>
+                  <div className="text-base sm:text-xl font-bold text-gray-900 dark:text-white">{repository.directory_count}</div>
             </div>
-                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                  <div className="text-sm text-gray-500 dark:text-gray-400">Last Updated</div>
-                  <div className="text-xl font-bold text-gray-900 dark:text-white">{new Date(repository.updated_at).toLocaleDateString()}</div>
+                <div className="bg-gray-50 dark:bg-gray-700 p-3 sm:p-4 rounded-lg">
+                  <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Total Size</div>
+                  <div className="text-base sm:text-xl font-bold text-gray-900 dark:text-white">{formatSize(repository.total_size)}</div>
+            </div>
+                <div className="bg-gray-50 dark:bg-gray-700 p-3 sm:p-4 rounded-lg">
+                  <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Last Updated</div>
+                  <div className="text-base sm:text-xl font-bold text-gray-900 dark:text-white">{new Date(repository.updated_at).toLocaleDateString()}</div>
           </div>
         </div>
       </div>
       
             {/* GitHub Section */}
-            <div className="mt-8">
-              <h2 className="text-2xl font-bold mb-4 dark:text-white">GitHub Connection</h2>
+            <div className="mt-6 sm:mt-8">
+              <h2 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4 dark:text-white">GitHub Connection</h2>
               {isGitHubRepo ? (
                 <>
                   {loadingGitHub ? (
                     <LoadingSpinner size="medium" message="Loading GitHub data..." />
                   ) : showGitHubData ? (
                     <div>
-                      {/* Add debugging information */}
-                      <div className="bg-gray-100 dark:bg-gray-800 p-2 mb-4 rounded text-xs">
-                        <p className="font-bold">Debug Info:</p>
-                        <p>Rate Limit Exceeded: {rateLimitExceeded ? 'Yes' : 'No'}</p>
-                        <p>GitHub Error: {githubError || 'None'}</p>
-                        <p>Time to Reset: {timeToReset !== null ? `${timeToReset}ms` : 'Not set'}</p>
-                      </div>
+                      {/* Debug info - Only show in development */}
+                      {process.env.NODE_ENV === 'development' && (
+                        <div className="bg-gray-100 dark:bg-gray-800 p-2 mb-4 rounded text-xs">
+                          <p className="font-bold">Debug Info:</p>
+                          <p>Rate Limit Exceeded: {rateLimitExceeded ? 'Yes' : 'No'}</p>
+                          <p>GitHub Error: {githubError || 'None'}</p>
+                          <p>Time to Reset: {timeToReset !== null ? `${timeToReset}ms` : 'Not set'}</p>
+                        </div>
+                      )}
 
                       {/* Use the renderRateLimitError function instead of duplicating code */}
                       {renderRateLimitError()}
@@ -560,26 +567,28 @@ export default function RepositoryDetailsPage() {
                       {/* Only render tabs if not rate limited */}
                       {!rateLimitExceeded && (
                         <Tabs defaultValue="commits" className="w-full">
-                          <TabsList className="grid w-full grid-cols-4">
-                            <TabsTrigger value="commits">Commits</TabsTrigger>
-                            <TabsTrigger value="issues">Issues</TabsTrigger>
-                            <TabsTrigger value="pulls">Pull Requests</TabsTrigger>
-                            <TabsTrigger value="languages">Languages</TabsTrigger>
-                          </TabsList>
+                          <div className="overflow-x-auto -mx-3 px-3 pb-1">
+                            <TabsList className="grid w-full grid-cols-4 min-w-[400px]">
+                              <TabsTrigger value="commits">Commits</TabsTrigger>
+                              <TabsTrigger value="issues">Issues</TabsTrigger>
+                              <TabsTrigger value="pulls">Pull Requests</TabsTrigger>
+                              <TabsTrigger value="languages">Languages</TabsTrigger>
+                            </TabsList>
+                          </div>
                           <TabsContent value="commits">
                             {githubCommits && githubCommits.length > 0 ? (
-                              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm space-y-4 mt-2">
-                                <h3 className="text-lg font-medium dark:text-white">Recent Commits</h3>
+                              <div className="bg-white dark:bg-gray-800 p-3 sm:p-4 rounded-lg shadow-sm space-y-3 sm:space-y-4 mt-2">
+                                <h3 className="text-base sm:text-lg font-medium dark:text-white">Recent Commits</h3>
                                 <div className="space-y-3">
                                   {githubCommits.slice(0, 5).map((commit) => (
-                                    <div key={commit.sha} className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
-                                      <div className="flex justify-between mb-1">
-                                        <span className="text-sm font-medium dark:text-white">{commit.commit?.author?.name}</span>
+                                    <div key={commit.sha} className="p-2 sm:p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                                      <div className="flex flex-wrap justify-between mb-1">
+                                        <span className="text-xs sm:text-sm font-medium dark:text-white mr-2 mb-1">{commit.commit?.author?.name}</span>
                                         <span className="text-xs text-gray-500 dark:text-gray-400">
                                           {new Date(commit.commit?.author?.date).toLocaleDateString()}
                                         </span>
                                       </div>
-                                      <p className="text-sm text-gray-700 dark:text-gray-300 break-words">{commit.commit?.message}</p>
+                                      <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 break-words">{commit.commit?.message}</p>
                                       <div className="mt-2 flex flex-wrap gap-2">
                                         {commit.stats && (
                                           <>
@@ -600,18 +609,18 @@ export default function RepositoryDetailsPage() {
           </div>
         </div>
                             ) : (
-                              <p className="text-gray-600 dark:text-gray-400">No commits found</p>
+                              <p className="text-gray-600 dark:text-gray-400 p-2">No commits found</p>
                             )}
                           </TabsContent>
                           <TabsContent value="issues">
                             {githubIssues && githubIssues.length > 0 ? (
-                              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm space-y-4 mt-2">
-                                <h3 className="text-lg font-medium dark:text-white">Recent Issues</h3>
+                              <div className="bg-white dark:bg-gray-800 p-3 sm:p-4 rounded-lg shadow-sm space-y-3 sm:space-y-4 mt-2">
+                                <h3 className="text-base sm:text-lg font-medium dark:text-white">Recent Issues</h3>
                                 <div className="space-y-3">
                                   {githubIssues.slice(0, 5).map((issue) => (
-                                    <div key={issue.id} className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
-                                      <div className="flex justify-between mb-1">
-                                        <span className="text-sm font-medium dark:text-white">
+                                    <div key={issue.id} className="p-2 sm:p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                                      <div className="flex flex-wrap justify-between mb-1">
+                                        <span className="text-xs sm:text-sm font-medium dark:text-white max-w-[75%] break-words mr-2 mb-1">
                                           {issue.title}
                                         </span>
                                         <span className={`text-xs px-2 py-1 rounded-full ${
@@ -622,29 +631,29 @@ export default function RepositoryDetailsPage() {
                                           {issue.state}
                                         </span>
       </div>
-                                      <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-2">{issue.body}</p>
-                                      <div className="mt-2 flex items-center text-xs text-gray-500 dark:text-gray-400">
+                                      <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 line-clamp-2">{issue.body}</p>
+                                      <div className="mt-2 flex flex-wrap items-center text-xs text-gray-500 dark:text-gray-400">
                                         <span>By {issue.user?.login || 'Unknown'}</span>
-                                        <span className="mx-2">•</span>
-                                        <span>{new Date(issue.created_at).toLocaleDateString()}</span>
+                                        <span className="mx-2 hidden sm:inline">•</span>
+                                        <span className="mt-1 sm:mt-0">{new Date(issue.created_at).toLocaleDateString()}</span>
                   </div>
                 </div>
               ))}
                                 </div>
             </div>
           ) : (
-                              <p className="text-gray-600 dark:text-gray-400">No issues found</p>
+                              <p className="text-gray-600 dark:text-gray-400 p-2">No issues found</p>
                             )}
                           </TabsContent>
                           <TabsContent value="pulls">
                             {githubPullRequests && githubPullRequests.length > 0 ? (
-                              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm space-y-4 mt-2">
-                                <h3 className="text-lg font-medium dark:text-white">Recent Pull Requests</h3>
+                              <div className="bg-white dark:bg-gray-800 p-3 sm:p-4 rounded-lg shadow-sm space-y-3 sm:space-y-4 mt-2">
+                                <h3 className="text-base sm:text-lg font-medium dark:text-white">Recent Pull Requests</h3>
                                 <div className="space-y-3">
                                   {githubPullRequests.slice(0, 5).map((pr) => (
-                                    <div key={pr.id} className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
-                                      <div className="flex justify-between mb-1">
-                                        <span className="text-sm font-medium dark:text-white">
+                                    <div key={pr.id} className="p-2 sm:p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                                      <div className="flex flex-wrap justify-between mb-1">
+                                        <span className="text-xs sm:text-sm font-medium dark:text-white max-w-[75%] break-words mr-2 mb-1">
                                           {pr.title}
                                         </span>
                                         <span className={`text-xs px-2 py-1 rounded-full ${
@@ -655,46 +664,46 @@ export default function RepositoryDetailsPage() {
                                             : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
                                         }`}>
                                           {pr.merged_at ? 'merged' : pr.state}
-                      </span>
+                                        </span>
                                       </div>
-                                      <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-2">{pr.body}</p>
-                                      <div className="mt-2 flex items-center text-xs text-gray-500 dark:text-gray-400">
+                                      <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 line-clamp-2">{pr.body}</p>
+                                      <div className="mt-2 flex flex-wrap items-center text-xs text-gray-500 dark:text-gray-400">
                                         <span>By {pr.user?.login || 'Unknown'}</span>
-                                        <span className="mx-2">•</span>
-                                        <span>{new Date(pr.created_at).toLocaleDateString()}</span>
-                  </div>
-                </div>
-              ))}
-                                </div>
-            </div>
-          ) : (
-            <p className="text-gray-600 dark:text-gray-400">No pull requests found</p>
-          )}
-                          </TabsContent>
-                          <TabsContent value="languages">
-                            {githubLanguages && Object.keys(githubLanguages).length > 0 ? (
-                              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm mt-2">
-                                <h3 className="text-lg font-medium dark:text-white mb-4">Language Distribution</h3>
-                                <div className="h-64">
-                                  <LanguageChart languages={githubLanguages} />
-                                </div>
-                                <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                                  {Object.entries(githubLanguages).map(([language, bytes]) => (
-                                    <div key={language} className="flex items-center p-2 rounded bg-gray-50 dark:bg-gray-700">
-                                      <div 
-                                        className="w-3 h-3 rounded-full mr-2" 
-                                        style={{ backgroundColor: getLanguageColor(language) }}
-                                      />
-                                      <span className="text-sm font-medium dark:text-gray-200">{language}</span>
-                                      <span className="ml-auto text-xs text-gray-500 dark:text-gray-400">
-                                        {formatBytes(bytes)}
-                                      </span>
+                                        <span className="mx-2 hidden sm:inline">•</span>
+                                        <span className="mt-1 sm:mt-0">{new Date(pr.created_at).toLocaleDateString()}</span>
+                                      </div>
                                     </div>
                                   ))}
         </div>
       </div>
                             ) : (
-                              <p className="text-gray-600 dark:text-gray-400">No language statistics available</p>
+                              <p className="text-gray-600 dark:text-gray-400 p-2">No pull requests found</p>
+                            )}
+                          </TabsContent>
+                          <TabsContent value="languages">
+                            {githubLanguages && Object.keys(githubLanguages).length > 0 ? (
+                              <div className="bg-white dark:bg-gray-800 p-3 sm:p-4 rounded-lg shadow-sm mt-2">
+                                <h3 className="text-base sm:text-lg font-medium dark:text-white mb-3">Language Distribution</h3>
+                                <div className="h-48 sm:h-64">
+                                  <LanguageChart languages={githubLanguages} />
+                                </div>
+                                <div className="mt-3 sm:mt-4 grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 gap-2">
+                                  {Object.entries(githubLanguages).map(([language, bytes]) => (
+                                    <div key={language} className="flex items-center p-2 rounded bg-gray-50 dark:bg-gray-700">
+                                      <div 
+                                        className="w-2 h-2 sm:w-3 sm:h-3 rounded-full mr-2" 
+                                        style={{ backgroundColor: getLanguageColor(language) }}
+                                      />
+                                      <span className="text-xs sm:text-sm font-medium dark:text-gray-200">{language}</span>
+                                      <span className="ml-auto text-xs text-gray-500 dark:text-gray-400">
+                                        {formatBytes(bytes)}
+                      </span>
+                </div>
+              ))}
+            </div>
+                              </div>
+                            ) : (
+                              <p className="text-gray-600 dark:text-gray-400 p-2">No language statistics available</p>
                             )}
                           </TabsContent>
                         </Tabs>
@@ -710,13 +719,13 @@ export default function RepositoryDetailsPage() {
                 <p className="text-gray-600 dark:text-gray-400">
                   This is not a GitHub repository or the repository URL format is not supported.
                 </p>
-              )}
-            </div>
+          )}
+        </div>
           </>
         ) : (
           <div className="text-center py-8">
             <p className="text-gray-600 dark:text-gray-400">Repository not found</p>
-          </div>
+      </div>
         )}
       </main>
       <Footer />
