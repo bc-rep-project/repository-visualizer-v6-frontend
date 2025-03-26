@@ -18,8 +18,8 @@ const nextConfig = {
               script-src 'self' 'unsafe-eval' 'unsafe-inline';
               style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
               font-src 'self' https://fonts.gstatic.com;
-              img-src 'self' data: blob: https://fonts.gstatic.com;
-              connect-src 'self' ${process.env.NEXT_PUBLIC_API_URL || 'https://repository-visualizer-v6-backend.onrender.com'};
+              img-src 'self' data: blob: https://fonts.gstatic.com https://avatars.githubusercontent.com;
+              connect-src 'self' ${process.env.NEXT_PUBLIC_API_URL || 'https://repository-visualizer-v6-backend.onrender.com'} https://api.github.com;
             `.replace(/\s+/g, ' ').trim()
           }
         ]
