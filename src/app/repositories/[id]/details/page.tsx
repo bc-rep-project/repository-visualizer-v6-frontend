@@ -7,7 +7,7 @@ import Link from 'next/link';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
-import githubService, { 
+import { 
   GitHubCommit, 
   GitHubIssue, 
   GitHubPullRequest 
@@ -106,6 +106,84 @@ export default function RepositoryDetailsPage() {
   const [rateLimitTotal, setRateLimitTotal] = useState<string | null>(null);
   const [timeToReset, setTimeToReset] = useState<number | null>(null);
 
+  // Define fetchGitHubData to refresh GitHub data on demand
+  const fetchGitHubData = async (repoUrl: string) => {
+    try {
+      setLoadingGitHub(true);
+      setGithubError(null);
+      setRateLimitExceeded(false);
+      
+      // Debug: check if GitHub token is set
+      console.log('Refreshing GitHub data...');
+      
+      // Validate the GitHub URL
+      if (!repoUrl || !repoUrl.includes('github.com')) {
+        setGithubError('Not a valid GitHub repository URL');
+        setLoadingGitHub(false);
+        return;
+      }
+      
+      if (!repoId) {
+        setGithubError('Repository ID is missing');
+        setLoadingGitHub(false);
+        return;
+      }
+      
+      try {
+        // Get GitHub data for commits, issues, pulls, and languages using our backend API
+        const [commitsResponse, issuesResponse, pullsResponse, languagesResponse] = await Promise.all([
+          axios.get(`${API_URL}/api/repositories/${repoId}/github/commits`),
+          axios.get(`${API_URL}/api/repositories/${repoId}/github/issues`),
+          axios.get(`${API_URL}/api/repositories/${repoId}/github/pulls`), 
+          axios.get(`${API_URL}/api/repositories/${repoId}/github/languages`)
+        ]);
+        
+        // Set the GitHub data
+        setGithubCommits(commitsResponse.data);
+        setGithubIssues(issuesResponse.data);
+        setGithubPullRequests(pullsResponse.data);
+        setGithubLanguages(languagesResponse.data);
+        setShowGitHubData(true);
+        
+      } catch (error: any) {
+        console.error('Error fetching GitHub data:', error);
+        
+        // Check if this is a rate limit error
+        if (error.response?.status === 403 && error.response?.data?.error === 'GitHub API rate limit exceeded') {
+          handleRateLimitError(error.response.data);
+        } else {
+          let errorMessage = 'Failed to fetch GitHub data. ';
+          if (error.response?.status === 403) {
+            errorMessage += 'GitHub API access may be forbidden. The repository might be private or the API token may be invalid.';
+          } else if (error.response?.status === 404) {
+            errorMessage += 'The repository could not be found.';
+          } else {
+            errorMessage += 'GitHub may be temporarily unavailable.';
+          }
+          
+          setGithubError(errorMessage);
+        }
+      }
+    } catch (err: any) {
+      console.error('Error in GitHub data fetching process:', err);
+      setGithubError('Failed to load GitHub data. An unexpected error occurred.');
+    } finally {
+      setLoadingGitHub(false);
+    }
+  };
+  
+  // Add a function to refresh GitHub data
+  const refreshGitHubData = async () => {
+    if (!repository?.repo_url || !isGitHubRepo || !repoId) return;
+    
+    try {
+      await fetchGitHubData(repository.repo_url);
+    } catch (err) {
+      console.error('Error refreshing GitHub data:', err);
+      setGithubError('Failed to refresh GitHub data');
+    }
+  };
+
   // Add a countdown timer effect for rate limit reset
   useEffect(() => {
     let intervalId: NodeJS.Timeout | null = null;
@@ -145,21 +223,61 @@ export default function RepositoryDetailsPage() {
         const repoData = repoResponse.data;
         setRepository(repoData);
         
-        // Store the repository ID for the URL for future GitHub API calls
-        if (repoData.repo_url) {
-          githubService.storeRepoId(repoData.repo_url, repoId);
-        }
-        
         // Check if this is a GitHub repository
         const isGitHub = repoData.repo_url && repoData.repo_url.includes('github.com');
         setIsGitHubRepo(isGitHub);
         
-        // Load mock data for any repository
-        await loadMockData();
-        
-        // If this is a GitHub repo, also fetch GitHub data
+        // Fetch data directly from GitHub endpoints instead of mock endpoints
         if (isGitHub) {
-          await refreshGitHubData();
+          try {
+            // Get GitHub data for commits, issues, pulls, and languages
+            const [commitsResponse, issuesResponse, pullsResponse] = await Promise.all([
+              axios.get(`${API_URL}/api/repositories/${repoId}/github/commits`),
+              axios.get(`${API_URL}/api/repositories/${repoId}/github/issues`),
+              axios.get(`${API_URL}/api/repositories/${repoId}/github/pulls`)
+            ]);
+            
+            // Set the GitHub data
+            setGithubCommits(commitsResponse.data);
+            setGithubIssues(issuesResponse.data);
+            setGithubPullRequests(pullsResponse.data);
+            setShowGitHubData(true);
+            
+            // Get languages data separately to handle any rate limit issues specifically
+            try {
+              const languagesResponse = await axios.get(`${API_URL}/api/repositories/${repoId}/github/languages`);
+              setGithubLanguages(languagesResponse.data);
+            } catch (langError: any) {
+              console.error('Error fetching GitHub languages:', langError);
+              
+              // Check if this is a rate limit error
+              if (langError.response?.status === 403 && langError.response?.data?.error === 'GitHub API rate limit exceeded') {
+                handleRateLimitError(langError.response.data);
+              }
+            }
+          } catch (githubError: any) {
+            console.error('Error fetching GitHub data:', githubError);
+            
+            // Check if this is a rate limit error
+            if (githubError.response?.status === 403 && githubError.response?.data?.error === 'GitHub API rate limit exceeded') {
+              handleRateLimitError(githubError.response.data);
+            } else {
+              setGithubError('Failed to fetch GitHub data. The repository may be private or GitHub may be temporarily unavailable.');
+            }
+          } finally {
+            setLoadingGitHub(false);
+          }
+        } else {
+          // For non-GitHub repos, still get mock data for demonstration purposes
+          const [commitsResponse, prResponse, issuesResponse] = await Promise.all([
+            axios.get(`${API_URL}/api/repositories/${repoId}/commits`),
+            axios.get(`${API_URL}/api/repositories/${repoId}/pulls`),
+            axios.get(`${API_URL}/api/repositories/${repoId}/issues`)
+          ]);
+          
+          setCommits(commitsResponse.data);
+          setPullRequests(prResponse.data);
+          setIssues(issuesResponse.data);
         }
         
         setError(null);
@@ -171,25 +289,25 @@ export default function RepositoryDetailsPage() {
       }
     };
     
-    // Helper function to load mock data
-    const loadMockData = async () => {
-      try {
-        const [commitsResponse, prResponse, issuesResponse] = await Promise.all([
-          axios.get(`${API_URL}/api/repositories/${repoId}/commits`),
-          axios.get(`${API_URL}/api/repositories/${repoId}/pulls`),
-          axios.get(`${API_URL}/api/repositories/${repoId}/issues`)
-        ]);
-        
-        setCommits(commitsResponse.data);
-        setPullRequests(prResponse.data);
-        setIssues(issuesResponse.data);
-      } catch (error) {
-        console.error('Error loading mock data:', error);
-      }
-    };
-    
     fetchRepositoryDetails();
   }, [repoId]);
+
+  // Helper function to handle rate limit errors
+  const handleRateLimitError = (errorData: any) => {
+    setRateLimitExceeded(true);
+    setRateLimitTotal(errorData.rate_limit);
+    setRateLimitRemaining(errorData.rate_remaining);
+    setRateLimitReset(errorData.rate_reset);
+    
+    // Calculate time to reset
+    if (errorData.rate_reset) {
+      const resetTime = parseInt(errorData.rate_reset) * 1000;
+      const now = Date.now();
+      setTimeToReset(Math.max(0, resetTime - now));
+    }
+    
+    setGithubError('GitHub API rate limit exceeded. Please wait until the rate limit resets.');
+  };
 
   const handleCreateIssue = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -280,7 +398,9 @@ export default function RepositoryDetailsPage() {
           <button 
             onClick={() => {
               console.log("Attempting to refresh GitHub data after rate limit reset");
-              refreshGitHubData();
+              if (repository?.repo_url) {
+                refreshGitHubData();
+              }
             }}
             className="mt-3 w-full py-2 px-4 bg-red-600 hover:bg-red-700 text-white rounded transition-colors"
           >
@@ -311,56 +431,6 @@ export default function RepositoryDetailsPage() {
       const resetTime = parseInt(rateLimitReset) * 1000;
       const now = Date.now();
       setTimeToReset(Math.max(0, resetTime - now));
-    }
-  };
-
-  // Add a function to refresh GitHub data
-  const refreshGitHubData = async () => {
-    if (!repository?.repo_url || !isGitHubRepo || !repoId) return;
-    
-    try {
-      setLoadingGitHub(true);
-      setGithubError(null);
-      setRateLimitExceeded(false);
-      
-      // Use direct API endpoints
-      const [githubRepoData, githubCommitsData, githubIssuesData, githubPullsData, githubLanguagesData] = await Promise.all([
-        axios.get(`${API_URL}/api/repositories/${repoId}/github`),
-        axios.get(`${API_URL}/api/repositories/${repoId}/github/commits`),
-        axios.get(`${API_URL}/api/repositories/${repoId}/github/issues`),
-        axios.get(`${API_URL}/api/repositories/${repoId}/github/pulls`),
-        axios.get(`${API_URL}/api/repositories/${repoId}/github/languages`)
-      ]);
-      
-      // Set the GitHub data directly
-      setGithubCommits(githubCommitsData.data || []);
-      setGithubIssues(githubIssuesData.data || []);
-      setGithubPullRequests(githubPullsData.data || []);
-      setGithubLanguages(githubLanguagesData.data || {});
-      setShowGitHubData(true);
-    } catch (err: any) {
-      console.error('Error refreshing GitHub data:', err);
-      
-      // Check if this is a rate limit error
-      if (err.response?.status === 403 && err.response?.data?.error === 'GitHub API rate limit exceeded') {
-        setRateLimitExceeded(true);
-        setRateLimitTotal(err.response.data.rate_limit);
-        setRateLimitRemaining(err.response.data.rate_remaining);
-        setRateLimitReset(err.response.data.rate_reset);
-        
-        // Calculate time to reset
-        if (err.response.data.rate_reset) {
-          const resetTime = parseInt(err.response.data.rate_reset) * 1000;
-          const now = Date.now();
-          setTimeToReset(Math.max(0, resetTime - now));
-        }
-        
-        setGithubError('GitHub API rate limit exceeded. Please wait until the rate limit resets.');
-      } else {
-        setGithubError('Failed to refresh GitHub data. The repository may be private or GitHub API may be temporarily unavailable.');
-      }
-    } finally {
-      setLoadingGitHub(false);
     }
   };
 
@@ -476,11 +546,9 @@ export default function RepositoryDetailsPage() {
                     <LoadingSpinner size="medium" message="Loading GitHub data..." />
                   ) : showGitHubData ? (
                     <div>
-                      {/* Add source info for better clarity */}
+                      {/* Add debugging information */}
                       <div className="bg-gray-100 dark:bg-gray-800 p-2 mb-4 rounded text-xs">
-                        <p className="font-bold">Data Source:</p>
-                        <p>Using GitHub API from <code className="text-xs bg-gray-200 dark:bg-gray-700 px-1 py-0.5 rounded">/api/repositories/{repoId}/github/*</code> endpoints</p>
-                        <p className="font-bold mt-2">Debug Info:</p>
+                        <p className="font-bold">Debug Info:</p>
                         <p>Rate Limit Exceeded: {rateLimitExceeded ? 'Yes' : 'No'}</p>
                         <p>GitHub Error: {githubError || 'None'}</p>
                         <p>Time to Reset: {timeToReset !== null ? `${timeToReset}ms` : 'Not set'}</p>

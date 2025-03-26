@@ -126,52 +126,6 @@ class GitHubService {
     this.octokit = new Octokit({
       auth: token,
     });
-    
-    // Log token status for debugging
-    console.log('GitHub token provided:', Boolean(token), 'Length:', token.length);
-  }
-  
-  /**
-   * Handle GitHub API rate limit errors consistently
-   */
-  private handleRateLimitError(error: any): never {
-    // Extract rate limit information
-    const rateLimitExceeded = 
-      error.response?.status === 403 && 
-      (error.response?.data?.error === 'GitHub API rate limit exceeded' ||
-       error.response?.data?.message?.includes('API rate limit exceeded'));
-    
-    if (rateLimitExceeded) {
-      // Get rate limit details
-      const rateLimitTotal = error.response.data.rate_limit || error.response.headers['x-ratelimit-limit'];
-      const rateLimitRemaining = error.response.data.rate_remaining || error.response.headers['x-ratelimit-remaining'];
-      const rateLimitReset = error.response.data.rate_reset || error.response.headers['x-ratelimit-reset'];
-      
-      // Log detailed rate limit information
-      console.warn('GitHub API Rate Limit Exceeded:', {
-        limit: rateLimitTotal,
-        remaining: rateLimitRemaining,
-        resetTimestamp: rateLimitReset,
-        resetTime: rateLimitReset ? new Date(parseInt(rateLimitReset) * 1000).toLocaleString() : 'Unknown',
-        errorSource: error.response.data.error ? 'Backend API' : 'Direct GitHub API'
-      });
-      
-      // Enhance error with rate limit information
-      const enhancedError = new Error('GitHub API rate limit exceeded');
-      (enhancedError as any).response = error.response;
-      (enhancedError as any).rateLimitInfo = {
-        exceeded: true,
-        total: rateLimitTotal,
-        remaining: rateLimitRemaining,
-        reset: rateLimitReset,
-        resetTime: rateLimitReset ? new Date(parseInt(rateLimitReset) * 1000) : null
-      };
-      
-      throw enhancedError;
-    }
-    
-    // For other errors, just re-throw
-    throw error;
   }
   
   /**
@@ -237,12 +191,9 @@ class GitHubService {
           return data.repository || data;
         } catch (error: any) {
           console.error('Error from backend GitHub API:', error.response?.status, error.response?.data);
-          
-          // Check if this is a rate limit error
-          if (error.response?.status === 403 && error.response?.data?.error === 'GitHub API rate limit exceeded') {
-            return this.handleRateLimitError(error);
+          if (error.response?.status === 403) {
+            console.warn('GitHub API rate limit may have been exceeded or token might be invalid');
           }
-          
           // Fall back to direct GitHub API call
           console.log('Falling back to direct GitHub API call...');
         }
@@ -256,25 +207,18 @@ class GitHubService {
       
       const { owner, repo } = parsed;
       console.log(`Making direct GitHub API request for ${owner}/${repo}`);
+      const { data } = await this.octokit.repos.get({
+        owner,
+        repo,
+      });
       
-      try {
-        const { data } = await this.octokit.repos.get({
-          owner,
-          repo,
-        });
-        return data as GitHubRepository;
-      } catch (error: any) {
-        if (error.status === 403) {
-          return this.handleRateLimitError(error);
-        }
-        throw error;
-      }
+      return data as GitHubRepository;
     } catch (error: any) {
       console.error('Error fetching repository details:', error);
       if (error.response?.status === 403) {
         console.error('GitHub API rate limit exceeded or invalid token');
       }
-      throw error;
+      return null;
     }
   }
   
@@ -403,7 +347,14 @@ class GitHubService {
           
           // Check for rate limit error
           if (error.response?.status === 403 && error.response?.data?.error === 'GitHub API rate limit exceeded') {
-            return this.handleRateLimitError(error);
+            const resetTime = error.response.data.rate_reset ? 
+              new Date(parseInt(error.response.data.rate_reset) * 1000).toLocaleTimeString() : 
+              'unknown time';
+              
+            console.warn(`GitHub API rate limit exceeded. Reset at ${resetTime}`);
+            
+            // Re-throw with enhanced error message to ensure the component can display detailed information
+            throw error;
           }
           
           // Fall back to direct GitHub API call
@@ -419,21 +370,23 @@ class GitHubService {
       
       const { owner, repo } = parsed;
       console.log(`Making direct GitHub API request for languages: ${owner}/${repo}`);
+      const { data } = await this.octokit.repos.listLanguages({
+        owner,
+        repo,
+      });
       
-      try {
-        const { data } = await this.octokit.repos.listLanguages({
-          owner,
-          repo,
-        });
-        return data as Record<string, number>;
-      } catch (error: any) {
-        if (error.status === 403) {
-          return this.handleRateLimitError(error);
-        }
-        throw error;
-      }
+      return data as Record<string, number>;
     } catch (error: any) {
       console.error('Error fetching languages:', error);
+      
+      // Check if this is a GitHub rate limit error
+      if (error.response?.status === 403) {
+        if (error.response?.data?.message?.includes('API rate limit exceeded')) {
+          console.error('GitHub API rate limit exceeded from direct call');
+        }
+      }
+      
+      // Re-throw to allow the component to handle the error display
       throw error;
     }
   }
