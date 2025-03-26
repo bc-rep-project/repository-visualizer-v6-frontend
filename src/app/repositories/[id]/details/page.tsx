@@ -12,6 +12,7 @@ import githubService, {
   GitHubIssue, 
   GitHubPullRequest 
 } from '@/services/githubService';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -97,11 +98,19 @@ export default function RepositoryDetailsPage() {
   const [loadingGitHub, setLoadingGitHub] = useState(false);
   const [githubError, setGithubError] = useState<string | null>(null);
 
+  // Rate limit specific states
+  const [rateLimitExceeded, setRateLimitExceeded] = useState(false);
+  const [rateLimitReset, setRateLimitReset] = useState<string | null>(null);
+  const [rateLimitRemaining, setRateLimitRemaining] = useState<string | null>(null);
+  const [rateLimitTotal, setRateLimitTotal] = useState<string | null>(null);
+  const [timeToReset, setTimeToReset] = useState<number | null>(null);
+
   // Define fetchGitHubData outside of useEffect
   const fetchGitHubData = async (repoUrl: string) => {
     try {
       setLoadingGitHub(true);
       setGithubError(null);
+      setRateLimitExceeded(false);
       
       // Debug: check if GitHub token is set
       console.log('GitHub Token available:', Boolean(process.env.NEXT_PUBLIC_GITHUB_TOKEN));
@@ -139,16 +148,33 @@ export default function RepositoryDetailsPage() {
         } catch (error: any) {
           console.error('Error fetching GitHub data:', error);
           
-          let errorMessage = 'Failed to fetch some GitHub data. ';
-          if (error.response?.status === 403) {
-            errorMessage += 'The API rate limit may have been exceeded or access token may be invalid.';
-          } else if (error.response?.status === 404) {
-            errorMessage += 'Some resources could not be found.';
+          // Check if this is a rate limit error
+          if (error.response?.status === 403 && error.response?.data?.error === 'GitHub API rate limit exceeded') {
+            setRateLimitExceeded(true);
+            setRateLimitTotal(error.response.data.rate_limit);
+            setRateLimitRemaining(error.response.data.rate_remaining);
+            setRateLimitReset(error.response.data.rate_reset);
+            
+            // Calculate time to reset
+            if (error.response.data.rate_reset) {
+              const resetTime = parseInt(error.response.data.rate_reset) * 1000;
+              const now = Date.now();
+              setTimeToReset(Math.max(0, resetTime - now));
+            }
+            
+            setGithubError('GitHub API rate limit exceeded. Please wait until the rate limit resets.');
           } else {
-            errorMessage += 'Some data may be incomplete.';
+            let errorMessage = 'Failed to fetch some GitHub data. ';
+            if (error.response?.status === 403) {
+              errorMessage += 'The API rate limit may have been exceeded or access token may be invalid.';
+            } else if (error.response?.status === 404) {
+              errorMessage += 'Some resources could not be found.';
+            } else {
+              errorMessage += 'Some data may be incomplete.';
+            }
+            
+            setGithubError(errorMessage);
           }
-          
-          setGithubError(errorMessage);
           
           // Still set showGitHubData if we at least got repo details
           setShowGitHubData(true);
@@ -156,19 +182,37 @@ export default function RepositoryDetailsPage() {
       } catch (error: any) {
         console.error('Error getting repository details:', error);
         
-        let errorMessage = 'Failed to access GitHub repository data. ';
-        if (error.response?.status === 403) {
-          errorMessage += 'GitHub API rate limit may have been exceeded or authorization failed.';
-        } else if (error.response?.status === 404) {
-          errorMessage += 'The repository could not be found.';
+        // Check if this is a rate limit error
+        if (error.response?.status === 403 && error.response?.data?.error === 'GitHub API rate limit exceeded') {
+          setRateLimitExceeded(true);
+          setRateLimitTotal(error.response.data.rate_limit);
+          setRateLimitRemaining(error.response.data.rate_remaining);
+          setRateLimitReset(error.response.data.rate_reset);
+          
+          // Calculate time to reset
+          if (error.response.data.rate_reset) {
+            const resetTime = parseInt(error.response.data.rate_reset) * 1000;
+            const now = Date.now();
+            setTimeToReset(Math.max(0, resetTime - now));
+          }
+          
+          setGithubError('GitHub API rate limit exceeded. Please wait until the rate limit resets.');
         } else {
-          errorMessage += 'The repository may be private or GitHub may be temporarily unavailable.';
+          let errorMessage = 'Failed to access GitHub repository data. ';
+          if (error.response?.status === 403) {
+            errorMessage += 'GitHub API rate limit may have been exceeded or authorization failed.';
+          } else if (error.response?.status === 404) {
+            errorMessage += 'The repository could not be found.';
+          } else {
+            errorMessage += 'The repository may be private or GitHub may be temporarily unavailable.';
+          }
+          
+          setGithubError(errorMessage);
         }
         
-        setGithubError(errorMessage);
         setLoadingGitHub(false);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error in GitHub data fetching process:', err);
       setGithubError('Failed to load GitHub data. The repository may be private or the API rate limit may have been exceeded.');
     } finally {
@@ -187,6 +231,29 @@ export default function RepositoryDetailsPage() {
       setGithubError('Failed to refresh GitHub data');
     }
   };
+
+  // Add a countdown timer effect for rate limit reset
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout | null = null;
+    
+    if (timeToReset && timeToReset > 0) {
+      intervalId = setInterval(() => {
+        setTimeToReset(prevTime => {
+          const newTime = prevTime ? prevTime - 1000 : null;
+          if (newTime && newTime <= 0) {
+            // Time's up, clear the interval and allow retrying
+            if (intervalId) clearInterval(intervalId);
+            return 0;
+          }
+          return newTime;
+        });
+      }, 1000);
+    }
+    
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [timeToReset]);
 
   useEffect(() => {
     const fetchRepositoryDetails = async () => {
@@ -269,6 +336,52 @@ export default function RepositoryDetailsPage() {
     }
   };
 
+  // Function to format the time until rate limit reset
+  const formatTimeUntilReset = () => {
+    if (!timeToReset) return 'Unknown time';
+    
+    const totalSeconds = Math.floor(timeToReset / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  // Render a dedicated component for rate limit errors
+  const renderRateLimitError = () => {
+    if (!rateLimitExceeded) return null;
+    
+    return (
+      <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+        <h3 className="text-lg font-medium text-red-800 dark:text-red-300">GitHub API Rate Limit Exceeded</h3>
+        <p className="mt-2 text-sm text-red-700 dark:text-red-400">
+          The GitHub API rate limit has been exceeded. Please wait until the rate limit resets.
+        </p>
+        <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
+          <div className="p-2 bg-red-100 dark:bg-red-800/30 rounded">
+            <span className="font-medium">Limit:</span> {rateLimitTotal || 'Unknown'}
+          </div>
+          <div className="p-2 bg-red-100 dark:bg-red-800/30 rounded">
+            <span className="font-medium">Remaining:</span> {rateLimitRemaining || '0'}
+          </div>
+        </div>
+        <div className="mt-3 p-3 bg-red-100 dark:bg-red-800/30 rounded text-center">
+          <span className="font-medium">Time until reset:</span>
+          <div className="text-xl font-mono mt-1">{formatTimeUntilReset()}</div>
+        </div>
+        {timeToReset === 0 && (
+          <button 
+            onClick={() => repository?.repo_url && fetchGitHubData(repository.repo_url)}
+            className="mt-3 w-full py-2 px-4 bg-red-600 hover:bg-red-700 text-white rounded transition-colors"
+          >
+            Try Again
+          </button>
+        )}
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div className="flex flex-col min-h-screen">
@@ -321,94 +434,149 @@ export default function RepositoryDetailsPage() {
       </div>
     </main>
     <Footer />
-  </div>
-);
-}
+      </div>
+    );
+  }
 
-return (
+  return (
   <div className="flex flex-col min-h-screen">
     <Navigation />
     <main className="flex-grow">
-  <div className="container mx-auto px-4 py-8">
-    <div className="flex justify-between items-center mb-6">
-      <h1 className="text-2xl font-bold dark:text-white">Repository Details</h1>
-      <div className="flex space-x-4">
-        <Link 
-          href={`/repositories/${repoId}/analyze`}
-          className="bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white px-4 py-2 rounded"
-        >
-          Visualize
-        </Link>
-        <Link 
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold dark:text-white">Repository Details</h1>
+        <div className="flex space-x-4">
+          <Link 
+            href={`/repositories/${repoId}/analyze`}
+            className="bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white px-4 py-2 rounded"
+          >
+            Visualize
+          </Link>
+          <Link 
               href="/repositories"
-          className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-        >
-          Back to List
-        </Link>
-      </div>
-    </div>
-    
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden mb-8">
-      <div className="p-6">
-        <h2 className="text-xl font-bold mb-4 dark:text-white">{repository.repo_url}</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <p className="text-gray-600 dark:text-gray-400">
-              <span className="font-semibold">Status:</span> 
-              <span className={`ml-2 px-2 py-1 rounded ${
-                repository.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
-                repository.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-              }`}>
-                {repository.status}
-              </span>
-            </p>
-            <p className="text-gray-600 dark:text-gray-400 mt-2">
-              <span className="font-semibold">Files:</span> {repository.file_count}
-            </p>
-            <p className="text-gray-600 dark:text-gray-400 mt-2">
-              <span className="font-semibold">Directories:</span> {repository.directory_count}
-            </p>
-            <p className="text-gray-600 dark:text-gray-400 mt-2">
-              <span className="font-semibold">Total Size:</span> {(repository.total_size / 1024 / 1024).toFixed(2)} MB
-            </p>
-          </div>
-          <div>
-            <p className="text-gray-600 dark:text-gray-400">
-              <span className="font-semibold">Created:</span> {new Date(repository.created_at).toLocaleString()}
-            </p>
-            <p className="text-gray-600 dark:text-gray-400 mt-2">
-              <span className="font-semibold">Last Updated:</span> {new Date(repository.updated_at).toLocaleString()}
-            </p>
-          </div>
+            className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+          >
+            Back to List
+          </Link>
         </div>
       </div>
-    </div>
-    
-    {/* GitHub Connection Status */}
-    {isGitHubRepo && (
+      
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden mb-8">
         <div className="p-6">
-          <h2 className="text-xl font-bold mb-4 dark:text-white">GitHub Connection</h2>
-          <div className="flex items-center">
-            <div className={`w-3 h-3 rounded-full mr-2 ${
-              showGitHubData ? 'bg-green-500' : loadingGitHub ? 'bg-yellow-500' : 'bg-red-500'
-            }`} />
-            <p className="text-gray-600 dark:text-gray-400">
-              {loadingGitHub 
-                ? 'Connecting to GitHub API...' 
-                : showGitHubData 
-                ? 'Successfully connected to GitHub API'
-                : githubError || 'Could not connect to GitHub API'}
-            </p>
+          <h2 className="text-xl font-bold mb-4 dark:text-white">{repository.repo_url}</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p className="text-gray-600 dark:text-gray-400">
+                <span className="font-semibold">Status:</span> 
+                <span className={`ml-2 px-2 py-1 rounded ${
+                  repository.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
+                  repository.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                  'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                }`}>
+                  {repository.status}
+                </span>
+              </p>
+              <p className="text-gray-600 dark:text-gray-400 mt-2">
+                <span className="font-semibold">Files:</span> {repository.file_count}
+              </p>
+              <p className="text-gray-600 dark:text-gray-400 mt-2">
+                <span className="font-semibold">Directories:</span> {repository.directory_count}
+              </p>
+              <p className="text-gray-600 dark:text-gray-400 mt-2">
+                <span className="font-semibold">Total Size:</span> {(repository.total_size / 1024 / 1024).toFixed(2)} MB
+              </p>
+            </div>
+            <div>
+              <p className="text-gray-600 dark:text-gray-400">
+                <span className="font-semibold">Created:</span> {new Date(repository.created_at).toLocaleString()}
+              </p>
+              <p className="text-gray-600 dark:text-gray-400 mt-2">
+                <span className="font-semibold">Last Updated:</span> {new Date(repository.updated_at).toLocaleString()}
+              </p>
+            </div>
           </div>
-          {process.env.NEXT_PUBLIC_GITHUB_TOKEN 
-            ? <p className="text-sm text-green-600 dark:text-green-400 mt-2">GitHub token is configured</p>
-            : <p className="text-sm text-red-600 dark:text-red-400 mt-2">No GitHub token configured</p>
-          }
         </div>
       </div>
-    )}
+      
+    {/* GitHub Section */}
+    <div className="mt-8">
+      <h2 className="text-2xl font-bold mb-4 dark:text-white">GitHub Connection</h2>
+      {isGitHubRepo ? (
+        <>
+          {loadingGitHub ? (
+            <LoadingSpinner size="medium" message="Loading GitHub data..." />
+          ) : showGitHubData ? (
+            <div>
+              {/* Render rate limit error if applicable */}
+              {renderRateLimitError()}
+              
+              {/* Only render tabs if not rate limited */}
+              {!rateLimitExceeded && (
+                <Tabs defaultValue="commits" className="w-full">
+                  <TabsList className="grid w-full grid-cols-4">
+                    <TabsTrigger value="commits">Commits</TabsTrigger>
+                    <TabsTrigger value="issues">Issues</TabsTrigger>
+                    <TabsTrigger value="pulls">Pull Requests</TabsTrigger>
+                    <TabsTrigger value="languages">Languages</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="commits">
+                    {githubCommits && githubCommits.length > 0 ? (
+                      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm space-y-4 mt-2">
+                        <h3 className="text-lg font-medium dark:text-white">Recent Commits</h3>
+                        <div className="space-y-3">
+                          {githubCommits.slice(0, 5).map((commit) => (
+                            <div key={commit.sha} className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                              <div className="flex justify-between mb-1">
+                                <span className="text-sm font-medium dark:text-white">{commit.commit.author.name}</span>
+                                <span className="text-xs text-gray-500 dark:text-gray-400">{new Date(commit.commit.author.date).toLocaleDateString()}</span>
+                              </div>
+                              <p className="text-sm text-gray-700 dark:text-gray-300 break-words">{commit.commit.message}</p>
+                              <div className="mt-2 flex flex-wrap gap-2">
+                                {commit.stats && (
+                                  <>
+                                    <span className="text-xs px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded-full">
+                                      +{commit.stats.additions}
+                                    </span>
+                                    <span className="text-xs px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 rounded-full">
+                                      -{commit.stats.deletions}
+                                    </span>
+                                    <span className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full">
+                                      {commit.stats.total} files
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-gray-600 dark:text-gray-400">No commits found</p>
+                    )}
+                  </TabsContent>
+                  {/* Other tabs remain the same */}
+                </Tabs>
+              )}
+              
+              {/* Show generic error only if not a rate limit error */}
+              {githubError && !rateLimitExceeded && (
+                <div className="mt-4 text-sm text-red-600 dark:text-red-400">
+                  {githubError}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div>
+              <p className="text-gray-600 dark:text-gray-400">Loading GitHub data...</p>
+            </div>
+          )}
+        </>
+      ) : (
+        <p className="text-gray-600 dark:text-gray-400">
+          This is not a GitHub repository or the repository URL format is not supported.
+        </p>
+      )}
+    </div>
     
     {/* Add GitHub refresh button */}
     {isGitHubRepo && (
@@ -431,9 +599,9 @@ return (
     )}
     
     {/* Languages */}
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden mb-8">
-      <div className="p-6">
-        <h2 className="text-xl font-bold mb-4 dark:text-white">Languages</h2>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden mb-8">
+        <div className="p-6">
+          <h2 className="text-xl font-bold mb-4 dark:text-white">Languages</h2>
         {loadingGitHub && isGitHubRepo ? (
           <div className="flex justify-center">
             <LoadingSpinner size="small" message="Loading GitHub language data..." />
@@ -453,25 +621,25 @@ return (
             </div>
           </div>
         ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {Object.entries(repository.languages).map(([language, count]) => (
-            <div key={language} className="bg-gray-100 dark:bg-gray-700 p-3 rounded">
-              <p className="font-semibold dark:text-white">{language}</p>
-              <p className="text-gray-600 dark:text-gray-400">{count} files</p>
-            </div>
-          ))}
-        </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {Object.entries(repository.languages).map(([language, count]) => (
+              <div key={language} className="bg-gray-100 dark:bg-gray-700 p-3 rounded">
+                <p className="font-semibold dark:text-white">{language}</p>
+                <p className="text-gray-600 dark:text-gray-400">{count} files</p>
+              </div>
+            ))}
+          </div>
         )}
         {githubError && isGitHubRepo && (
           <div className="mt-4 text-sm text-red-600 dark:text-red-400">
             {githubError}
           </div>
         )}
+        </div>
       </div>
-    </div>
-    
+      
         {/* Repository Tabs */}
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden mb-8">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden mb-8">
           <div className="border-b border-gray-200 dark:border-gray-700">
             <nav className="flex overflow-x-auto">
               <button
@@ -507,11 +675,11 @@ return (
             </nav>
           </div>
           
-      <div className="p-6">
+        <div className="p-6">
             {/* Commits Tab */}
             {activeTab === 'commits' && (
               <div>
-        <h2 className="text-xl font-bold mb-4 dark:text-white">Recent Commits</h2>
+          <h2 className="text-xl font-bold mb-4 dark:text-white">Recent Commits</h2>
         {showGitHubData && githubCommits.length > 0 ? (
           <div>
             <h3 className="text-lg font-semibold mb-4 dark:text-white">GitHub Commits</h3>
@@ -563,7 +731,7 @@ return (
         ) : (
           <div>
             <h3 className="text-lg font-semibold mb-4 dark:text-white">Repository Commits</h3>
-            {commits.length > 0 ? (
+          {commits.length > 0 ? (
               <div className="space-y-4">
                 {commits.map((commit) => (
                   <div key={commit.id} className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
@@ -792,36 +960,36 @@ return (
                 </div>
               ))}
             </div>
-          </div>
+        </div>
         ) : pullRequests.length > 0 ? (
-          <div className="space-y-4">
-            {pullRequests.map((pr) => (
-              <div key={pr.id} className="border-b dark:border-gray-700 pb-4">
-                <p className="font-semibold dark:text-white">{pr.title}</p>
-                <p className="text-gray-600 dark:text-gray-400 mt-1">{pr.description}</p>
-                <div className="flex justify-between mt-2">
-                  <p className="text-gray-600 dark:text-gray-400">
-                    <span className="font-medium">Author:</span> {pr.author}
-                  </p>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    <span className="font-medium">Status:</span> 
-                    <span className={`ml-1 ${
-                      pr.status === 'open' ? 'text-blue-600 dark:text-blue-400' :
-                      pr.status === 'merged' ? 'text-purple-600 dark:text-purple-400' :
-                      'text-red-600 dark:text-red-400'
-                    }`}>
-                      {pr.status}
-                    </span>
+            <div className="space-y-4">
+              {pullRequests.map((pr) => (
+                <div key={pr.id} className="border-b dark:border-gray-700 pb-4">
+                  <p className="font-semibold dark:text-white">{pr.title}</p>
+                  <p className="text-gray-600 dark:text-gray-400 mt-1">{pr.description}</p>
+                  <div className="flex justify-between mt-2">
+                    <p className="text-gray-600 dark:text-gray-400">
+                      <span className="font-medium">Author:</span> {pr.author}
+                    </p>
+                    <p className="text-gray-600 dark:text-gray-400">
+                      <span className="font-medium">Status:</span> 
+                      <span className={`ml-1 ${
+                        pr.status === 'open' ? 'text-blue-600 dark:text-blue-400' :
+                        pr.status === 'merged' ? 'text-purple-600 dark:text-purple-400' :
+                        'text-red-600 dark:text-red-400'
+                      }`}>
+                        {pr.status}
+                      </span>
+                    </p>
+                  </div>
+                  <p className="text-gray-500 dark:text-gray-500 text-sm mt-1">
+                    <span className="font-medium">Branch:</span> {pr.branch}
                   </p>
                 </div>
-                <p className="text-gray-500 dark:text-gray-500 text-sm mt-1">
-                  <span className="font-medium">Branch:</span> {pr.branch}
-                </p>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-gray-600 dark:text-gray-400">No pull requests found</p>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-600 dark:text-gray-400">No pull requests found</p>
         )}
         {githubError && isGitHubRepo && (
           <div className="mt-4 text-sm text-red-600 dark:text-red-400">
@@ -829,12 +997,12 @@ return (
           </div>
         )}
               </div>
-            )}
-          </div>
+          )}
+        </div>
       </div>
     </div>
     </main>
     <Footer />
-  </div>
-);
+    </div>
+  );
 } 

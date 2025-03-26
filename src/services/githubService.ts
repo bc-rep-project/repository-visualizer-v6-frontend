@@ -329,7 +329,7 @@ class GitHubService {
   }
   
   /**
-   * Fetch languages from GitHub
+   * Fetch repository languages from GitHub
    */
   async getLanguages(repoUrl: string): Promise<Record<string, number>> {
     try {
@@ -338,26 +338,56 @@ class GitHubService {
       
       if (repoId) {
         // Use our backend API to get languages
-        const { data } = await axios.get(`${API_URL}/api/repositories/${repoId}/github/languages`);
-        return data as Record<string, number>;
-      } else {
-        // Fall back to direct GitHub API call
-        const parsed = this.parseGitHubUrl(repoUrl);
-        if (!parsed) {
-          throw new Error(`Could not parse GitHub URL: ${repoUrl}`);
+        try {
+          console.log(`Making API request to ${API_URL}/api/repositories/${repoId}/github/languages`);
+          const { data } = await axios.get(`${API_URL}/api/repositories/${repoId}/github/languages`);
+          return data as Record<string, number>;
+        } catch (error: any) {
+          console.error('Error from backend GitHub languages API:', error.response?.status, error.response?.data);
+          
+          // Check for rate limit error
+          if (error.response?.status === 403 && error.response?.data?.error === 'GitHub API rate limit exceeded') {
+            const resetTime = error.response.data.rate_reset ? 
+              new Date(parseInt(error.response.data.rate_reset) * 1000).toLocaleTimeString() : 
+              'unknown time';
+              
+            console.warn(`GitHub API rate limit exceeded. Reset at ${resetTime}`);
+            
+            // Re-throw with enhanced error message to ensure the component can display detailed information
+            throw error;
+          }
+          
+          // Fall back to direct GitHub API call
+          console.log('Falling back to direct GitHub API call for languages...');
         }
-        
-        const { owner, repo } = parsed;
-        const { data } = await this.octokit.repos.listLanguages({
-          owner,
-          repo,
-        });
-        
-        return data as Record<string, number>;
       }
-    } catch (error) {
+      
+      // Fall back to direct GitHub API call
+      const parsed = this.parseGitHubUrl(repoUrl);
+      if (!parsed) {
+        throw new Error(`Could not parse GitHub URL: ${repoUrl}`);
+      }
+      
+      const { owner, repo } = parsed;
+      console.log(`Making direct GitHub API request for languages: ${owner}/${repo}`);
+      const { data } = await this.octokit.repos.listLanguages({
+        owner,
+        repo,
+      });
+      
+      return data as Record<string, number>;
+    } catch (error: any) {
       console.error('Error fetching languages:', error);
-      return {};
+      
+      // Check if this is a GitHub rate limit error
+      if (error.response?.status === 403) {
+        if (error.response?.data?.message?.includes('API rate limit exceeded')) {
+          console.error('GitHub API rate limit exceeded from direct call');
+        }
+      }
+      
+      // Re-throw to allow the component to handle the error display
+      throw error;
     }
   }
   
