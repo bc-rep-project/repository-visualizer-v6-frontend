@@ -4,7 +4,7 @@ const nextConfig = {
         NEXT_PUBLIC_BACKEND_URL: process.env.NEXT_PUBLIC_BACKEND_URL,
       },
   images: {
-    domains: ['fonts.gstatic.com', 'fonts.googleapis.com'],
+    domains: ['fonts.gstatic.com', 'fonts.googleapis.com', 'avatars.githubusercontent.com'],
   },
   async headers() {
     return [
@@ -19,7 +19,7 @@ const nextConfig = {
               style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
               font-src 'self' https://fonts.gstatic.com;
               img-src 'self' data: blob: https://fonts.gstatic.com https://avatars.githubusercontent.com;
-              connect-src 'self' ${process.env.NEXT_PUBLIC_API_URL || 'https://repository-visualizer-v6-backend.onrender.com'} https://api.github.com;
+              connect-src 'self' ${process.env.NEXT_PUBLIC_API_URL || 'https://repository-visualizer-v6-backend.onrender.com'} https://api.github.com https://*.githubusercontent.com;
             `.replace(/\s+/g, ' ').trim()
           }
         ]
